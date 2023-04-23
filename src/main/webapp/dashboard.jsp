@@ -8,7 +8,6 @@
 <h3>Hello ${user.name}</h3>
 <h5>You have access to ${servers.size()} Server${(servers.size() == 1 ? "" : "s")}</h5>
 <h4>Servers</h4>
-<c:if test="${servers.size() > 0}">
     <table>
     <tr>
         <th>
@@ -48,7 +47,6 @@
             </tr>
         </c:forEach>
     </table>
-</c:if>
 <c:if test="${user.canManageShConnections()}">
     <h4>SSH Connections</h4>
     <table>
