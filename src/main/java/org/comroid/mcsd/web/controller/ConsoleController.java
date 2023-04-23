@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpSession;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.mcsd.web.config.WebSocketConfig;
-import org.comroid.mcsd.web.dto.Handshake;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.entity.User;
@@ -13,24 +12,18 @@ import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
+import org.comroid.mcsd.web.util.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.Principal;
+import java.io.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -51,14 +44,15 @@ public class ConsoleController {
 
     @MessageMapping("/console/connect")
     @SendToUser("/console/handshake")
-    public boolean connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
+    public String connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
         var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
         var user = userRepo.findBySession(session).require(User.Perm.ManageServers);
         var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
         Connection connection = new Connection(user, server);
+        if (!connection.start())
+            return null;
         connections.put(user.getId(), connection);
-        connection.start();
-        return true;
+        return "\"%s\"".formatted(user.getId().toString());
     }
 
     @MessageMapping("/console/input")
@@ -68,7 +62,7 @@ public class ConsoleController {
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
             throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        res.input(input);
+        res.input(input.substring(1, input.length() - 1));
     }
 
     @MessageMapping("/console/disconnect")
@@ -84,6 +78,7 @@ public class ConsoleController {
     @Data
     @RequiredArgsConstructor
     private class Connection implements Closeable {
+        private final CompletableFuture<Void> connected = new CompletableFuture<>();
         private @NonNull User user;
         private @NonNull Server server;
         private Session session;
@@ -96,7 +91,7 @@ public class ConsoleController {
                     .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server.getShConnection()));
         }
 
-        public void start() {
+        public boolean start() {
             try {
                 var con = shConnection();
                 this.session = jSch.getSession(con.getUsername(), con.getHost(), con.getPort());
@@ -110,15 +105,18 @@ public class ConsoleController {
                 channel.setOutputStream(this.output = new Output());
 
                 channel.connect();
+                connected.complete(null);
+                return true;
             } catch (Exception e) {
-                throw new RuntimeException("Could not start Console Connection", e);
+                log.error("Could not start Console Connection", e);
+                return false;
             }
         }
 
         public void input(String input) {
             synchronized (this.input.cmds) {
                 this.input.cmds.add(input);
-                this.input.cmds.notifyAll();
+                this.input.cmds.notify();
             }
         }
 
@@ -134,23 +132,30 @@ public class ConsoleController {
             }};
             private String cmd;
             private int r = 0;
+            private boolean endlSent = true;
 
             @Override
-            public int read() throws IOException {
+            public int read() {
                 if (cmd == null) {
+                    if (endlSent)
+                        endlSent = false;
+                    else {
+                        endlSent = true;
+                        return -1;
+                    }
                     synchronized (cmds) {
                         while (cmds.size() == 0) {
                             try {
                                 cmds.wait();
                             } catch (InterruptedException e) {
-                                throw new IOException("Could not wait for new input", e);
+                                log.error("Could not wait for new input", e);
                             }
                         }
                         cmd = cmds.poll();
                     }
                 }
 
-                char c;
+                int c;
                 if (r < cmd.length())
                     c = cmd.charAt(r++);
                 else {
@@ -163,17 +168,22 @@ public class ConsoleController {
         }
 
         private class Output extends OutputStream {
-            private StringBuilder buf = new StringBuilder();
+            private StringWriter buf = new StringWriter();
 
             @Override
-            public void write(int b) {
-                buf.append((char)b);
+            public void write(int b) throws IOException {
+                buf.write(b);
             }
 
             @Override
-            public void flush() {
-                respond.convertAndSendToUser(user.getName(), "/console/output", buf);
-                buf = new StringBuilder();
+            public void flush() throws IOException {
+                if (!connected.isDone())
+                    connected.join();
+                var str = buf.toString();
+                str = Utils.removeAnsiEscapeSequences(str);
+                respond.convertAndSendToUser(user.getName(), "/console/output", str);
+                buf.close();
+                buf = new StringWriter();
             }
         }
     }

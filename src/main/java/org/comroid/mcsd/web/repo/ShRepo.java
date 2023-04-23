@@ -3,6 +3,7 @@ package org.comroid.mcsd.web.repo;
 import jakarta.persistence.Table;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.RepositoryDefinition;
 
 import java.util.Map;
 import java.util.UUID;
@@ -13,8 +14,6 @@ import java.util.stream.StreamSupport;
 public interface ShRepo extends CrudRepository<ShConnection, UUID> {
     default Map<String, UUID> toShMap() {
         return StreamSupport.stream(findAll().spliterator(), false)
-                .collect(Collectors.toUnmodifiableMap(
-                        x -> "%s@%s:%s".formatted(x.getUsername(), x.getHost(), x.getPort()),
-                        ShConnection::getId));
+                .collect(Collectors.toUnmodifiableMap(ShConnection::toString, ShConnection::getId));
     }
 }

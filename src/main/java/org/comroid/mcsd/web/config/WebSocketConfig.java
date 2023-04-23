@@ -57,14 +57,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 HttpServletRequest servletRequest = ((ServletServerHttpRequest) request).getServletRequest();
                 HttpSession httpSession = servletRequest.getSession();
                 attributes.put(HTTP_SESSION_KEY, httpSession);
-
-                var uri = request.getURI().toString();
-                var li = uri.lastIndexOf('/');
-                var li2 = uri.lastIndexOf('/', li - 1);
-                var id = uri.substring(li2 + 1, li);
-                attributes.put(USER_ID_KEY, id);
-                log.info("User ID: " + id);
-
                 return super.beforeHandshake(request, response, wsHandler, attributes);
             }
         };

@@ -1,33 +1,34 @@
 var stompClient = null;
 var subscriptionHandshake;
 var subscriptionOutput;
-var userId;
+var userName;
 var serverId;
 var sessionId;
 
 function connect() {
-    appendOutput('Connecting...')
+    appendOutput('Connecting...' + '\r\n')
     var socket = new SockJS('/console');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function(frame) {
-        subscriptionHandshake = stompClient.subscribe('/user/console/handshake', function(success){
+        subscriptionHandshake = stompClient.subscribe('/user/'+userName+'/console/handshake', function(success){
             handleHandshake(JSON.parse(success.body));
         });
         stompClient.send('/console/connect', {}, JSON.stringify(serverId));
     });
 }
 
-function handleHandshake(success) {
-    if (!success) {
+function handleHandshake(session) {
+    if (session === undefined) {
         let msg = 'Handshake was not successful';
         appendOutput(msg)
         throw new Error(msg)
     }
+    sessionId = session;
     subscriptionHandshake.unsubscribe();
-    subscriptionOutput = stompClient.subscribe('/user/console/output', function(msg){
+    subscriptionOutput = stompClient.subscribe('/user/'+userName+'/console/output', function(msg){
         appendOutput(msg.body);
     });
-    appendOutput("Connected!")
+    appendOutput("Connected" + '\r\n')
 }
 
 function disconnect() {
@@ -36,7 +37,7 @@ function disconnect() {
         subscriptionOutput.unsubscribe();
         stompClient.disconnect();
     }
-    console.log(`Disconnected`);
+    appendOutput("Disconnected" + '\r\n')
 }
 
 function sendMessage() {
@@ -46,11 +47,11 @@ function sendMessage() {
 }
 
 function appendOutput(msg) {
-    document.getElementById('output').innerHTML += msg + '\r\n';
+    document.getElementById('output').innerHTML += msg;
 }
 
 function init() {
-    userId = document.getElementById('userId').value;
+    userName = document.getElementById('userName').value;
     serverId = document.getElementById('serverId').value;
 
     connect();

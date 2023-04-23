@@ -137,3 +137,43 @@ button:hover {
     font-family: 'Fira Mono', monospaced, sans-serif;
     padding: 10px;
 }
+
+/* Media queries for mobile devices */
+@media only screen and (max-width: 768px) {
+    body {
+        font-size: 16px;
+    }
+
+    h3 {
+        font-size: 1.5rem;
+    }
+
+    h4 {
+        font-size: 1.25rem;
+    }
+
+    table {
+        font-size: 0.8rem;
+    }
+
+    th, td {
+        padding: 0.25rem;
+    }
+
+    button {
+        font-size: 0.8rem;
+    }
+
+    .ui-sidebar {
+        display: none;
+    }
+
+    .ui-content {
+        margin-left: 0;
+    }
+
+    #output {
+        width: 100%;
+        height: 300px;
+    }
+}

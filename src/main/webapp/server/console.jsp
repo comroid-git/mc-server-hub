@@ -8,6 +8,6 @@
 <textarea id="output" readonly></textarea>
 <br/>
 <input type="text" id="input" style="width: 80%;" />
-<input type="text" id="userId" value="${user.id}" style="display: none" readonly />
+<input type="text" id="userName" value="${user.name}" style="display: none" readonly />
 <input type="text" id="serverId" value="${server.id}" style="display: none" readonly />
 <button id="send" onclick="sendMessage()" style="width: 9.65%;">Send</button>
