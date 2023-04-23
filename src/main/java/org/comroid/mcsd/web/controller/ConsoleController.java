@@ -122,6 +122,7 @@ public class ConsoleController {
 
         @Override
         public void close() {
+            respond.convertAndSendToUser(user.getName(), "/console/disconnect", new Object());
             channel.disconnect();
             session.disconnect();
         }
@@ -171,7 +172,7 @@ public class ConsoleController {
             private StringWriter buf = new StringWriter();
 
             @Override
-            public void write(int b) throws IOException {
+            public void write(int b) {
                 buf.write(b);
             }
 
@@ -179,10 +180,14 @@ public class ConsoleController {
             public void flush() throws IOException {
                 if (!connected.isDone())
                     connected.join();
-                var str = buf.toString();
-                str = Utils.removeAnsiEscapeSequences(str);
+                var str = Utils.removeAnsiEscapeSequences(buf.toString());
                 respond.convertAndSendToUser(user.getName(), "/console/output", str);
                 buf.close();
+                if (Arrays.stream(new String[]{"no screen to be resumed", "command not found", "Invalid operation"})
+                        .anyMatch(str::contains)) {
+                    Connection.this.close();
+                    return;
+                }
                 buf = new StringWriter();
             }
         }

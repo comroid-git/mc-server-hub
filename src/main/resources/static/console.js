@@ -1,4 +1,5 @@
 var stompClient = null;
+var subscriptionDisconnect;
 var subscriptionHandshake;
 var subscriptionOutput;
 var userName;
@@ -10,6 +11,9 @@ function connect() {
     var socket = new SockJS('/console');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function(frame) {
+        subscriptionDisconnect = stompClient.subscribe('/user/'+userName+'/console/disconnect', function(){
+            disconnect();
+        });
         subscriptionHandshake = stompClient.subscribe('/user/'+userName+'/console/handshake', function(success){
             handleHandshake(JSON.parse(success.body));
         });
@@ -34,6 +38,7 @@ function handleHandshake(session) {
 function disconnect() {
     if(stompClient != null) {
         stompClient.send('/console/disconnect', {}, sessionId);
+        subscriptionDisconnect.unsubscribe();
         subscriptionOutput.unsubscribe();
         stompClient.disconnect();
     }
@@ -47,7 +52,9 @@ function sendMessage() {
 }
 
 function appendOutput(msg) {
-    document.getElementById('output').innerHTML += msg;
+    let output = document.getElementById('output');
+    output.innerHTML += msg;
+    output.scrollTop = output.scrollHeight;
 }
 
 function init() {

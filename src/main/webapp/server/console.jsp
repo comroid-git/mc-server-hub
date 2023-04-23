@@ -5,6 +5,7 @@
 <%--@elvariable id="user" type="org.comroid.mcsd.web.entity.User"--%>
 <%--@elvariable id="server" type="org.comroid.mcsd.web.entity.Server"--%>
 <h3>Server Console</h3>
+<button>Start Server</button>
 <textarea id="output" readonly></textarea>
 <br/>
 <input type="text" id="input" style="width: 80%;" />
