@@ -96,7 +96,7 @@ public class ConsoleController {
                 var con = shConnection();
                 this.session = jSch.getSession(con.getUsername(), con.getHost(), con.getPort());
                 session.setPassword(con.getPassword());
-                session.setConfig("StrictHostKeyChecking", "no");
+                session.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
                 session.connect();
 
                 this.channel = session.openChannel("shell");
@@ -113,18 +113,18 @@ public class ConsoleController {
             }
         }
 
-        public void input(String input) {
-            synchronized (this.input.cmds) {
-                this.input.cmds.add(input);
-                this.input.cmds.notify();
-            }
-        }
-
         @Override
         public void close() {
             respond.convertAndSendToUser(user.getName(), "/console/disconnect", new Object());
             channel.disconnect();
             session.disconnect();
+        }
+
+        public void input(String input) {
+            synchronized (this.input.cmds) {
+                this.input.cmds.add(input);
+                this.input.cmds.notify();
+            }
         }
 
         private class Input extends InputStream {
