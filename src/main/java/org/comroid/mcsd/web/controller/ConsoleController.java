@@ -15,6 +15,7 @@ import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
 import org.comroid.mcsd.web.util.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -43,6 +44,8 @@ public class ConsoleController {
     private ShRepo shRepo;
     @Autowired
     private JSch jSch;
+    @Autowired
+    private ResourceLoader loader;
 
     @MessageMapping("/console/connect")
     public void connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
@@ -115,7 +118,7 @@ public class ConsoleController {
 
             ((ChannelExec) scp).setCommand("scp -t " + fileName);
             try (var out = scp.getOutputStream();
-                 var resource = MinecraftServerHub.class.getResourceAsStream(fileName)) {
+                 var resource = loader.getResource("classpath:/"+fileName).getInputStream()) {
                 scp.connect();
 
                 if (scp.getExitStatus() != -1) {
