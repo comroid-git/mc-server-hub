@@ -20,7 +20,7 @@ public class Server {
     private String name;
     private String mcVersion = "1.19.1";
     private int port = 25565;
-    private String directory = "~/minecraft/";
+    private String directory = "~/minecraft";
     private Mode mode = Mode.Paper;
     private byte ramGB = 2;
     @ElementCollection
