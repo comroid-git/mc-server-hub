@@ -18,7 +18,6 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import java.io.*;
@@ -32,6 +31,8 @@ import java.util.concurrent.PriorityBlockingQueue;
 public class ConsoleController {
     private final Map<UUID, Connection> connections = new ConcurrentHashMap<>();
     @Autowired
+    private ServerController serverController;
+    @Autowired
     private SimpMessagingTemplate respond;
     @Autowired
     private UserRepo userRepo;
@@ -43,16 +44,18 @@ public class ConsoleController {
     private JSch jSch;
 
     @MessageMapping("/console/connect")
-    @SendToUser("/console/handshake")
-    public String connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
+    public void connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
         var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
         var user = userRepo.findBySession(session).require(User.Perm.ManageServers);
         var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
         Connection connection = new Connection(user, server);
-        if (!connection.start())
-            return null;
+        if (!connection.start()) {
+            respond.convertAndSendToUser(user.getName(), "/console/handshake", "");
+            return;
+        }
         connections.put(user.getId(), connection);
-        return "\"%s\"".formatted(user.getId().toString());
+        respond.convertAndSendToUser(user.getName(), "/console/handshake", "\"%s\"".formatted(user.getId().toString()));
+        respond.convertAndSendToUser(user.getName(), "/console/status", serverController.getStatus(server));
     }
 
     @MessageMapping("/console/input")
@@ -99,23 +102,57 @@ public class ConsoleController {
                 session.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
                 session.connect();
 
-                this.channel = session.openChannel("shell");
-
-                channel.setInputStream(this.input = new Input());
-                channel.setOutputStream(this.output = new Output());
-
-                channel.connect();
-                connected.complete(null);
-                return true;
+                return uploadRunScript() && startConnection();
             } catch (Exception e) {
-                log.error("Could not start Console Connection", e);
+                log.error("Could not start connection", e);
                 return false;
             }
         }
 
+        private boolean uploadRunScript() throws Exception {
+            var fileName = "run.sh";
+            var scp = session.openChannel("exec");
+
+            ((ChannelExec) scp).setCommand("scp -t " + fileName);
+            try (OutputStream out = scp.getOutputStream()) {
+                scp.connect();
+
+                if (scp.getExitStatus() != -1) {
+                    throw new RuntimeException("Failed to connect to the remote host.");
+                }
+
+                try (var resource = ClassLoader.getSystemClassLoader().getResourceAsStream(fileName)) {
+                    assert resource != null : "Could not find resource " + fileName;
+
+                    String command = "C0644 " + resource.available() + " " + fileName + "\n";
+                    out.write(command.getBytes());
+                    out.flush();
+
+                    resource.transferTo(out);
+
+                    out.write("".getBytes());
+                    out.flush();
+                }
+            }
+
+            scp.disconnect();
+            return true;
+        }
+
+        private boolean startConnection() throws Exception {
+            this.channel = session.openChannel("shell");
+
+            channel.setInputStream(this.input = new Input());
+            channel.setOutputStream(this.output = new Output());
+
+            channel.connect();
+            connected.complete(null);
+            return true;
+        }
+
         @Override
         public void close() {
-            respond.convertAndSendToUser(user.getName(), "/console/disconnect", new Object());
+            respond.convertAndSendToUser(user.getName(), "/console/disconnect", "");
             channel.disconnect();
             session.disconnect();
         }
@@ -129,7 +166,7 @@ public class ConsoleController {
 
         private class Input extends InputStream {
             private final Queue<String> cmds = new PriorityBlockingQueue<>(){{
-                add("screen -r mcsd-%s".formatted(server.getName()));
+                add("(screen -DSRq %s ./run.sh %s %dG) && exit".formatted(server.getUnitName(), server.getDirectory(), server.getRamGB())); // todo: home dir & ram
             }};
             private String cmd;
             private int r = 0;

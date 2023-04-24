@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
 
 public class WebPagePreparator {
     private final Model model;
@@ -38,12 +39,7 @@ public class WebPagePreparator {
     public WebPagePreparator session(HttpSession session, UserRepo users, ServerRepo servers) {
         var user = users.findBySession(session);
         setAttribute("user", user);
-        setAttribute("servers", user
-                .getPermittedServers()
-                .stream()
-                .map(servers::findById)
-                .flatMap(Optional::stream)
-                .toList());
+        setAttribute("servers", StreamSupport.stream(servers.findByPermittedUser(users.findBySession(session).getId()).spliterator(),false).toList());
         return this;
     }
 

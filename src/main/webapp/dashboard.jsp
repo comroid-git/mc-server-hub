@@ -8,45 +8,49 @@
 <h3>Hello ${user.name}</h3>
 <h5>You have access to ${servers.size()} Server${(servers.size() == 1 ? "" : "s")}</h5>
 <h4>Servers</h4>
-    <table>
-    <tr>
-        <th>
-            <c:if test="${user.canManageServers()}">
-                <button onclick="window.location.href = '<c:url value="/server/create"/>'">Create</button>
-            </c:if>
-        </th>
-        <th>Name</th>
-        <th>Minecraft Version</th>
-        <th>Mode</th>
-        <th>Host</th>
-        <th/>
-        <th>Port</th>
-        <th/>
-    </tr>
-        <c:forEach var="server" items="${servers}">
-            <tr class="serverEntry ui-button">
-                <td>
-                    <button onclick="window.location.href = '<c:url value="/server/${server.id}'"/>">View</button>
-                    <button onclick="window.location.href = '<c:url value="/server/${server.id}/console'"/>">Console</button>
-                </td>
-                <td>${server.name}</td>
-                <td>${server.mcVersion}</td>
-                <td>${server.mode}</td>
-                <td>${connections.stream()
-                .filter(con -> con.getId().equals(server.shConnection))
-                .findFirst()
-                .get()
-                .getHost()
-                }</td>
-                <td>:</td>
-                <td>${server.port}</td>
-                <td>
-                    <button onclick="window.location.href = '<c:url value="/server/edit/${server.id}'"/>">Edit</button>
-                    <button onclick="window.location.href = '<c:url value="/server/delete/${server.id}'"/>">Delete</button>
-                </td>
-            </tr>
-        </c:forEach>
-    </table>
+<table>
+<tr>
+    <th>
+        <c:if test="${user.canManageServers()}">
+            <button onclick="window.location.href = '<c:url value="/server/create"/>'">Create</button>
+        </c:if>
+    </th>
+    <th>Name</th>
+    <th>Minecraft Version</th>
+    <th>Mode</th>
+    <th>Host</th>
+    <th/>
+    <th>Port</th>
+    <th>Directory</th>
+    <th>RAM</th>
+    <th/>
+</tr>
+    <c:forEach var="server" items="${servers}">
+        <tr class="serverEntry ui-button">
+            <td>
+                <button onclick="window.location.href = '<c:url value="/server/${server.id}'"/>">View</button>
+                <button onclick="window.location.href = '<c:url value="/server/console/${server.id}'"/>">Console</button>
+            </td>
+            <td>${server.name}</td>
+            <td>${server.mcVersion}</td>
+            <td>${server.mode}</td>
+            <td>${connections.stream()
+            .filter(con -> con.getId().equals(server.shConnection))
+            .findFirst()
+            .get()
+            .getHost()
+            }</td>
+            <td>:</td>
+            <td>${server.port}</td>
+            <td>${server.directory}</td>
+            <td>${server.ramGB} GB</td>
+            <td>
+                <button onclick="window.location.href = '<c:url value="/server/edit/${server.id}'"/>">Edit</button>
+                <button onclick="window.location.href = '<c:url value="/server/delete/${server.id}'"/>">Delete</button>
+            </td>
+        </tr>
+    </c:forEach>
+</table>
 <c:if test="${user.canManageShConnections()}">
     <h4>SSH Connections</h4>
     <table>

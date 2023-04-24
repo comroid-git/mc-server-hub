@@ -33,14 +33,8 @@ public class GenericController implements ErrorController {
     public String dashboard(HttpSession session, Model model) {
         return new WebPagePreparator(model, "dashboard")
                 .session(session, users, servers)
-                .setAttribute("servers", users.findBySession(session)
-                        .getPermittedServers()
-                        .stream()
-                        .map(servers::findById)
-                        .flatMap(Optional::stream)
-                        .toList())
                 .setAttribute("connections", StreamSupport.stream(shRepo.findAll().spliterator(), false).toList())
-                .complete(u->true);
+                .complete($->true);
     }
 
     @GetMapping("/error")

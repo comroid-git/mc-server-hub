@@ -1,38 +1,25 @@
 var stompClient = null;
 var subscriptionDisconnect;
 var subscriptionHandshake;
+var subscriptionStatus;
 var subscriptionOutput;
 var userName;
 var serverId;
 var sessionId;
 
 function connect() {
-    appendOutput('Connecting...' + '\r\n')
+    writeLine('Connecting...')
     var socket = new SockJS('/console');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function(frame) {
         subscriptionDisconnect = stompClient.subscribe('/user/'+userName+'/console/disconnect', function(){
             disconnect();
         });
-        subscriptionHandshake = stompClient.subscribe('/user/'+userName+'/console/handshake', function(success){
-            handleHandshake(JSON.parse(success.body));
+        subscriptionHandshake = stompClient.subscribe('/user/'+userName+'/console/handshake', function(msg){
+            handleHandshake(JSON.parse(msg.body));
         });
         stompClient.send('/console/connect', {}, JSON.stringify(serverId));
     });
-}
-
-function handleHandshake(session) {
-    if (session === undefined) {
-        let msg = 'Handshake was not successful';
-        appendOutput(msg)
-        throw new Error(msg)
-    }
-    sessionId = session;
-    subscriptionHandshake.unsubscribe();
-    subscriptionOutput = stompClient.subscribe('/user/'+userName+'/console/output', function(msg){
-        appendOutput(msg.body);
-    });
-    appendOutput("Connected" + '\r\n')
 }
 
 function disconnect() {
@@ -42,19 +29,49 @@ function disconnect() {
         subscriptionOutput.unsubscribe();
         stompClient.disconnect();
     }
-    appendOutput("Disconnected" + '\r\n')
+    writeLine("Disconnected")
+}
+
+function handleHandshake(session) {
+    if (session === undefined) {
+        let msg = 'Handshake was not successful';
+        handleOutput(msg)
+        throw new Error(msg)
+    }
+    sessionId = session;
+    subscriptionHandshake.unsubscribe();
+    subscriptionStatus = stompClient.subscribe('/user/'+userName+'/console/status', function(msg){
+        handleStatus(msg.body);
+    });
+    subscriptionOutput = stompClient.subscribe('/user/'+userName+'/console/output', function(msg){
+        handleOutput(msg.body);
+    });
+    writeLine("Connected")
+}
+
+function handleStatus(data) {
+    let status = data.status;
+    let btnStart = document.getElementById('ui-server-start');
+    let btnStop = document.getElementById('ui-server-stop');
+
+    btnStart.enabled = status !== 4;
+    btnStop.enabled = status >= 1;
+}
+
+function handleOutput(msg) {
+    let output = document.getElementById('output');
+    output.innerHTML += msg;
+    output.scrollTop = output.scrollHeight;
+}
+
+function writeLine(msg) {
+    handleOutput(msg + '\r\n');
 }
 
 function sendMessage() {
     var text = document.getElementById('input').value;
     stompClient.send('/console/input', {}, JSON.stringify(text));
     document.getElementById('input').value = '';
-}
-
-function appendOutput(msg) {
-    let output = document.getElementById('output');
-    output.innerHTML += msg;
-    output.scrollTop = output.scrollHeight;
 }
 
 function init() {

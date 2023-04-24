@@ -17,8 +17,6 @@ public class User {
     private String name;
     private boolean guest;
     private int permissions;
-    @ElementCollection
-    private List<UUID> permittedServers = new ArrayList<>();
 
     public boolean canManageServers() {
         return Perm.ManageServers.isFlagSet(permissions);

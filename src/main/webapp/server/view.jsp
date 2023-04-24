@@ -12,5 +12,7 @@
     <tr><td>Minecraft Version</td><td>${server.mcVersion}</td></tr>
     <tr><td>Port</td><td>${server.port}</td></tr>
     <tr><td>Mode</td><td>${server.mode}</td></tr>
+    <tr><td>Directory</td><td>${server.directory}</td></tr>
+    <tr><td>RAM</td><td>${server.ramGB} GB</td></tr>
     <tr><td>SSH Connection</td><td>${server.shConnection}</td></tr>
 </table>
