@@ -74,9 +74,8 @@ public class ConsoleController {
         var session = (HttpSession) sessionAttributes.get(WebSocketConfig.HTTP_SESSION_KEY);
         var user = userRepo.findBySession(session);
         var res = connections.getOrDefault(user.getId(), null);
-        if (res == null)
-            throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        res.close();
+        if (res != null)
+            res.close();
     }
 
     @Data
@@ -115,25 +114,24 @@ public class ConsoleController {
             var scp = session.openChannel("exec");
 
             ((ChannelExec) scp).setCommand("scp -t " + fileName);
-            try (OutputStream out = scp.getOutputStream()) {
+            try (var out = scp.getOutputStream();
+                 var resource = MinecraftServerHub.class.getResourceAsStream(fileName)) {
                 scp.connect();
 
                 if (scp.getExitStatus() != -1) {
                     throw new RuntimeException("Failed to connect to the remote host.");
                 }
 
-                try (var resource = MinecraftServerHub.class.getResourceAsStream(fileName)) {
-                    assert resource != null : "Could not find resource " + fileName;
+                assert resource != null : "Could not find resource " + fileName;
 
-                    String command = "C0644 " + resource.available() + " " + fileName + "\n";
-                    out.write(command.getBytes());
-                    out.flush();
+                String command = "C0644 " + resource.available() + " " + fileName + "\n";
+                out.write(command.getBytes());
+                out.flush();
 
-                    resource.transferTo(out);
+                resource.transferTo(out);
 
-                    out.write("".getBytes());
-                    out.flush();
-                }
+                out.write("".getBytes());
+                out.flush();
             }
 
             scp.disconnect();
