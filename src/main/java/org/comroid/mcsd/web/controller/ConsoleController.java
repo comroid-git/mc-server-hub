@@ -4,6 +4,7 @@ import com.jcraft.jsch.*;
 import jakarta.servlet.http.HttpSession;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.mcsd.web.MinecraftServerHub;
 import org.comroid.mcsd.web.config.WebSocketConfig;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
@@ -121,7 +122,7 @@ public class ConsoleController {
                     throw new RuntimeException("Failed to connect to the remote host.");
                 }
 
-                try (var resource = ClassLoader.getSystemClassLoader().getResourceAsStream(fileName)) {
+                try (var resource = MinecraftServerHub.class.getResourceAsStream(fileName)) {
                     assert resource != null : "Could not find resource " + fileName;
 
                     String command = "C0644 " + resource.available() + " " + fileName + "\n";
