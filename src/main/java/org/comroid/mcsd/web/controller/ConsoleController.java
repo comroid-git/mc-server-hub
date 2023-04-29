@@ -168,7 +168,7 @@ public class ConsoleController {
 
         private class Input extends InputStream {
             private final Queue<String> cmds = new PriorityBlockingQueue<>(){{
-                add("(screen -DSRq %s ./run.sh %s %dG) && exit".formatted(server.getUnitName(), server.getDirectory(), server.getRamGB())); // todo: home dir & ram
+                add(server.attachCommand());
             }};
             private String cmd;
             private int r = 0;

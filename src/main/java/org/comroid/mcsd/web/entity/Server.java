@@ -54,6 +54,10 @@ public class Server {
         return "mcsd-" + getName();
     }
 
+    public String attachCommand() {
+        return "(screen -DSRq %s ./run.sh %s %dG) && exit".formatted(getUnitName(), getDirectory(), getRamGB());
+    }
+
     public enum Status implements IntegerAttribute {
         Unknown, Offline, Maintenance, Online
     }
