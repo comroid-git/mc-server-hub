@@ -3,9 +3,11 @@ package org.comroid.mcsd.web.controller;
 import com.jcraft.jsch.JSch;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import me.dilley.MineStat;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.dto.StatusMessage;
 import org.comroid.mcsd.web.entity.Server;
+import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.entity.User;
 import org.comroid.mcsd.web.exception.BadRequestException;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
@@ -28,6 +30,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Controller
@@ -140,6 +143,12 @@ public class ServerController {
     }
 
     Server.Status getStatus(Server srv) {
-        return Server.Status.Unknown; // todo use server query
+        var host = StreamSupport.stream(shRepo.findAll().spliterator(), false)
+                .filter(con -> con.getId().equals(srv.getShConnection()))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()))
+                .getHost();
+        var mc = new MineStat(host, srv.getPort());
+        return mc.isServerUp() ? Server.Status.Online : Server.Status.Offline;
     }
 }
