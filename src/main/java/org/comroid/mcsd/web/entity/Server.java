@@ -4,6 +4,7 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
+import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
@@ -23,6 +24,7 @@ public class Server {
     private String directory = "~/minecraft";
     private Mode mode = Mode.Paper;
     private byte ramGB = 2;
+    private boolean autoStart = false;
     @ElementCollection
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
 

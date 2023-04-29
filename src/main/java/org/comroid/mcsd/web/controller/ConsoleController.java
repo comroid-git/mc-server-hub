@@ -4,7 +4,7 @@ import com.jcraft.jsch.*;
 import jakarta.servlet.http.HttpSession;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.mcsd.web.MinecraftServerHub;
+import org.comroid.mcsd.model.ServerConnection;
 import org.comroid.mcsd.web.config.WebSocketConfig;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
@@ -31,7 +31,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 @Slf4j
 @Controller
 public class ConsoleController {
-    private final Map<UUID, Connection> connections = new ConcurrentHashMap<>();
+    private final Map<UUID, WebInterfaceConnection> connections = new ConcurrentHashMap<>();
     @Autowired
     private ServerController serverController;
     @Autowired
@@ -40,19 +40,13 @@ public class ConsoleController {
     private UserRepo userRepo;
     @Autowired
     private ServerRepo serverRepo;
-    @Autowired
-    private ShRepo shRepo;
-    @Autowired
-    private JSch jSch;
-    @Autowired
-    private ResourceLoader loader;
 
     @MessageMapping("/console/connect")
     public void connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
         var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
         var user = userRepo.findBySession(session).require(User.Perm.ManageServers);
         var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
-        Connection connection = new Connection(user, server);
+        WebInterfaceConnection connection = new WebInterfaceConnection(user, server);
         if (!connection.start()) {
             respond.convertAndSendToUser(user.getName(), "/console/handshake", "");
             return;
@@ -81,67 +75,20 @@ public class ConsoleController {
             res.close();
     }
 
-    @Data
-    @RequiredArgsConstructor
-    private class Connection implements Closeable {
+    @Getter
+    private class WebInterfaceConnection extends ServerConnection {
         private final CompletableFuture<Void> connected = new CompletableFuture<>();
-        private @NonNull User user;
-        private @NonNull Server server;
-        private Session session;
+        private final User user;
         private Channel channel;
         private Input input;
         private Output output;
 
-        public ShConnection shConnection() {
-            return shRepo.findById(server.getShConnection())
-                    .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server.getShConnection()));
+        public WebInterfaceConnection(User user, Server server) {
+            super(server);
+            this.user = user;
         }
 
-        public boolean start() {
-            try {
-                var con = shConnection();
-                this.session = jSch.getSession(con.getUsername(), con.getHost(), con.getPort());
-                session.setPassword(con.getPassword());
-                session.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
-                session.connect();
-
-                return uploadRunScript() && startConnection();
-            } catch (Exception e) {
-                log.error("Could not start connection", e);
-                return false;
-            }
-        }
-
-        private boolean uploadRunScript() throws Exception {
-            var fileName = "run.sh";
-            var scp = session.openChannel("exec");
-
-            ((ChannelExec) scp).setCommand("scp -t " + fileName);
-            try (var out = scp.getOutputStream();
-                 var resource = loader.getResource("classpath:/"+fileName).getInputStream()) {
-                scp.connect();
-
-                if (scp.getExitStatus() != -1) {
-                    throw new RuntimeException("Failed to connect to the remote host.");
-                }
-
-                assert resource != null : "Could not find resource " + fileName;
-
-                String command = "C0644 " + resource.available() + " " + fileName + "\n";
-                out.write(command.getBytes());
-                out.flush();
-
-                resource.transferTo(out);
-
-                out.write("".getBytes());
-                out.flush();
-            }
-
-            scp.disconnect();
-            return true;
-        }
-
-        private boolean startConnection() throws Exception {
+        protected boolean startConnection() throws Exception {
             this.channel = session.openChannel("shell");
 
             channel.setInputStream(this.input = new Input());
@@ -156,7 +103,7 @@ public class ConsoleController {
         public void close() {
             respond.convertAndSendToUser(user.getName(), "/console/disconnect", "");
             channel.disconnect();
-            session.disconnect();
+            super.close();
         }
 
         public void input(String input) {
@@ -224,7 +171,7 @@ public class ConsoleController {
                 buf.close();
                 if (Arrays.stream(new String[]{"no screen to be resumed", "command not found", "Invalid operation"})
                         .anyMatch(str::contains)) {
-                    Connection.this.close();
+                    WebInterfaceConnection.this.close();
                     return;
                 }
                 buf = new StringWriter();

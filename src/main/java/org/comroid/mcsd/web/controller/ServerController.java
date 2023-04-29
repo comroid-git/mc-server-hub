@@ -1,10 +1,14 @@
 package org.comroid.mcsd.web.controller;
 
+import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.IntegerAttribute;
+import org.comroid.mcsd.model.ServerConnection;
 import org.comroid.mcsd.web.dto.StatusMessage;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
@@ -22,14 +26,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.*;
+import java.io.StringBufferInputStream;
+import java.io.StringReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 @Slf4j
@@ -38,12 +42,15 @@ import java.util.stream.StreamSupport;
 public class ServerController {
     public static final Map<String, Integer> PERMS_MAP = Arrays.stream(Server.Permission.values())
             .collect(Collectors.toUnmodifiableMap(Enum::name, IntegerAttribute::getAsInt));
+    private final Map<UUID, ServerConnection> CONNECTIONS = new ConcurrentHashMap<>();
     @Autowired
     private UserRepo users;
     @Autowired
     private ServerRepo servers;
     @Autowired
     private ShRepo shRepo;
+    @Autowired
+    private JSch jSch;
 
     @GetMapping("/create")
     public String create(HttpSession session, Model model) {
@@ -124,8 +131,7 @@ public class ServerController {
         var user = users.findBySession(session).require(User.Perm.ManageServers);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Start);
-
-        //todo
+        doStart(result);
 
         return false;
     }
@@ -136,10 +142,37 @@ public class ServerController {
         var user = users.findBySession(session).require(User.Perm.ManageServers);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Stop);
-
-        //todo
+        doStop(result);
 
         return false;
+    }
+
+    @PostConstruct
+    void autoStart() {
+        for (Server srv : servers.findAll()) {
+            if (!srv.isAutoStart())
+                continue;
+
+            var con = shRepo.findById(srv.getShConnection())
+                    .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()));
+            try {
+                jSch.getSession(con.getUsername(), con.getHost(), con.getPort());
+            } catch (Exception e) {
+                log.error("Could not auto-start Server " + srv.getName(), e);
+            }
+        }
+    }
+
+    private boolean doStart(Server srv) {
+        try (var con = new ConnectionImpl(srv, ConnectionImpl.Command.Start)) {
+            return con.start();
+        }
+    }
+
+    private boolean doStop(Server srv) {
+        try (var con = new ConnectionImpl(srv, ConnectionImpl.Command.Stop)) {
+            return con.start();
+        }
     }
 
     Server.Status getStatus(Server srv) {
@@ -150,5 +183,30 @@ public class ServerController {
                 .getHost();
         var mc = new MineStat(host, srv.getPort());
         return mc.isServerUp() ? Server.Status.Online : Server.Status.Offline;
+    }
+
+    private static final class ConnectionImpl extends ServerConnection {
+        private final Command command;
+
+        public ConnectionImpl(@NonNull Server server, Command command) {
+            super(server);
+            this.command = command;
+        }
+
+        @Override
+        protected boolean startConnection() throws Exception {
+            var channel = (ChannelExec) session.openChannel("exec");
+
+            channel.setCommand(server.attachCommand());
+            channel.setInputStream(new ReaderInputStream(new StringReader(command == Command.Stop ? "stop" : "list")));
+
+            channel.connect();
+            channel.disconnect();
+            return true;
+        }
+
+        private enum Command {
+            Stop, Start
+        }
     }
 }
