@@ -3,6 +3,8 @@
 
 Manage all your Minecraft Servers from one Web interface!
 
+#### [Report a Problem](https://youtrack.comroid.org/newIssue?projectId=MCSD) (log in as guest if you dont want to create an account)
+
 ## Warning
 #### Compatibility is very limited currently
 System Requirements:
