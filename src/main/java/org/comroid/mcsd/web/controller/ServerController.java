@@ -95,7 +95,7 @@ public class ServerController {
 
     @GetMapping("/console/{id}")
     public String console(HttpSession session, Model model, @PathVariable UUID id) {
-        var user = users.findBySession(session).require(User.Perm.ManageServers);
+        var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Console);
         return new WebPagePreparator(model, "server/console")
@@ -115,7 +115,7 @@ public class ServerController {
     @ResponseBody
     @GetMapping("/status/{id}")
     public StatusMessage status(HttpSession session, @PathVariable UUID id) {
-        var user = users.findBySession(session).require(User.Perm.ManageServers);
+        var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Status);
         return getStatus(result);
@@ -124,7 +124,7 @@ public class ServerController {
     @ResponseBody
     @GetMapping("/start/{id}")
     public boolean start(HttpSession session, @PathVariable UUID id) {
-        var user = users.findBySession(session).require(User.Perm.ManageServers);
+        var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Start);
         return ServerConnection.send(result, result.cmdStart());
@@ -133,7 +133,7 @@ public class ServerController {
     @ResponseBody
     @GetMapping("/stop/{id}")
     public boolean stop(HttpSession session, @PathVariable UUID id) {
-        var user = users.findBySession(session).require(User.Perm.ManageServers);
+        var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Stop);
         return ServerConnection.send(result, result.cmdStop());
@@ -142,7 +142,7 @@ public class ServerController {
     @ResponseBody
     @GetMapping("/backup/{id}")
     public boolean backup(HttpSession session, @PathVariable UUID id) {
-        var user = users.findBySession(session).require(User.Perm.ManageServers);
+        var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Backup);
         return ServerConnection.send(result, result.cmdBackup());

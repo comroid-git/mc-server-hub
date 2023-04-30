@@ -51,7 +51,8 @@ public abstract class ServerConnection implements Closeable {
 
             @Override
             public void close() {
-                channel.disconnect();
+                if (channel != null)
+                    channel.disconnect();
                 super.close();
             }
         }) {
@@ -98,19 +99,15 @@ public abstract class ServerConnection implements Closeable {
         try (OutputStream out = channel.getOutputStream(); InputStream in = channel.getInputStream()) {
             channel.connect();
 
-            if (checkAck(in) != 0) {
-                throw new Exception("internal error");
-            }
+            if (checkAck(in) != 0)
+                log.warn("Unexpected ACK state");
 
             // send "C0644 filesize filename", where filename should not include '/'
-            command = "C0644 " + length + " ";
-            command += filename;
-            command += "\n";
+            command = "C0644 %d %s\n".formatted(length, filename);
             out.write(command.getBytes());
             out.flush();
-            if (checkAck(in) != 0) {
-                throw new Exception("internal error");
-            }
+            if (checkAck(in) != 0)
+                log.warn("Unexpected ACK state");
 
             // send a content of filename
             byte[] buf = new byte[1024];
@@ -125,9 +122,8 @@ public abstract class ServerConnection implements Closeable {
             buf[0] = 0;
             out.write(buf, 0, 1);
             out.flush();
-            if (checkAck(in) != 0) {
-                throw new Exception("internal error");
-            }
+            if (checkAck(in) != 0)
+                log.warn("Unexpected ACK state");
         }
 
         channel.disconnect();
