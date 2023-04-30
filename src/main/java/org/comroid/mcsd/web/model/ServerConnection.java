@@ -90,7 +90,7 @@ public abstract class ServerConnection implements Closeable {
     private boolean uploadFile(long length, InputStream source, String filename, String filepath) throws Exception {
         // exec 'scp -t filepath' remotely
         filepath = "'" + filepath + "'";
-        var command = "(touch \"%s\") && (scp -t \"%s\") && (chmod 755 \"%s\")".formatted(filepath, filepath, filepath);
+        var command = "(touch \"%s\") && (scp -t \"%s\") && (chmod 754 \"%s\")".formatted(filepath, filepath, filepath);
         var channel = session.openChannel("exec");
         ((ChannelExec) channel).setCommand(command);
 
