@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -156,12 +157,16 @@ public class ServerController {
             if (getStatus(srv).getStatus() != Server.Status.Offline)
                 continue;
 
-            try {
-                if (!ServerConnection.send(srv, srv.cmdStart()))
-                    log.warn("Staring server %s returned false".formatted(srv.getName()));
-            } catch (Exception e) {
-                log.error("Could not auto-start Server " + srv.getName(), e);
-            }
+            CompletableFuture.supplyAsync(() -> {
+                log.info("Auto-Starting Server " + srv.getName());
+                try {
+                    if (!ServerConnection.send(srv, srv.cmdStart()))
+                        log.warn("Starting server %s returned false".formatted(srv.getName()));
+                } catch (Exception e) {
+                    log.error("Could not auto-start Server " + srv.getName(), e);
+                }
+                return null;
+            });
         }
     }
 
