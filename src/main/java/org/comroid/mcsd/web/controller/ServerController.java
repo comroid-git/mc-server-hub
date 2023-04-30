@@ -91,7 +91,7 @@ public class ServerController {
         return new WebPagePreparator(model, "server/view")
                 .session(session, users, servers)
                 .setAttribute("server", result)
-                .complete(User::canManageServers);
+                .complete($->true);
     }
 
     @GetMapping("/console/{id}")
