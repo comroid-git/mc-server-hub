@@ -109,7 +109,7 @@ public class ServerController {
                 ))
                 .setAttribute("load", "init()")
                 .setAttribute("unload", "disconnect()")
-                .complete(User::canManageServers);
+                .complete($->true);
     }
 
     @ResponseBody
