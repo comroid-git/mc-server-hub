@@ -151,8 +151,8 @@ public class ServerController {
 
             var con = shRepo.findById(srv.getShConnection())
                     .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()));
-            try {
-                jSch.getSession(con.getUsername(), con.getHost(), con.getPort());
+            try  (var stop = new ServerStartConnection(srv)) {
+                stop.start();
             } catch (Exception e) {
                 log.error("Could not auto-start Server " + srv.getName(), e);
             }
@@ -173,6 +173,22 @@ public class ServerController {
                 .getHost();
         var mc = new MineStat(host, srv.getPort(), 3);
         return mc.isServerUp() ? Server.Status.Online : Server.Status.Offline;
+    }
+
+    private static final class ServerStartConnection extends ServerConnection {
+        public ServerStartConnection(@NonNull Server server) {
+            super(server);
+        }
+
+        @Override
+        protected boolean startConnection() throws Exception {
+            var channel = (ChannelExec) session.openChannel("exec");
+
+            channel.setCommand(server.attachCommand());
+            channel.connect();
+            channel.disconnect();
+            return true;
+        }
     }
 
     private static final class ServerStopConnection extends ServerConnection {
