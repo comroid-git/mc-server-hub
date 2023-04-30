@@ -1,4 +1,4 @@
-package org.comroid.mcsd.model;
+package org.comroid.mcsd.web.model;
 
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
