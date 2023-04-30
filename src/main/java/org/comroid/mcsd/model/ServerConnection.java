@@ -1,5 +1,6 @@
 package org.comroid.mcsd.model;
 
+import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
@@ -11,12 +12,12 @@ import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ShRepo;
-import org.comroid.mcsd.web.util.ApplicationContextProvider;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
-import java.io.Closeable;
-import java.io.File;
+import java.io.*;
 
+import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.get;
 
 @Data
@@ -43,106 +44,63 @@ public abstract class ServerConnection implements Closeable {
         }
     }
 
-    protected boolean uploadRunScript() throws Exception {
-        try{
-            var fileName = "mcsd.sh";
+    private boolean uploadRunScript() {
+        try {
+            var lfile = "mcsd.sh";
+            var rfile = server.getDirectory() + '/' + lfile;
 
-            if(new File(fileName).isDirectory()){
-                prefix=fileName+File.separator;
-            }
-
-            JSch jsch=new JSch();
-            Session session=jsch.getSession(user, host, 22);
-
-            // username and password will be given via UserInfo interface.
-            UserInfo ui=new MyUserInfo();
-            session.setUserInfo(ui);
-            session.connect();
-
-            // exec 'scp -f fileName ' remotely
-            fileName=fileName.replace("'", "'\"'\"'");
-            fileName="'"+fileName+"'";
-            String command="scp -f "+fileName;
-            Channel channel=session.openChannel("exec");
-            ((ChannelExec)channel).setCommand(command);
+            // exec 'scp -t rfile' remotely
+            rfile = "'" + rfile + "'";
+            var command = "scp -t %s && chmod 755 %s".formatted(rfile,rfile);
+            var channel = session.openChannel("exec");
+            ((ChannelExec) channel).setCommand(command);
 
             // get I/O streams for remote scp
-            OutputStream out=channel.getOutputStream();
-            InputStream in=channel.getInputStream();
+            try (OutputStream out = channel.getOutputStream(); InputStream in = channel.getInputStream()) {
+                channel.connect();
 
-            channel.connect();
-
-            byte[] buf=new byte[1024];
-
-            // send '\0'
-            buf[0]=0; out.write(buf, 0, 1); out.flush();
-
-            while(true){
-                int c=checkAck(in);
-                if(c!='C'){
-                    break;
+                if (checkAck(in) != 0) {
+                    throw new Exception("internal error");
                 }
 
-                // read '0644 '
-                in.read(buf, 0, 5);
+                var res = bean(ResourceLoader.class).getResource(lfile);
 
-                long filesize=0L;
-                while(true){
-                    if(in.read(buf, 0, 1)<0){
-                        // error
-                        break;
+                // send "C0644 filesize filename", where filename should not include '/'
+                long filesize = res.contentLength();
+                command = "C0644 " + filesize + " ";
+                command += lfile;
+                command += "\n";
+                out.write(command.getBytes());
+                out.flush();
+                if (checkAck(in) != 0) {
+                    throw new Exception("internal error");
+                }
+
+                // send a content of lfile
+                byte[] buf = new byte[1024];
+                try (var fis = res.getInputStream()) {
+                    while (true) {
+                        int len = fis.read(buf, 0, buf.length);
+                        if (len <= 0) break;
+                        out.write(buf, 0, len);
+                        out.flush();
                     }
-                    if(buf[0]==' ')break;
-                    filesize=filesize*10L+(long)(buf[0]-'0');
-                }
-
-                String file=null;
-                for(int i=0;;i++){
-                    in.read(buf, i, 1);
-                    if(buf[i]==(byte)0x0a){
-                        file=new String(buf, 0, i);
-                        break;
-                    }
-                }
-
-                //System.out.println("filesize="+filesize+", file="+file);
-
-                // send '\0'
-                buf[0]=0; out.write(buf, 0, 1); out.flush();
-
-                // read a content of fileName
-                fos=new FileOutputStream(prefix==null ? fileName : prefix+file);
-                int foo;
-                while(true){
-                    if(buf.length<filesize) foo=buf.length;
-                    else foo=(int)filesize;
-                    foo=in.read(buf, 0, foo);
-                    if(foo<0){
-                        // error
-                        break;
-                    }
-                    fos.write(buf, 0, foo);
-                    filesize-=foo;
-                    if(filesize==0L) break;
-                }
-                fos.close();
-                fos=null;
-
-                if(checkAck(in)!=0){
-                    System.exit(0);
                 }
 
                 // send '\0'
-                buf[0]=0; out.write(buf, 0, 1); out.flush();
+                buf[0] = 0;
+                out.write(buf, 0, 1);
+                out.flush();
+                if (checkAck(in) != 0) {
+                    throw new Exception("internal error");
+                }
             }
 
-            session.disconnect();
-
-            System.exit(0);
-        }
-        catch(Exception e){
-            System.out.println(e);
-            try{if(fos!=null)fos.close();}catch(Exception ee){}
+            channel.disconnect();
+            return true;
+        } catch (Exception e) {
+            log.error("Unable to upload runscript for Server " + server.getName(), e);
+            return false;
         }
     }
 
@@ -159,4 +117,28 @@ public abstract class ServerConnection implements Closeable {
     }
 
     protected abstract boolean startConnection() throws Exception;
+
+    private static int checkAck(InputStream in) throws Exception {
+        int b = in.read();
+        // b may be 0 for success,
+        //          1 for error,
+        //          2 for fatal error,
+        //          -1
+        if (b == 0) return b;
+        if (b == -1) return b;
+
+        if (b == 1 || b == 2) {
+            StringBuffer sb = new StringBuffer();
+            int c;
+            do {
+                c = in.read();
+                sb.append((char) c);
+            }
+            while (c != '\n');
+
+            if (b == 1) log.error("Error: " + sb);// error
+            else log.error("Fatal error: " + sb);// fatal error
+        }
+        return b;
+    }
 }

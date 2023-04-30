@@ -15,6 +15,7 @@ public class ShConnection {
     private int port = 22;
     private String username;
     private String password;
+    private String backupsDir = "~/backups";
 
     @Override
     public String toString() {

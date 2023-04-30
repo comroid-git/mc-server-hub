@@ -57,7 +57,10 @@ public class Server {
     }
 
     public String attachCommand() {
-        return "(screen -DSRq %s ./run.sh %s %dG) && exit".formatted(getUnitName(), getDirectory(), getRamGB());
+        return ("(cd \"%s\" || (echo \"Could change to server directory\" && return))" +
+                " && (screen -DSRq %s ./mcsd.sh run %dG)" +
+                " && exit")
+                .formatted(getDirectory(), getUnitName(), getRamGB());
     }
 
     public enum Status implements IntegerAttribute {
