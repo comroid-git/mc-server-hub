@@ -166,6 +166,7 @@ public class ServerController {
     }
 
     StatusMessage getStatus(Server srv) {
+        log.info("Getting status of Server " + srv.getName());
         var host = StreamSupport.stream(shRepo.findAll().spliterator(), false)
                 .filter(con -> con.getId().equals(srv.getShConnection()))
                 .findFirst()
