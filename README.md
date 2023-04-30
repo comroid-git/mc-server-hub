@@ -22,4 +22,4 @@ System Requirements:
 - Console page sometimes does not connect
 
 ### Screenshots
-[![Dashboard](https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/docs/img/dashboard.png)](https://mc.comroid.org)
+[![Dashboard](https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/docs/img/dashboard.png)](https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/docs/img/dashboard.png)
