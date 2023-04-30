@@ -77,11 +77,15 @@ function sendInput(input) {
     stompClient.send('/console/input', {}, JSON.stringify(input));
 }
 
+function restartServer() {
+    sendInput('stop');
+}
+
 async function runBackup(id) {
-    await sendInput("save-off");
-    await sendInput("save-all");
+    sendInput("save-off");
+    sendInput("save-all");
     await fetch('/server/backup/' + id)
-    await sendInput("save-on");
+    sendInput("save-on");
 }
 
 function init() {

@@ -19,6 +19,7 @@ if [ "$1" == "run" ]; then
     if [ -z "$first" ]; then
       first="no";
     else
+      echo "Restarting Server..."
       sleep "5s"
     fi
     java "-Xmx$2" -jar server.jar nogui
