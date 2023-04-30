@@ -153,6 +153,7 @@ public class ServerController {
                     .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()));
             try  (var stop = new ServerStartConnection(srv)) {
                 stop.start();
+                log.info("Server %s was automatically started".formatted(srv.getName()));
             } catch (Exception e) {
                 log.error("Could not auto-start Server " + srv.getName(), e);
             }
