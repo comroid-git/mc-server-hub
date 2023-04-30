@@ -16,6 +16,7 @@ if [ "$1" == "run" ]; then
   touch $sock
   while [ -f $sock ]; do
     java "-Xmx$2" -jar server.jar nogui
+    sleep 5s
   done
 
   echo "Server was stopped"

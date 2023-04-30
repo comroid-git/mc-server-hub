@@ -3,8 +3,12 @@ function sleep(ms) {
 }
 
 async function requestServerStatus(server) {
-    return fetch('/server/status/' + server)
-        .then(r => r.json());
+    return Promise.race([
+        fetch('/server/status/' + server).then(r => r.json()),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 3_000)
+        )
+    ]);
 }
 
 async function start() {
@@ -17,8 +21,7 @@ async function start() {
             let id = entry.getElementsByClassName('serverEntryId')[0].innerText;
             let status = entry.getElementsByClassName('serverEntryStatus')[0]
                 .getElementsByTagName('div')[0];
-            let response = await requestServerStatus(id);
-            status.className = 'serverStatus' + response.status;
+            requestServerStatus(id).then(response => status.className = 'serverStatus' + response.status);
         }
 
         await sleep(10_000);
