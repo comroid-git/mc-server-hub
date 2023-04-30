@@ -20,5 +20,7 @@ async function startServer(id) {
 
 async function stopServer(id) {
     await sendServerCommand(id, "stop");
+    if (typeof sendInput === 'function')
+        sendInput("stop");
     info("Server " + id + " stopped");
 }

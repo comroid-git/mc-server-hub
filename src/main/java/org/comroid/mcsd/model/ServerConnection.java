@@ -1,9 +1,9 @@
 package org.comroid.mcsd.model;
 
-import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+import io.graversen.minecraft.rcon.service.IMinecraftRconService;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +12,11 @@ import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ShRepo;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.get;
@@ -27,10 +28,12 @@ public abstract class ServerConnection implements Closeable {
     @NonNull
     protected Server server;
     protected Session session;
+    protected IMinecraftRconService rcon;
 
     public boolean start() {
         try {
             var con = shConnection();
+
             this.session = get().getBean(JSch.class)
                     .getSession(con.getUsername(), con.getHost(), con.getPort());
             session.setPassword(con.getPassword());

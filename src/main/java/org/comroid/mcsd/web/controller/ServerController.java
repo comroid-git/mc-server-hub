@@ -19,15 +19,12 @@ import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
 import org.comroid.mcsd.web.util.WebPagePreparator;
-import org.hibernate.engine.jdbc.ReaderInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.StringBufferInputStream;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -131,7 +128,6 @@ public class ServerController {
         var user = users.findBySession(session).require(User.Perm.ManageServers);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Start);
-        doStart(result);
 
         return false;
     }
@@ -142,9 +138,7 @@ public class ServerController {
         var user = users.findBySession(session).require(User.Perm.ManageServers);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Stop);
-        doStop(result);
-
-        return false;
+        return doStop(result);
     }
 
     @PostConstruct
@@ -163,14 +157,8 @@ public class ServerController {
         }
     }
 
-    private boolean doStart(Server srv) {
-        try (var con = new ConnectionImpl(srv, ConnectionImpl.Command.Start)) {
-            return con.start();
-        }
-    }
-
     private boolean doStop(Server srv) {
-        try (var con = new ConnectionImpl(srv, ConnectionImpl.Command.Stop)) {
+        try (var con = new ServerStopConnection(srv)) {
             return con.start();
         }
     }
@@ -185,28 +173,19 @@ public class ServerController {
         return mc.isServerUp() ? Server.Status.Online : Server.Status.Offline;
     }
 
-    private static final class ConnectionImpl extends ServerConnection {
-        private final Command command;
-
-        public ConnectionImpl(@NonNull Server server, Command command) {
+    private static final class ServerStopConnection extends ServerConnection {
+        public ServerStopConnection(@NonNull Server server) {
             super(server);
-            this.command = command;
         }
 
         @Override
         protected boolean startConnection() throws Exception {
             var channel = (ChannelExec) session.openChannel("exec");
 
-            channel.setCommand(server.attachCommand());
-            channel.setInputStream(new ReaderInputStream(new StringReader(command == Command.Stop ? "stop" : "list")));
-
+            channel.setCommand("rm %s/.running".formatted(server.getDirectory()));
             channel.connect();
             channel.disconnect();
             return true;
-        }
-
-        private enum Command {
-            Stop, Start
         }
     }
 }

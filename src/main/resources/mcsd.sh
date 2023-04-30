@@ -18,7 +18,7 @@ if [ "$1" == "run" ]; then
     java "-Xmx$2" -jar server.jar nogui
   done
 
-  echo "Server did not restart because $sock was deleted"
+  echo "Server was stopped"
 
 # backup command
 elif [ "$1" == "backup" ]; then

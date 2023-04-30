@@ -1,10 +1,10 @@
 package org.comroid.mcsd.web.entity;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
-import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
@@ -23,8 +23,10 @@ public class Server {
     private int port = 25565;
     private String directory = "~/minecraft";
     private Mode mode = Mode.Paper;
-    private byte ramGB = 2;
+    private byte ramGB = 4;
     private boolean autoStart = false;
+    private int rConPort = 25575;
+    private String rConPassword;
     @ElementCollection
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
 
@@ -57,10 +59,9 @@ public class Server {
     }
 
     public String attachCommand() {
-        return ("(cd \"%s\" || (echo \"Could change to server directory\" && return))" +
+        return ("cd \"%s\" || (echo \"Could change to server directory\" && return)" +
                 " && (screen -DSRq %s ./mcsd.sh run %dG)" +
-                " && exit")
-                .formatted(getDirectory(), getUnitName(), getRamGB());
+                " && exit").formatted(getDirectory(), getUnitName(), getRamGB());
     }
 
     public enum Status implements IntegerAttribute {

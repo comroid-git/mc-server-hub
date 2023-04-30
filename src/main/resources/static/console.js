@@ -69,9 +69,12 @@ function writeLine(msg) {
 }
 
 function sendMessage() {
-    var text = document.getElementById('input').value;
-    stompClient.send('/console/input', {}, JSON.stringify(text));
+    sendInput(document.getElementById('input').value);
     document.getElementById('input').value = '';
+}
+
+function sendInput(input) {
+    stompClient.send('/console/input', {}, JSON.stringify(input));
 }
 
 function init() {
