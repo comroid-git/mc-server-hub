@@ -42,6 +42,24 @@ elif [ "$1" == "backup" ]; then
   echo "Compressing backup as $backup.tar.gz"
   tar -zcvf "$backup.tar.gz" ./*glob*
 
+# install command
+elif [ "$1" == "install" ]; then
+  # fallback value for version
+  if [ -z "$2" ]; then
+    echo "No server.jar source specified"
+    return
+  fi
+
+  # cleanup if requested
+  if [ "$3" == "-c" ]; then
+    echo "Cleaning up directory..."
+    rm -r ./*glob*
+  fi
+
+  echo "Downloading server.jar..."
+  wget -O server.jar "$2"
+  chmod 755 server.jar
+
 # invalid command
 else
   echo "Invalid arguments"
