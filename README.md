@@ -20,3 +20,7 @@ System Requirements:
 - View and Edit server is bugged
 - Edit User/Server permissions in web incomplete; please modify the DB instead
 - Console page sometimes does not connect
+
+### Screenshots
+##### Dashboard
+![Dashboard](https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/docs/img/dashboard.png)
