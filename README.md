@@ -23,4 +23,5 @@ System Requirements:
 
 ### Screenshots
 ##### Dashboard
-![Dashboard](https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/docs/img/dashboard.png)
+
+[![Dashboard](https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/docs/img/dashboard.png)](https://mc.comroid.org)
