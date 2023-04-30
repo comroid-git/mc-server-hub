@@ -149,8 +149,6 @@ public class ServerController {
             if (getStatus(srv) != Server.Status.Offline)
                 continue;
 
-            var con = shRepo.findById(srv.getShConnection())
-                    .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()));
             try  (var stop = new ServerStartConnection(srv)) {
                 stop.start();
                 log.info("Server %s was automatically started".formatted(srv.getName()));
