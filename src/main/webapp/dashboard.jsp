@@ -10,6 +10,7 @@
 <h4>Servers</h4>
 <table>
 <tr>
+    <th/>
     <th>
         <c:if test="${user.canManageServers()}">
             <button onclick="window.location.href = '<c:url value="/server/create"/>'">Create</button>
@@ -27,24 +28,28 @@
 </tr>
     <c:forEach var="server" items="${servers}">
         <tr class="serverEntry ui-button">
-            <td>
+            <td class="serverEntryId" style="display: none">${server.id}</td>
+            <td class="serverEntryStatus">
+                <div class="serverStatusUnknown" />
+            </td>
+            <td class="serverEntryInteract">
                 <button onclick="window.location.href = '<c:url value="/server/${server.id}'"/>">View</button>
                 <button onclick="window.location.href = '<c:url value="/server/console/${server.id}'"/>">Console</button>
             </td>
-            <td>${server.name}</td>
-            <td>${server.mcVersion}</td>
-            <td>${server.mode}</td>
-            <td>${connections.stream()
+            <td class="serverEntryName">${server.name}</td>
+            <td class="serverEntryMcVersion">${server.mcVersion}</td>
+            <td class="serverEntryMode">${server.mode}</td>
+            <td class="serverEntryHost">${connections.stream()
             .filter(con -> con.getId().equals(server.shConnection))
             .findFirst()
             .get()
             .getHost()
             }</td>
-            <td>:</td>
-            <td>${server.port}</td>
-            <td>${server.directory}</td>
-            <td>${server.ramGB} GB</td>
-            <td>
+            <td class="serverEntrySeparator">:</td>
+            <td class="serverEntryPort">${server.port}</td>
+            <td class="serverEntryDir">${server.directory}</td>
+            <td class="serverEntryRam">${server.ramGB} GB</td>
+            <td class="serverEntryManage">
                 <button onclick="window.location.href = '<c:url value="/server/edit/${server.id}'"/>">Edit</button>
                 <button onclick="window.location.href = '<c:url value="/server/delete/${server.id}'"/>">Delete</button>
             </td>
@@ -64,7 +69,7 @@
             <th/>
         </tr>
         <c:forEach var="con" items="${connections}">
-            <tr class="serverEntry ui-button">
+            <tr class="connectionEntry ui-button">
                 <td><button onclick="window.location.href = '<c:url value="/connection/${con.id}"/>'">View</button></td>
                 <td>${con.username}</td>
                 <td>@</td>

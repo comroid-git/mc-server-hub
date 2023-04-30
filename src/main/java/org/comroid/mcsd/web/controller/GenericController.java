@@ -17,6 +17,7 @@ import org.springframework.web.util.NestedServletException;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
@@ -34,6 +35,8 @@ public class GenericController implements ErrorController {
         return new WebPagePreparator(model, "dashboard")
                 .session(session, users, servers)
                 .setAttribute("connections", StreamSupport.stream(shRepo.findAll().spliterator(), false).toList())
+                .setAttribute("scripts", List.of("/dashboard.js"))
+                .setAttribute("load", "start()")
                 .complete($->true);
     }
 

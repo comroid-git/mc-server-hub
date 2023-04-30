@@ -146,6 +146,8 @@ public class ServerController {
         for (Server srv : servers.findAll()) {
             if (!srv.isAutoStart())
                 continue;
+            if (getStatus(srv) != Server.Status.Offline)
+                continue;
 
             var con = shRepo.findById(srv.getShConnection())
                     .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()));
@@ -169,7 +171,7 @@ public class ServerController {
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()))
                 .getHost();
-        var mc = new MineStat(host, srv.getPort());
+        var mc = new MineStat(host, srv.getPort(), 3);
         return mc.isServerUp() ? Server.Status.Online : Server.Status.Offline;
     }
 

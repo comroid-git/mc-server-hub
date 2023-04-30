@@ -11,6 +11,8 @@
     --button-hover-background-color: #0069d9;
     --output-background-color: black;
     --output-color: white;
+    --status-icon-size: 30px;
+    --status-icon-border: 5px;
 }
 
 /* Set up dark mode colors */
@@ -137,6 +139,70 @@ button:hover {
     font-family: 'Fira Mono', monospaced, sans-serif;
     font-size: 13px;
     padding: 10px;
+}
+
+.serverStatusUnknown {
+    border: var(--status-icon-border) solid #f3f3f3; /* gray border */
+    border-top: var(--status-icon-border) solid #3498db; /* blue border */
+    border-radius: 50%;
+    width: var(--status-icon-size);
+    height: var(--status-icon-size);
+    animation: spin 2s linear infinite; /* animation properties */
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); } /* start position */
+    100% { transform: rotate(360deg); } /* end position */
+}
+
+.serverStatusOnline {
+    display: inline-block;
+    width: var(--status-icon-size);
+    height: var(--status-icon-size);
+    border-radius: 50%;
+    border: 2px solid green;
+    position: relative;
+}
+
+.serverStatusOnline::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%) rotate(45deg);
+    width: calc(var(--status-icon-size)*0.2);
+    height: calc(var(--status-icon-size)*0.45);
+    border-bottom: 2px solid green;
+    border-right: 2px solid green;
+}
+
+.serverStatusOffline {
+    display: inline-block;
+    width: var(--status-icon-size);
+    height: var(--status-icon-size);
+    border-radius: 50%;
+    border: 2px solid red;
+    position: relative;
+}
+
+.serverStatusOffline::before,
+.serverStatusOffline::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: calc(var(--status-icon-size)*0.6);
+    height: 2px;
+    background-color: red;
+}
+
+.serverStatusOffline::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.serverStatusOffline::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 /* Media queries for mobile devices */
