@@ -3,8 +3,11 @@ package org.comroid.mcsd.web.util;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 /** brought to you by ChatGPT */
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class ApplicationContextProvider implements ApplicationContextAware {
 
     private static ApplicationContext applicationContext;

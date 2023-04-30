@@ -54,8 +54,8 @@ function handleStatus(data) {
     let btnStart = document.getElementById('ui-server-start');
     let btnStop = document.getElementById('ui-server-stop');
 
-    btnStart.enabled = status !== 4;
-    btnStop.enabled = status >= 1;
+    btnStart.enabled = status !== "Offline";
+    btnStop.enabled = status === "Offline";
 }
 
 function handleOutput(msg) {
@@ -75,6 +75,13 @@ function sendMessage() {
 
 function sendInput(input) {
     stompClient.send('/console/input', {}, JSON.stringify(input));
+}
+
+async function runBackup(id) {
+    await sendInput("save-off");
+    await sendInput("save-all");
+    await fetch('/server/backup/' + id)
+    await sendInput("save-on");
 }
 
 function init() {

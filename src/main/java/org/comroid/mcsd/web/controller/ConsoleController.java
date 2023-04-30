@@ -113,7 +113,7 @@ public class ConsoleController {
 
         private class Input extends InputStream {
             private final Queue<String> cmds = new PriorityBlockingQueue<>(){{
-                add(server.attachCommand());
+                add(server.cmdAttach());
             }};
             private String cmd;
             private int r = 0;

@@ -7,6 +7,7 @@
 <h3>Server Console</h3>
 <button id="ui-server-start" onclick="window.location.reload()">Start Server</button>
 <button id="ui-server-stop" onclick="stopServer('${server.id}')">Stop Server</button>
+<button id="ui-server-backup" onclick="runBackup('${server.id}')" disabled>Run Backup Script</button>
 <textarea id="output" readonly></textarea>
 <br/>
 <input type="text" id="input" style="width: 80%;" />

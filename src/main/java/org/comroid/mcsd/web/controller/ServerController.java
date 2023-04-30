@@ -1,10 +1,7 @@
 package org.comroid.mcsd.web.controller;
 
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.IntegerAttribute;
@@ -18,6 +15,7 @@ import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
+import org.comroid.mcsd.web.util.ApplicationContextProvider;
 import org.comroid.mcsd.web.util.WebPagePreparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -47,7 +45,8 @@ public class ServerController {
     @Autowired
     private ShRepo shRepo;
     @Autowired
-    private JSch jSch;
+    @SuppressWarnings("unused") // this is a dependency for @PostConstruct
+    private ApplicationContextProvider applicationContextProvider;
 
     @GetMapping("/create")
     public String create(HttpSession session, Model model) {
@@ -119,7 +118,7 @@ public class ServerController {
         var user = users.findBySession(session).require(User.Perm.ManageServers);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Status);
-        return new StatusMessage(result.getId(), getStatus(result));
+        return getStatus(result);
     }
 
     @ResponseBody
@@ -128,8 +127,7 @@ public class ServerController {
         var user = users.findBySession(session).require(User.Perm.ManageServers);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Start);
-
-        return false;
+        return ServerConnection.send(result, result.cmdStart());
     }
 
     @ResponseBody
@@ -138,7 +136,16 @@ public class ServerController {
         var user = users.findBySession(session).require(User.Perm.ManageServers);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Stop);
-        return doStop(result);
+        return ServerConnection.send(result, result.cmdStop());
+    }
+
+    @ResponseBody
+    @GetMapping("/backup/{id}")
+    public boolean backup(HttpSession session, @PathVariable UUID id) {
+        var user = users.findBySession(session).require(User.Perm.ManageServers);
+        var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
+        result.validateUserAccess(user, Server.Permission.Backup);
+        return ServerConnection.send(result, result.cmdBackup());
     }
 
     @PostConstruct
@@ -146,63 +153,31 @@ public class ServerController {
         for (Server srv : servers.findAll()) {
             if (!srv.isAutoStart())
                 continue;
-            if (getStatus(srv) != Server.Status.Offline)
+            if (getStatus(srv).getStatus() != Server.Status.Offline)
                 continue;
 
-            try  (var stop = new ServerStartConnection(srv)) {
-                stop.start();
-                log.info("Server %s was automatically started".formatted(srv.getName()));
+            try {
+                if (!ServerConnection.send(srv, srv.cmdStart()))
+                    log.warn("Staring server %s returned false".formatted(srv.getName()));
             } catch (Exception e) {
                 log.error("Could not auto-start Server " + srv.getName(), e);
             }
         }
     }
 
-    private boolean doStop(Server srv) {
-        try (var con = new ServerStopConnection(srv)) {
-            return con.start();
-        }
-    }
-
-    Server.Status getStatus(Server srv) {
+    StatusMessage getStatus(Server srv) {
         var host = StreamSupport.stream(shRepo.findAll().spliterator(), false)
                 .filter(con -> con.getId().equals(srv.getShConnection()))
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()))
                 .getHost();
         var mc = new MineStat(host, srv.getPort(), 3);
-        return mc.isServerUp() ? Server.Status.Online : Server.Status.Offline;
-    }
-
-    private static final class ServerStartConnection extends ServerConnection {
-        public ServerStartConnection(@NonNull Server server) {
-            super(server);
-        }
-
-        @Override
-        protected boolean startConnection() throws Exception {
-            var channel = (ChannelExec) session.openChannel("exec");
-
-            channel.setCommand(server.attachCommand());
-            channel.connect();
-            channel.disconnect();
-            return true;
-        }
-    }
-
-    private static final class ServerStopConnection extends ServerConnection {
-        public ServerStopConnection(@NonNull Server server) {
-            super(server);
-        }
-
-        @Override
-        protected boolean startConnection() throws Exception {
-            var channel = (ChannelExec) session.openChannel("exec");
-
-            channel.setCommand("rm %s/.running".formatted(server.getDirectory()));
-            channel.connect();
-            channel.disconnect();
-            return true;
-        }
+        return new StatusMessage(
+                srv.getId(),
+                mc.isServerUp() ? Server.Status.Online : Server.Status.Offline,
+                mc.getCurrentPlayers(),
+                mc.getMaximumPlayers(),
+                mc.getStrippedMotd()
+        );
     }
 }

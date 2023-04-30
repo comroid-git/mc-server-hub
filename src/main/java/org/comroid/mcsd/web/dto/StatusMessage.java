@@ -11,4 +11,7 @@ import java.util.UUID;
 public class StatusMessage {
     private UUID serverId;
     private Server.Status status;
+    private int playerCount;
+    private int playerMax;
+    private String motd;
 }

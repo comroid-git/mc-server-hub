@@ -14,9 +14,14 @@ if [ "$1" == "run" ]; then
   # exec loop
   sock=".running"
   touch $sock
+  first="";
   while [ -f $sock ]; do
+    if [ -z "$first" ]; then
+      first="no";
+    else
+      sleep "5s"
+    fi
     java "-Xmx$2" -jar server.jar nogui
-    sleep 5s
   done
 
   echo "Server was stopped"
@@ -35,7 +40,7 @@ elif [ "$1" == "backup" ]; then
 
   # create backup
   echo "Compressing backup as $backup.tar.gz"
-  tar -zcvf $backup.tar.gz .
+  tar -zcvf "$backup.tar.gz" ./*glob*
 
 # invalid command
 else
