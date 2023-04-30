@@ -154,11 +154,11 @@ public class ServerController {
         for (Server srv : servers.findAll()) {
             if (!srv.isAutoStart())
                 continue;
-            if (getStatus(srv).getStatus() != Server.Status.Offline)
-                continue;
-
             CompletableFuture.supplyAsync(() -> {
                 log.info("Auto-Starting Server " + srv.getName());
+                if (getStatus(srv).getStatus() != Server.Status.Offline)
+                    return null;
+
                 try {
                     if (!ServerConnection.send(srv, srv.cmdStart()))
                         log.warn("Starting server %s returned false".formatted(srv.getName()));
