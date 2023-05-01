@@ -19,10 +19,12 @@ import org.comroid.mcsd.web.util.ApplicationContextProvider;
 import org.comroid.mcsd.web.util.WebPagePreparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +50,29 @@ public class ServerController {
     @Autowired
     @SuppressWarnings("unused") // this is a dependency for @PostConstruct
     private ApplicationContextProvider applicationContextProvider;
+    @Autowired
+    private ThreadPoolTaskScheduler taskScheduler;
+
+    @PostConstruct
+    void autoStart() {
+        for (Server srv : servers.findAll()) {
+            if (!srv.isAutoStart())
+                continue;
+            CompletableFuture.supplyAsync(() -> {
+                log.info("Auto-Starting Server " + srv.getName());
+                if (getStatus(srv).getStatus() != Server.Status.Offline)
+                    return null;
+
+                try {
+                    if (!ServerConnection.send(srv, srv.cmdStart()))
+                        log.warn("Starting server %s returned false".formatted(srv.getName()));
+                } catch (Exception e) {
+                    log.error("Could not auto-start Server " + srv.getName(), e);
+                }
+                return null;
+            }).thenRun(() -> taskScheduler.scheduleWithFixedDelay(this::autoStart, Duration.ofMinutes(5)));
+        }
+    }
 
     @GetMapping("/create")
     public String create(HttpSession session, Model model) {
@@ -147,27 +172,6 @@ public class ServerController {
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Backup);
         return ServerConnection.send(result, result.cmdBackup());
-    }
-
-    @PostConstruct
-    void autoStart() {
-        for (Server srv : servers.findAll()) {
-            if (!srv.isAutoStart())
-                continue;
-            CompletableFuture.supplyAsync(() -> {
-                log.info("Auto-Starting Server " + srv.getName());
-                if (getStatus(srv).getStatus() != Server.Status.Offline)
-                    return null;
-
-                try {
-                    if (!ServerConnection.send(srv, srv.cmdStart()))
-                        log.warn("Starting server %s returned false".formatted(srv.getName()));
-                } catch (Exception e) {
-                    log.error("Could not auto-start Server " + srv.getName(), e);
-                }
-                return null;
-            });
-        }
     }
 
     StatusMessage getStatus(Server srv) {
