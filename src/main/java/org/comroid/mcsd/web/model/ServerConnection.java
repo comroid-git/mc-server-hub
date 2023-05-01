@@ -7,6 +7,7 @@ import io.graversen.minecraft.rcon.service.IMinecraftRconService;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
@@ -14,16 +15,14 @@ import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.springframework.core.io.ResourceLoader;
 
-import java.io.Closeable;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
 @Data
 @Slf4j
 @RequiredArgsConstructor
-public abstract class ServerConnection implements Closeable {
+public class ServerConnection implements Closeable {
     @NonNull
     protected Server server;
     protected Session session;
@@ -129,6 +128,94 @@ public abstract class ServerConnection implements Closeable {
         channel.disconnect();
         return true;
     }
+    private InputStream downloadFile(final String rfile) throws Exception {
+        return new InputStream() {
+            private final ChannelExec channel;
+            private final OutputStream out;
+            private final InputStream scp;
+            private final String fileName;
+            private long available = -1;
+
+            {
+                this.channel = (ChannelExec) session.openChannel("exec");
+                channel.setCommand("scp -f '%s'".formatted(rfile));
+                this.out = channel.getOutputStream();
+                this.scp = channel.getInputStream();
+                channel.connect();
+
+                out.write(0);
+                out.flush();
+
+                // scp ack
+                int c = checkAck(scp);
+                if (c != 'C')
+                    throw new IOException("Invalid scp ACK");
+
+                // scp code
+                final String code = "0644 ";
+                byte[] buf = new byte[5];
+                if (scp.read(buf) != code.length())
+                    throw new IOException("Invalid scp code");
+
+                // file size
+                if (available == -1) {
+                    buf = new byte[1];
+                    while (true) {
+                        if (scp.read(buf) < 0)
+                            throw new RuntimeException("Invalid amount of bytes was read");
+                        if (buf[0] == ' ')
+                            break;
+                        available = available * 10L + (long) (buf[0] - '0');
+                    }
+                }
+
+                // file name
+                buf = new byte[4 * 1024];
+                int i;
+                for(i = 0; ; i++){
+                    if (scp.read(buf, i, 1) == 1 && buf[i]==(byte)0x0a)
+                        break;
+                }
+                fileName = new String(buf, 0, i);
+
+                // start receiving content
+                out.write(0);
+                out.flush();
+            }
+
+            @Override
+            public int read() throws IOException {
+                if (available <= 0) {
+                    return -1;
+                } else {
+                    available -= 1;
+                    return scp.read();
+                }
+            }
+
+            @Override
+            public int available() {
+                return Math.toIntExact(available);
+            }
+
+            @Override
+            @SneakyThrows
+            public void close() {
+                // scp ack
+                if(checkAck(scp)!=0)
+                    log.error("Invalid ACK when closing SCP Download Stream " + fileName);
+
+                // send '\0'
+                out.write(0);
+                out.flush();
+
+                scp.close();
+                out.close();
+                super.close();
+                channel.disconnect();
+            }
+        };
+    }
 
     public ShConnection shConnection() {
         return bean(ShRepo.class)
@@ -142,7 +229,9 @@ public abstract class ServerConnection implements Closeable {
             session.disconnect();
     }
 
-    protected abstract boolean startConnection() throws Exception;
+    protected boolean startConnection() throws Exception {
+        return true;
+    }
 
     private static int checkAck(InputStream in) throws Exception {
         int b = in.read();

@@ -24,11 +24,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -181,5 +181,24 @@ public class ServerController {
                 mc.getMaximumPlayers(),
                 mc.getStrippedMotd()
         );
+    }
+
+    Properties updateProperties(Server srv, InputStream input) throws IOException {
+        var prop = new Properties();
+        prop.load(input);
+
+        prop.setProperty("server-port", String.valueOf(srv.getPort()));
+        prop.setProperty("max-players", String.valueOf(srv.getMaxPlayers()));
+
+        // query
+        prop.setProperty("enable-query", String.valueOf(true));
+        prop.setProperty("query.port", String.valueOf(srv.getQueryPort()));
+
+        // rcon
+        prop.setProperty("enable-rcon", String.valueOf(true));
+        prop.setProperty("rcon.port", String.valueOf(srv.getRConPort()));
+        prop.setProperty("rcon.password", srv.getRConPassword());
+
+        return prop;
     }
 }

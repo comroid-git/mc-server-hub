@@ -27,6 +27,8 @@ public class Server {
     private Mode mode = Mode.Paper;
     private byte ramGB = 4;
     private boolean autoStart = false;
+    private int maxPlayers = 20;
+    private int queryPort = 25565;
     private int rConPort = 25575;
     private String rConPassword;
     @ElementCollection
