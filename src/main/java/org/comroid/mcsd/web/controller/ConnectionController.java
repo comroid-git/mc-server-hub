@@ -2,18 +2,15 @@ package org.comroid.mcsd.web.controller;
 
 
 import jakarta.servlet.http.HttpSession;
-import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.entity.User;
 import org.comroid.mcsd.web.exception.BadRequestException;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
-import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
 import org.comroid.mcsd.web.util.WebPagePreparator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -33,8 +30,7 @@ public class ConnectionController {
 
     @GetMapping("/create")
     public String create(HttpSession session, Model model) {
-        return new WebPagePreparator(model, "connection/edit")
-                .session(session, users, servers)
+        return new WebPagePreparator(model, "connection/edit", session)
                 .setAttribute("creating", true)
                 .setAttribute("editing", new ShConnection())
                 .complete(User::canManageShConnections);
@@ -54,8 +50,7 @@ public class ConnectionController {
         Optional<ShConnection> result = shRepo.findById(id);
         if (result.isEmpty())
             throw new EntityNotFoundException(ShConnection.class, id);
-        return new WebPagePreparator(model, "connection/view")
-                .session(session, users, servers)
+        return new WebPagePreparator(model, "connection/view", session)
                 .setAttribute("connection", result.get())
                 .complete(User::canManageShConnections);
     }

@@ -18,7 +18,6 @@ import org.springframework.web.util.NestedServletException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 @Controller
@@ -32,12 +31,11 @@ public class GenericController implements ErrorController {
 
     @GetMapping("/")
     public String dashboard(HttpSession session, Model model) {
-        return new WebPagePreparator(model, "dashboard")
-                .session(session, users, servers)
+        return new WebPagePreparator(model, "dashboard", session)
                 .setAttribute("connections", StreamSupport.stream(shRepo.findAll().spliterator(), false).toList())
                 .setAttribute("scripts", List.of("/dashboard.js"))
                 .setAttribute("load", "start()")
-                .complete($->true);
+                .complete();
     }
 
     @GetMapping("/error")
@@ -58,11 +56,10 @@ public class GenericController implements ErrorController {
         else codeMessage += status.getReasonPhrase();
         if (code == 404)
             codeMessage += ": " + request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
-        return new WebPagePreparator(model, "generic/error")
-                .session(session, users, servers)
+        return new WebPagePreparator(model, "generic/error", session)
                 .setAttribute("code", codeMessage)
                 .setAttribute("message", request.getAttribute(RequestDispatcher.ERROR_MESSAGE))
                 .setAttribute("stacktrace", sw.toString().replace("\r\n", "\n"))
-                .complete($->true);
+                .complete();
     }
 }

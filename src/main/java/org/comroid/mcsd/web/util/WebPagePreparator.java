@@ -5,10 +5,10 @@ import org.comroid.api.Polyfill;
 import org.comroid.mcsd.web.entity.User;
 import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.web.repo.ServerRepo;
+import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
 import org.springframework.ui.Model;
 
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
@@ -17,9 +17,16 @@ public class WebPagePreparator {
     private final String page;
     private String frame = "page/frame";
 
-    public WebPagePreparator(Model model, String page) {
+    public WebPagePreparator(Model model, String page, HttpSession session) {
         this.model = model;
         this.page = page;
+
+        var users = ApplicationContextProvider.bean(UserRepo.class);
+        var user = users.findBySession(session);
+        var servers = ApplicationContextProvider.bean(ServerRepo.class);
+        setAttribute("user", user);
+        setAttribute("servers", StreamSupport.stream(servers.findByPermittedUser(users.findBySession(session).getId()).spliterator(), false).toList());
+        setAttribute("connections", StreamSupport.stream(ApplicationContextProvider.bean(ShRepo.class).findAll().spliterator(), false).toList());
     }
 
     public WebPagePreparator frame(String frame) {
@@ -36,11 +43,8 @@ public class WebPagePreparator {
         return Polyfill.uncheckedCast(model.getAttribute(name));
     }
 
-    public WebPagePreparator session(HttpSession session, UserRepo users, ServerRepo servers) {
-        var user = users.findBySession(session);
-        setAttribute("user", user);
-        setAttribute("servers", StreamSupport.stream(servers.findByPermittedUser(users.findBySession(session).getId()).spliterator(),false).toList());
-        return this;
+    public String complete() {
+        return complete($ -> true);
     }
 
     public String complete(Predicate<User> permissionCheck) {

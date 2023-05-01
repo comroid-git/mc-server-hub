@@ -24,13 +24,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -75,8 +73,7 @@ public class ServerController {
 
     @GetMapping("/create")
     public String create(HttpSession session, Model model) {
-        return new WebPagePreparator(model, "server/edit")
-                .session(session, users, servers)
+        return new WebPagePreparator(model, "server/edit", session)
                 .setAttribute("creating", true)
                 .setAttribute("editing", new Server())
                 .setAttribute("shMap", shRepo.toShMap())
@@ -89,8 +86,7 @@ public class ServerController {
     @GetMapping("/edit/{id}")
     public String edit(HttpSession session, Model model, @PathVariable UUID id) {
         var server = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
-        return new WebPagePreparator(model, "server/edit")
-                .session(session, users, servers)
+        return new WebPagePreparator(model, "server/edit", session)
                 .setAttribute("creating", false)
                 .setAttribute("editing", server)
                 .setAttribute("shMap", shRepo.toShMap())
@@ -112,10 +108,9 @@ public class ServerController {
     @GetMapping("/{id}")
     public String view(HttpSession session, Model model, @PathVariable UUID id) {
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
-        return new WebPagePreparator(model, "server/view")
-                .session(session, users, servers)
+        return new WebPagePreparator(model, "server/view", session)
                 .setAttribute("server", result)
-                .complete($->true);
+                .complete();
     }
 
     @GetMapping("/console/{id}")
@@ -123,8 +118,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Console);
-        return new WebPagePreparator(model, "server/console")
-                .session(session, users, servers)
+        return new WebPagePreparator(model, "server/console", session)
                 .setAttribute("server", result)
                 .setAttribute("scripts", List.of(
                         "https://cdn.jsdelivr.net/gh/sockjs/sockjs-client@v0.3.4/dist/sockjs.js",
@@ -134,7 +128,7 @@ public class ServerController {
                 ))
                 .setAttribute("load", "init()")
                 .setAttribute("unload", "disconnect()")
-                .complete($->true);
+                .complete();
     }
 
     @ResponseBody

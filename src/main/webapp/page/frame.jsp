@@ -18,24 +18,20 @@
         <c:if test="${not empty load}">onload="${load}"</c:if>
         <c:if test="${not empty unload}">onbeforeunload="${unload}"</c:if>
 >
-<table>
-    <tr>
-        <td colspan="2"><div class="ui-menubar"><c:import url="/page/menubar.jsp" /></div></td>
-    </tr>
-    <tr>
-        <td><div class="ui-sidebar"><c:import url="/page/sidebar.jsp" /></div></td>
-        <td><div class="ui-content"><c:import url="/${page}.jsp" /></div></td>
-    </tr>
-</table>
+<div class="ui-menubar"><c:import url="/page/menubar.jsp" /></div>
+<div class="ui-container-page">
+    <!--<div class="ui-sidebar"><c_import url="/page/sidebar.jsp" /></div>-->
+    <div class="ui-content"><c:import url="/${page}.jsp" /></div>
+</div>
 <div style="
   font-family: 'Comic Sans MS', sans-serif;
-  position: absolute;
+  position: fixed;
   bottom: 0;
+  right: 100px;
   align-self: center;
   background: red;
   padding: 10px;
-  border-radius: 10px 10px 0 0;
-  right: 100px;">
+  border-radius: 10px 10px 0 0;">
     yes i know this page is ugly as fuck
     <br/>
     i'm not a good graphics designer
