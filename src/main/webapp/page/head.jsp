@@ -6,14 +6,14 @@
 <%--@elvariable id="account" type="org.comroid.auth.entity.UserAccount"--%>
 <%--@elvariable id="service" type="org.comroid.auth.entity.AuthService"--%>
 <meta charset="utf-8"/>
-<meta content="width=device-width,initial-scale=1.0" name="viewport">
-<meta content="comroid, account" name="keywords"/>
-<meta content="index, follow" name="robots"/>
-<meta content="kaleidox@comroid.org" name="author"/>
-<meta content="comroid" name="publisher"/>
-<meta content="comroid Account" name="description"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="keywords" content="minecraft, server hub, server manager"/>
+<meta name="robots" content="noindex"/>
+<meta name="author" content="kaleidox@comroid.org"/>
+<meta name="publisher" content="comroid"/>
+<meta name="description" content="Minecraft Server Hub"/>
 
-<link href="https://cdn.comroid.org/favicon.ico" rel="icon">
+<link href="<c:url value="/favicon.ico"/>" rel="icon">
 <link href="https://comroid.org/style.css" rel="stylesheet">
 <link href="<c:url value="/style.css"/>" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=Fira+Mono" rel="stylesheet">
