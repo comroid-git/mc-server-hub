@@ -4,6 +4,7 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="org.comroid.mcsd.web.util.ApplicationContextProvider"/>
     <bean class="org.springframework.core.io.DefaultResourceLoader" />
+    <bean class="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler"/>
     <bean id="jstlViewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
         <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
         <property name="prefix" value="/"/>
