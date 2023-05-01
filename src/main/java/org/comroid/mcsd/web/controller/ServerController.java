@@ -24,6 +24,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -45,9 +46,6 @@ public class ServerController {
     @Autowired
     private ShRepo shRepo;
     @Autowired
-    @SuppressWarnings("unused") // this is a dependency for @PostConstruct
-    private ApplicationContextProvider applicationContextProvider;
-    @Autowired
     private ThreadPoolTaskScheduler taskScheduler;
 
     @PostConstruct
@@ -63,11 +61,12 @@ public class ServerController {
                 try {
                     if (!ServerConnection.send(srv, srv.cmdStart()))
                         log.warn("Starting server %s returned false".formatted(srv.getName()));
+                    taskScheduler.scheduleWithFixedDelay(this::autoStart, Duration.ofMinutes(5));
                 } catch (Exception e) {
                     log.error("Could not auto-start Server " + srv.getName(), e);
                 }
                 return null;
-            });//.thenRun(() -> taskScheduler.scheduleWithFixedDelay(this::autoStart, Duration.ofMinutes(5)));
+            });
         }
     }
 

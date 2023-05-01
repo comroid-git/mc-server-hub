@@ -3,6 +3,7 @@ package org.comroid.mcsd.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.jdbc.Driver;
 import org.comroid.api.io.FileHandle;
+import org.comroid.mcsd.web.util.ApplicationContextProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,6 +28,10 @@ public class MinecraftServerHub {
     public static void main(String[] args) {
         SpringApplication.run(MinecraftServerHub.class, args);
     }
+
+    @Autowired
+    @SuppressWarnings("unused") // this is a dependency
+    private ApplicationContextProvider applicationContextProvider;
 
     @Bean
     public DataSource dataSource(@Autowired ObjectMapper objectMapper) throws IOException {
