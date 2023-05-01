@@ -40,7 +40,6 @@ import java.util.stream.StreamSupport;
 public class ServerController {
     public static final Map<String, Integer> PERMS_MAP = Arrays.stream(Server.Permission.values())
             .collect(Collectors.toUnmodifiableMap(Enum::name, IntegerAttribute::getAsInt));
-    private final Map<UUID, ServerConnection> CONNECTIONS = new ConcurrentHashMap<>();
     @Autowired
     private UserRepo users;
     @Autowired
@@ -70,7 +69,7 @@ public class ServerController {
                     log.error("Could not auto-start Server " + srv.getName(), e);
                 }
                 return null;
-            }).thenRun(() -> taskScheduler.scheduleWithFixedDelay(this::autoStart, Duration.ofMinutes(5)));
+            });//.thenRun(() -> taskScheduler.scheduleWithFixedDelay(this::autoStart, Duration.ofMinutes(5)));
         }
     }
 
