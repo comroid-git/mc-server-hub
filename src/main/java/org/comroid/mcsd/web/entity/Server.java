@@ -26,7 +26,8 @@ public class Server {
     private String directory = "~/minecraft";
     private Mode mode = Mode.Paper;
     private byte ramGB = 4;
-    private boolean autoStart = false;
+    private boolean managed = false;
+    private boolean maintenance = false;
     private int maxPlayers = 20;
     private int queryPort = 25565;
     private int rConPort = 25575;

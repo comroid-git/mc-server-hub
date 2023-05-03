@@ -25,8 +25,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -46,9 +48,9 @@ public class ServerController {
     private ThreadPoolTaskScheduler taskScheduler;
 
     @PostConstruct
-    void autoStart() {
+    void runManageCycle() {
         for (Server srv : servers.findAll()) {
-            if (!srv.isAutoStart())
+            if (!srv.isManaged())
                 continue;
             CompletableFuture.supplyAsync(() -> {
                 log.info("Auto-Starting Server %s".formatted(srv.getName()));
@@ -74,7 +76,7 @@ public class ServerController {
 
                     // start server
                     if (ServerConnection.send(srv, srv.cmdStart()))
-                        taskScheduler.scheduleWithFixedDelay(this::autoStart, Duration.ofMinutes(5));
+                        taskScheduler.scheduleWithFixedDelay(this::runManageCycle, Duration.ofMinutes(5));
                     else log.warn("Auto-Starting server %s did not finish successfully".formatted(srv.getName()));
                 } catch (Exception e) {
                     log.error("Could not auto-start Server " + srv.getName(), e);
@@ -180,21 +182,31 @@ public class ServerController {
         return ServerConnection.send(result, result.cmdBackup());
     }
 
+    private static final Duration statusCacheLifetime = Duration.ofMinutes(5);
+    private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
+
     StatusMessage getStatus(Server srv) {
         log.debug("Getting status of Server " + srv.getName());
+        if (statusCache.containsKey(srv.getId())) {
+            var entry = statusCache.get(srv.getId());
+            if (entry.getTimestamp().plus(statusCacheLifetime).isAfter(Instant.now()))
+                return entry;
+        }
         var host = StreamSupport.stream(shRepo.findAll().spliterator(), false)
                 .filter(con -> con.getId().equals(srv.getShConnection()))
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()))
                 .getHost();
         var mc = new MineStat(host, srv.getPort(), 3);
-        return new StatusMessage(
+        var msg = new StatusMessage(
                 srv.getId(),
-                mc.isServerUp() ? Server.Status.Online : Server.Status.Offline,
+                mc.isServerUp() ? srv.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online : Server.Status.Offline,
                 mc.getCurrentPlayers(),
                 mc.getMaximumPlayers(),
                 mc.getStrippedMotd()
         );
+        statusCache.put(srv.getId(), msg);
+        return msg;
     }
 
     Properties updateProperties(Server srv, InputStream input) throws IOException {
