@@ -10,9 +10,7 @@
 <h4>Servers</h4>
 <table>
 <tr>
-    <th>
-        <button onclick="refreshUI()">Refresh</button>
-    </th>
+    <th/>
     <th>
         <c:if test="${user.canManageServers()}">
             <button onclick="window.location.href = '<c:url value="/server/create"/>'">Create</button>
