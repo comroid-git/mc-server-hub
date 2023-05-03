@@ -15,7 +15,6 @@ import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
-import org.comroid.mcsd.web.util.ApplicationContextProvider;
 import org.comroid.mcsd.web.util.WebPagePreparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -24,9 +23,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -54,14 +51,31 @@ public class ServerController {
             if (!srv.isAutoStart())
                 continue;
             CompletableFuture.supplyAsync(() -> {
-                log.info("Auto-Starting Server " + srv.getName());
-                if (getStatus(srv).getStatus() != Server.Status.Offline)
+                log.info("Auto-Starting Server %s".formatted(srv.getName()));
+                if (getStatus(srv).getStatus() != Server.Status.Offline) {
+                    log.info("Server %s did not need to be started".formatted(srv.getName()));
                     return null;
+                }
 
-                try {
-                    if (!ServerConnection.send(srv, srv.cmdStart()))
-                        log.warn("Starting server %s returned false".formatted(srv.getName()));
-                    taskScheduler.scheduleWithFixedDelay(this::autoStart, Duration.ofMinutes(5));
+                // update server.properties first
+                final var fileName = "server.properties";
+                final var path = srv.getDirectory() + '/' + fileName;
+                try (var con = new ServerConnection(srv)) {
+                    con.start();
+
+                    // download & update & upload properties
+                    try (var in = con.downloadFile(path)) {
+                        var prop = updateProperties(srv, in);
+                        try (var out = con.uploadFile(path)) {
+                            prop.store(out, "Managed Server Properties by MCSD");
+                        }
+                    }
+                    log.info("Uploaded managed properties of server " + srv.getName());
+
+                    // start server
+                    if (ServerConnection.send(srv, srv.cmdStart()))
+                        taskScheduler.scheduleWithFixedDelay(this::autoStart, Duration.ofMinutes(5));
+                    else log.warn("Auto-Starting server %s did not finish successfully".formatted(srv.getName()));
                 } catch (Exception e) {
                     log.error("Could not auto-start Server " + srv.getName(), e);
                 }
