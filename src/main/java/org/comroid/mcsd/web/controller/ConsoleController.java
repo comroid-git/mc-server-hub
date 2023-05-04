@@ -42,8 +42,9 @@ public class ConsoleController {
     @MessageMapping("/console/connect")
     public void connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
         var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
-        var user = userRepo.findBySession(session).require(User.Perm.ManageServers);
+        var user = userRepo.findBySession(session);
         var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
+        server.validateUserAccess(user, Server.Permission.Console);
         WebInterfaceConnection connection = new WebInterfaceConnection(user, server);
         if (!connection.start()) {
             respond.convertAndSendToUser(user.getName(), "/console/handshake", "");
@@ -51,7 +52,7 @@ public class ConsoleController {
         }
         connections.put(user.getId(), connection);
         respond.convertAndSendToUser(user.getName(), "/console/handshake", "\"%s\"".formatted(user.getId().toString()));
-        respond.convertAndSendToUser(user.getName(), "/console/status", serverController.getStatus(server));
+        ServerConnection.status(server).thenAccept(status -> respond.convertAndSendToUser(user.getName(), "/console/status", status));
     }
 
     @MessageMapping("/console/input")

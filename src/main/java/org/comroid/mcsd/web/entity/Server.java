@@ -65,7 +65,7 @@ public class Server {
 
     public String cmdStart() {
         return ("cd \"%s\" || (echo \"Could change to server directory\" && return)" +
-                " && (screen -dmS %s ./mcsd.sh run %dG)" +
+                " && (screen -dmSq %s ./mcsd.sh run %dG)" +
                 " && exit").formatted(getDirectory(), getUnitName(), getRamGB());
     }
 

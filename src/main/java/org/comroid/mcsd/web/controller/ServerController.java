@@ -22,8 +22,10 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.*;
+import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -61,9 +63,25 @@ public class ServerController {
                         log.warn("Unable to update server properties for server " + srv.getName());
 
                     // is it not offline?
-                    if (getStatus(srv).getStatus() != Server.Status.Offline) {
+                    if (ServerConnection.status(srv).join().getStatus() != Server.Status.Offline) {
                         log.info("Server %s did not need to be started".formatted(srv.getName()));
                         return null;
+                    }
+
+                    // upload most recent server.jar
+                    final String prefix = "https://serverjars.com/api/fetchJar/";
+                    String type = switch (srv.getMode()) {
+                        case Vanilla -> "vanilla";
+                        case Paper -> "servers";
+                        case Forge, Fabric -> "modded";
+                    };
+                    String detail = srv.getMode().name().toLowerCase();
+                    String version = srv.getMcVersion();
+                    String url = prefix + type + "/" + detail + "/" + version;
+                    log.info("Uploading most recent server.jar for %s from %s".formatted(srv.getName(), url));
+                    try (var download = new URL(url).openStream();
+                         var upload = ServerConnection.upload(srv, "server.jar")) {
+                        download.transferTo(upload);
                     }
 
                     // start server
@@ -144,7 +162,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Status);
-        return getStatus(result);
+        return ServerConnection.status(result).join();
     }
 
     @ResponseBody
@@ -172,32 +190,5 @@ public class ServerController {
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Backup);
         return ServerConnection.send(result, result.cmdBackup());
-    }
-
-    private static final Duration statusCacheLifetime = Duration.ofMinutes(5);
-    private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
-
-    StatusMessage getStatus(Server srv) {
-        log.debug("Getting status of Server " + srv.getName());
-        if (statusCache.containsKey(srv.getId())) {
-            var entry = statusCache.get(srv.getId());
-            if (entry.getTimestamp().plus(statusCacheLifetime).isAfter(Instant.now()))
-                return entry;
-        }
-        var host = StreamSupport.stream(shRepo.findAll().spliterator(), false)
-                .filter(con -> con.getId().equals(srv.getShConnection()))
-                .findFirst()
-                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + srv.getName()))
-                .getHost();
-        var mc = new MineStat(host, srv.getPort(), 3);
-        var msg = new StatusMessage(
-                srv.getId(),
-                mc.isServerUp() ? srv.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online : Server.Status.Offline,
-                mc.getCurrentPlayers(),
-                mc.getMaximumPlayers(),
-                mc.getStrippedMotd()
-        );
-        statusCache.put(srv.getId(), msg);
-        return msg;
     }
 }
