@@ -29,13 +29,16 @@ public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseab
         return (Output)this;
     }
 
-    private static <T extends AutoCloseable> Stack<T> prepend(T it, T[] array) {
-        return Stream.concat(Stream.of(it), Stream.of(array)).collect(Stack::new, Collection::add, Collection::addAll);
+    private static <T extends AutoCloseable> Queue<T> prepend(T it, T[] array) {
+        var yield = new ArrayDeque<T>();
+        yield.add(it);
+        yield.addAll(List.of(array));
+        return yield;
     }
 
-    final class Input extends InputStream implements DelegateStream {
+    class Input extends InputStream implements DelegateStream {
         private final ThrowingIntSupplier<IOException> read;
-        private final Stack<Closeable> dependencies;
+        private final Queue<Closeable> dependencies;
 
         public Input(InputStream delegate, Closeable... dependencies) {
             this.read = delegate::read;
@@ -65,16 +68,15 @@ public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseab
         @Override
         @SneakyThrows
         public void close() {
-            var iter = getDependencies().filter(Objects::nonNull).iterator();
-            while (iter.hasNext())
-                iter.next().close();
+            while (!dependencies.isEmpty())
+                dependencies.poll().close();
         }
     }
 
-    final class Output extends OutputStream implements DelegateStream {
+    class Output extends OutputStream implements DelegateStream {
         private final ThrowingIntConsumer<IOException> write;
         private final ThrowingRunnable<IOException> flush;
-        private final Stack<Closeable> dependencies;
+        private final Queue<Closeable> dependencies;
 
         public Output(OutputStream delegate, Closeable... dependencies) {
             this.write = delegate::write;
@@ -111,9 +113,8 @@ public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseab
         @Override
         @SneakyThrows
         public void close() {
-            var iter = getDependencies().filter(Objects::nonNull).iterator();
-            while (iter.hasNext())
-                iter.next().close();
+            while (!dependencies.isEmpty())
+                dependencies.poll().close();
         }
     }
 }
