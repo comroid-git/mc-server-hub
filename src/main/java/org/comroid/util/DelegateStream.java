@@ -30,10 +30,10 @@ public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseab
     }
 
     @Override
-    @SneakyThrows
-    @SuppressWarnings("RedundantThrows")
     default void close() throws Exception {
-        getDependencies().filter(Objects::nonNull).forEachOrdered(AutoCloseable::close);
+        var iter = getDependencies().filter(Objects::nonNull).iterator();
+        while (iter.hasNext())
+            iter.next().close();
     }
 
     private static <T extends AutoCloseable> Stack<T> prepend(T it, T[] array) {
