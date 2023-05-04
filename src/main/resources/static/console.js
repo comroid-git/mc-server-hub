@@ -44,6 +44,9 @@ function handleHandshake(session) {
     subscriptionOutput = stompClient.subscribe('/user/'+userName+'/console/output', function(msg){
         handleOutput(msg.body);
     });
+    subscriptionOutput = stompClient.subscribe('/user/'+userName+'/console/error', function(msg){
+        handleError(msg.body);
+    });
     writeLine("Connected")
 }
 
@@ -58,7 +61,16 @@ function handleStatus(data) {
 
 function handleOutput(msg) {
     let output = document.getElementById('output');
-    output.innerHTML += msg;
+    output.innerHTML += msg.replace(new RegExp('\r?\n'), '<br/>');
+    output.scrollTop = output.scrollHeight;
+}
+
+function handleError(msg) {
+    let output = document.getElementById('output');
+    let span = document.createElement('span')
+    span.className = 'stderr';
+    span.innerText = msg.replace(new RegExp('\r?\n'), '<br/>');
+    output.innerHTML += span;
     output.scrollTop = output.scrollHeight;
 }
 

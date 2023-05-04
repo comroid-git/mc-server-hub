@@ -75,6 +75,7 @@ public class ConsoleController {
         private final Channel channel;
         private final Input input;
         private final Output output;
+        private final Output error;
 
         public WebInterfaceConnection(User user, Server server) throws JSchException {
             super(server);
@@ -82,7 +83,8 @@ public class ConsoleController {
             this.channel = session.openChannel("shell");
 
             channel.setInputStream(this.input = new Input());
-            channel.setOutputStream(this.output = new Output());
+            channel.setOutputStream(this.output = new Output(false));
+            channel.setExtOutputStream(this.error = new Output(true));
 
             channel.connect();
             connected.complete(null);
@@ -144,7 +146,12 @@ public class ConsoleController {
         }
 
         private class Output extends OutputStream {
+            private final boolean error;
             private StringWriter buf = new StringWriter();
+
+            public Output(boolean error) {
+                this.error = error;
+            }
 
             @Override
             public void write(int b) {
@@ -156,7 +163,7 @@ public class ConsoleController {
                 if (!connected.isDone())
                     connected.join();
                 var str = Utils.removeAnsiEscapeSequences(buf.toString());
-                respond.convertAndSendToUser(user.getName(), "/console/output", str);
+                respond.convertAndSendToUser(user.getName(), "/console/" + (error ? "error" : "output"), str);
                 buf.close();
                 if (Arrays.stream(new String[]{"no screen to be resumed", "command not found", "Invalid operation"})
                         .anyMatch(str::contains)) {
