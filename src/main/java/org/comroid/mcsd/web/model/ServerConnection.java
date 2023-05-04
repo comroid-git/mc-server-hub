@@ -4,19 +4,27 @@ import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+import io.graversen.minecraft.rcon.service.ConnectOptions;
 import io.graversen.minecraft.rcon.service.IMinecraftRconService;
+import io.graversen.minecraft.rcon.service.MinecraftRconService;
+import io.graversen.minecraft.rcon.service.RconDetails;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.ThrowingFunction;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ShRepo;
+import org.comroid.util.DelegateStream;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.ResourceLoader;
 
 import java.io.*;
+import java.time.Duration;
+import java.util.Properties;
+import java.util.function.Function;
 
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
@@ -29,24 +37,29 @@ public class ServerConnection implements Closeable {
     protected Session session;
     protected IMinecraftRconService rcon;
 
-    public static @Nullable OutputStream upload(Server srv, long length, String fileName, String filePath) {
+    private static <T> T facadeCall(Server srv, ThrowingFunction<ServerConnection, T, Exception> call, String errorMessage) {
         try (var con = new ServerConnection(srv)) {
             con.start();
-            return con.uploadFile(filePath);
+            return call.apply(con);
         } catch (Exception e) {
-            log.error("Error opening upload stream to server %s for file %s".formatted(srv.getName(), fileName), e);
+            log.error(errorMessage, e);
             return null;
         }
     }
 
-    public static @Nullable InputStream download(Server srv, String filePath) {
-        try (var con = new ServerConnection(srv)) {
-            con.start();
-            return con.downloadFile(filePath);
-        } catch (Exception e) {
-            log.error("Error opening download stream from server %s from file %s".formatted(srv.getName(), filePath), e);
-            return null;
-        }
+    public static @Nullable OutputStream upload(Server srv, String path) {
+        return facadeCall(srv, con -> con.uploadFile(path).plus(con),
+                "Error opening upload stream to server %s for file %s".formatted(srv.getName(), path));
+    }
+
+    public static @Nullable InputStream download(Server srv, String path) {
+        return facadeCall(srv, con -> con.downloadFile(path).plus(con),
+                "Error opening download stream from server %s from file %s".formatted(srv.getName(), path));
+    }
+
+    public static boolean updateProperties(Server srv) {
+        return Boolean.TRUE.equals(facadeCall(srv, ServerConnection::updateProperties,
+                "Error updating managed properties of server " + srv.getName()));
     }
 
     public static boolean send(Server srv, String command) {
@@ -89,11 +102,53 @@ public class ServerConnection implements Closeable {
             session.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
             session.connect();
 
-            return uploadRunScript() && startConnection();
+            this.rcon = new MinecraftRconService(
+                    new RconDetails(con.getHost(), server.getPort(), server.getRConPassword()),
+                    new ConnectOptions(3, Duration.ofSeconds(1), Duration.ofSeconds(1)));
+            rcon.connect();
+
+            return uploadRunScript() && updateProperties() && startConnection();
         } catch (Exception e) {
             log.error("Could not start connection", e);
             return false;
         }
+    }
+
+    private boolean updateProperties() {
+        final var fileName = "server.properties";
+        final var path = server.getDirectory() + '/' + fileName;
+
+        // download & update & upload properties
+        try (var in = downloadFile(path)) {
+            var prop = updateProperties(server, in);
+            try (var out = uploadFile(path)) {
+                prop.store(out, "Managed Server Properties by MCSD");
+            }
+        } catch (Exception e) {
+            log.error("Error uploading managed server.properties", e);
+            return false;
+        }
+        log.info("Uploaded managed properties of server " + server.getName());
+        return true;
+    }
+
+    private Properties updateProperties(Server srv, InputStream input) throws IOException {
+        var prop = new Properties();
+        prop.load(input);
+
+        prop.setProperty("server-port", String.valueOf(srv.getPort()));
+        prop.setProperty("max-players", String.valueOf(srv.getMaxPlayers()));
+
+        // query
+        prop.setProperty("enable-query", String.valueOf(true));
+        prop.setProperty("query.port", String.valueOf(srv.getQueryPort()));
+
+        // rcon
+        prop.setProperty("enable-rcon", String.valueOf(!srv.getRConPassword().isBlank()));
+        prop.setProperty("rcon.port", String.valueOf(srv.getRConPort()));
+        prop.setProperty("rcon.password", srv.getRConPassword());
+
+        return prop;
     }
 
     private boolean uploadRunScript() {
@@ -110,51 +165,16 @@ public class ServerConnection implements Closeable {
         }
     }
 
-    public OutputStream uploadFile(final String path) throws Exception {
-        return new OutputStream() {
-            private final ChannelSftp sftp;
-            private final OutputStream delegate;
-
-            {
-                this.sftp = (ChannelSftp) session.openChannel("sftp");
-                sftp.connect();
-                this.delegate = sftp.put(path);
-            }
-
-            @Override
-            public void write(int b) throws IOException {
-                delegate.write(b);
-            }
-
-            @Override
-            public void close() throws IOException {
-                super.close();
-                sftp.disconnect();
-            }
-        };
+    public DelegateStream.Output uploadFile(final String path) throws Exception {
+        var sftp = (ChannelSftp) session.openChannel("sftp");
+        sftp.connect();
+        return new DelegateStream.Output(sftp.put(path), sftp::disconnect);
     }
 
-    public InputStream downloadFile(final String path) throws Exception {
-        return new InputStream() {
-            private final ChannelSftp sftp;
-            private final InputStream delegate;
-
-            {
-                this.sftp = (ChannelSftp) session.openChannel("sftp");
-                sftp.connect();
-                this.delegate = sftp.get(path);
-            }
-
-            @Override
-            public int read() throws IOException {
-                return delegate.read();
-            }
-
-            @Override
-            public void close() throws IOException {
-                sftp.disconnect();
-            }
-        };
+    public DelegateStream.Input downloadFile(final String path) throws Exception {
+        var sftp = (ChannelSftp) session.openChannel("sftp");
+        sftp.connect();
+        return new DelegateStream.Input(sftp.get(path), sftp::disconnect);
     }
 
     public ShConnection shConnection() {
@@ -167,6 +187,8 @@ public class ServerConnection implements Closeable {
     public void close() {
         if (session != null)
             session.disconnect();
+        if (rcon != null)
+            rcon.disconnect();
     }
 
     protected boolean startConnection() throws Exception {

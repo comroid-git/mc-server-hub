@@ -54,25 +54,17 @@ public class ServerController {
                 continue;
             CompletableFuture.supplyAsync(() -> {
                 log.info("Auto-Starting Server %s".formatted(srv.getName()));
-                if (getStatus(srv).getStatus() != Server.Status.Offline) {
-                    log.info("Server %s did not need to be started".formatted(srv.getName()));
-                    return null;
-                }
 
-                // update server.properties first
-                final var fileName = "server.properties";
-                final var path = srv.getDirectory() + '/' + fileName;
-                try (var con = new ServerConnection(srv)) {
-                    con.start();
+                try {
+                    // manage server.properties file
+                    if (!ServerConnection.updateProperties(srv))
+                        log.warn("Unable to update server properties for server " + srv.getName());
 
-                    // download & update & upload properties
-                    try (var in = con.downloadFile(path)) {
-                        var prop = updateProperties(srv, in);
-                        try (var out = con.uploadFile(path)) {
-                            prop.store(out, "Managed Server Properties by MCSD");
-                        }
+                    // is it not offline?
+                    if (getStatus(srv).getStatus() != Server.Status.Offline) {
+                        log.info("Server %s did not need to be started".formatted(srv.getName()));
+                        return null;
                     }
-                    log.info("Uploaded managed properties of server " + srv.getName());
 
                     // start server
                     if (ServerConnection.send(srv, srv.cmdStart()))
@@ -207,24 +199,5 @@ public class ServerController {
         );
         statusCache.put(srv.getId(), msg);
         return msg;
-    }
-
-    Properties updateProperties(Server srv, InputStream input) throws IOException {
-        var prop = new Properties();
-        prop.load(input);
-
-        prop.setProperty("server-port", String.valueOf(srv.getPort()));
-        prop.setProperty("max-players", String.valueOf(srv.getMaxPlayers()));
-
-        // query
-        prop.setProperty("enable-query", String.valueOf(true));
-        prop.setProperty("query.port", String.valueOf(srv.getQueryPort()));
-
-        // rcon
-        prop.setProperty("enable-rcon", String.valueOf(true));
-        prop.setProperty("rcon.port", String.valueOf(srv.getRConPort()));
-        prop.setProperty("rcon.password", srv.getRConPassword());
-
-        return prop;
     }
 }
