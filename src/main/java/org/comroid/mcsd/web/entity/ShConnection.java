@@ -1,5 +1,6 @@
 package org.comroid.mcsd.web.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.util.UUID;
 public class ShConnection {
     @Id
     private UUID id = UUID.randomUUID();
+    private UUID owner;
     private String host;
     private int port = 22;
     private String username;

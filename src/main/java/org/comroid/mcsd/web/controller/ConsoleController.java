@@ -31,8 +31,6 @@ import java.util.concurrent.PriorityBlockingQueue;
 public class ConsoleController {
     private final Map<UUID, WebInterfaceConnection> connections = new ConcurrentHashMap<>();
     @Autowired
-    private ServerController serverController;
-    @Autowired
     private SimpMessagingTemplate respond;
     @Autowired
     private UserRepo userRepo;
@@ -40,19 +38,15 @@ public class ConsoleController {
     private ServerRepo serverRepo;
 
     @MessageMapping("/console/connect")
-    public void connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
+    public void connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) throws JSchException {
         var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
         var user = userRepo.findBySession(session);
         var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
         server.validateUserAccess(user, Server.Permission.Console);
         WebInterfaceConnection connection = new WebInterfaceConnection(user, server);
-        if (!connection.start()) {
-            respond.convertAndSendToUser(user.getName(), "/console/handshake", "");
-            return;
-        }
         connections.put(user.getId(), connection);
         respond.convertAndSendToUser(user.getName(), "/console/handshake", "\"%s\"".formatted(user.getId().toString()));
-        ServerConnection.status(server).thenAccept(status -> respond.convertAndSendToUser(user.getName(), "/console/status", status));
+        connection.status().thenAccept(status -> respond.convertAndSendToUser(user.getName(), "/console/status", status));
     }
 
     @MessageMapping("/console/input")
@@ -78,16 +72,13 @@ public class ConsoleController {
     private class WebInterfaceConnection extends ServerConnection {
         private final CompletableFuture<Void> connected = new CompletableFuture<>();
         private final User user;
-        private Channel channel;
-        private Input input;
-        private Output output;
+        private final Channel channel;
+        private final Input input;
+        private final Output output;
 
-        public WebInterfaceConnection(User user, Server server) {
+        public WebInterfaceConnection(User user, Server server) throws JSchException {
             super(server);
             this.user = user;
-        }
-
-        protected boolean startConnection() throws Exception {
             this.channel = session.openChannel("shell");
 
             channel.setInputStream(this.input = new Input());
@@ -95,7 +86,6 @@ public class ConsoleController {
 
             channel.connect();
             connected.complete(null);
-            return true;
         }
 
         @Override

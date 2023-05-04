@@ -1,6 +1,6 @@
 #!/bin/bash
 
-defaultRam="4"
+defaultRam="4G"
 defaultBackupDir="$HOME/backup"
 
 # run comamnd
@@ -8,7 +8,9 @@ if [ "$1" == "run" ]; then
   # fallback value for max ram
   if [ -z "$2" ]; then
     echo "No maximum RAM GB specified; falling back to $defaultRam"
-    2="$defaultRam"
+    ram="$defaultRam"
+  else
+    ram="$2"
   fi
 
   # exec loop
@@ -22,7 +24,7 @@ if [ "$1" == "run" ]; then
       echo "Restarting Server..."
       sleep "5s"
     fi
-    java "-Xmx$2" -jar server.jar nogui
+    java "-Xmx$ram" -jar server.jar nogui
   done
 
   echo "Server was stopped"

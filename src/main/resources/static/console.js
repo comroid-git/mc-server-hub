@@ -1,17 +1,15 @@
-var stompClient = null;
-var subscriptionDisconnect;
-var subscriptionHandshake;
-var subscriptionStatus;
-var subscriptionOutput;
-var userName;
-var serverId;
-var sessionId;
+let stompClient = null;
+let subscriptionDisconnect;
+let subscriptionHandshake;
+let subscriptionStatus;
+let subscriptionOutput;
+let sessionId;
 
 function connect() {
     writeLine('Connecting...')
     var socket = new SockJS('/console');
     stompClient = Stomp.over(socket);
-    stompClient.connect({}, function(frame) {
+    stompClient.connect({}, function() {
         subscriptionDisconnect = stompClient.subscribe('/user/'+userName+'/console/disconnect', function(){
             disconnect();
         });
@@ -89,9 +87,6 @@ async function runBackup(id) {
 }
 
 function init() {
-    userName = document.getElementById('userName').value;
-    serverId = document.getElementById('serverId').value;
-
     connect();
 
 // Enables pressing the Enter Key in the Send Message Prompt

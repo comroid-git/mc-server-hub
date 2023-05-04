@@ -29,13 +29,6 @@ public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseab
         return (Output)this;
     }
 
-    @Override
-    default void close() throws Exception {
-        var iter = getDependencies().filter(Objects::nonNull).iterator();
-        while (iter.hasNext())
-            iter.next().close();
-    }
-
     private static <T extends AutoCloseable> Stack<T> prepend(T it, T[] array) {
         return Stream.concat(Stream.of(it), Stream.of(array)).collect(Stack::new, Collection::add, Collection::addAll);
     }
@@ -67,6 +60,14 @@ public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseab
         @Override
         public boolean addDependency(AutoCloseable dependency) {
             return dependency instanceof Closeable && dependencies.add((Closeable)dependency);
+        }
+
+        @Override
+        @SneakyThrows
+        public void close() {
+            var iter = getDependencies().filter(Objects::nonNull).iterator();
+            while (iter.hasNext())
+                iter.next().close();
         }
     }
 
@@ -105,6 +106,14 @@ public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseab
         @Override
         public boolean addDependency(AutoCloseable dependency) {
             return dependency instanceof Closeable && dependencies.add((Closeable)dependency);
+        }
+
+        @Override
+        @SneakyThrows
+        public void close() {
+            var iter = getDependencies().filter(Objects::nonNull).iterator();
+            while (iter.hasNext())
+                iter.next().close();
         }
     }
 }

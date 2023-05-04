@@ -3,12 +3,10 @@ package org.comroid.mcsd.web.controller;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
-import me.dilley.MineStat;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.dto.StatusMessage;
 import org.comroid.mcsd.web.entity.Server;
-import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.entity.User;
 import org.comroid.mcsd.web.exception.BadRequestException;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
@@ -22,17 +20,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
-import java.io.*;
-import java.net.URL;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @Slf4j
 @Controller
@@ -56,18 +48,20 @@ public class ServerController {
                 continue;
             CompletableFuture.supplyAsync(() -> {
                 log.info("Auto-Starting Server %s".formatted(srv.getName()));
+                var con = srv.getConnection();
 
                 try {
                     // manage server.properties file
-                    if (!ServerConnection.updateProperties(srv))
+                    if (!con.updateProperties())
                         log.warn("Unable to update server properties for server " + srv.getName());
 
                     // is it not offline?
-                    if (ServerConnection.status(srv).join().getStatus() != Server.Status.Offline) {
+                    if (con.status().join().getStatus() != Server.Status.Offline) {
                         log.info("Server %s did not need to be started".formatted(srv.getName()));
                         return null;
                     }
 
+                    /*
                     // upload most recent server.jar
                     final String prefix = "https://serverjars.com/api/fetchJar/";
                     String type = switch (srv.getMode()) {
@@ -83,9 +77,12 @@ public class ServerController {
                          var upload = ServerConnection.upload(srv, "server.jar")) {
                         download.transferTo(upload);
                     }
+                     */
 
                     // start server
-                    if (ServerConnection.send(srv, srv.cmdStart()))
+                    if (!con.uploadRunScript())
+                        throw new RuntimeException("Unable to upload runscript to Server " + srv.getName());
+                    if (con.sendSh(srv.cmdStart()))
                         taskScheduler.scheduleWithFixedDelay(this::runManageCycle, Duration.ofMinutes(5));
                     else log.warn("Auto-Starting server %s did not finish successfully".formatted(srv.getName()));
                 } catch (Exception e) {
@@ -162,7 +159,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Status);
-        return ServerConnection.status(result).join();
+        return result.getConnection().status().join();
     }
 
     @ResponseBody
@@ -171,7 +168,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Start);
-        return ServerConnection.send(result, result.cmdStart());
+        return result.getConnection().sendSh(result.cmdStart());
     }
 
     @ResponseBody
@@ -180,7 +177,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Stop);
-        return ServerConnection.send(result, result.cmdStop());
+        return result.getConnection().sendSh(result.cmdStop());
     }
 
     @ResponseBody
@@ -189,6 +186,6 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Backup);
-        return ServerConnection.send(result, result.cmdBackup());
+        return result.getConnection().sendSh(result.cmdBackup());
     }
 }

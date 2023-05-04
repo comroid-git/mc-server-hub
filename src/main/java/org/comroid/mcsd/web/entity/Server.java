@@ -1,27 +1,32 @@
 package org.comroid.mcsd.web.entity;
 
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.annotation.PostConstruct;
+import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
+import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.util.ApplicationContextProvider;
+import org.intellij.lang.annotations.Language;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
 @Data
 @Entity
 public class Server {
     @Id
     private UUID id = UUID.randomUUID();
+    private UUID owner;
     private UUID shConnection;
     private String name;
-    private String mcVersion = "1.19.1";
+    private String mcVersion = "1.19.4";
     private int port = 25565;
     private String directory = "~/minecraft";
     private Mode mode = Mode.Paper;
@@ -32,8 +37,15 @@ public class Server {
     private int queryPort = 25565;
     private int rConPort = 25575;
     private String rConPassword;
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
+    @Transient
+    private ServerConnection connection;
+
+    @PostLoad
+    private void init() {
+        connection = new ServerConnection(this);
+    }
 
     public boolean isVanilla() {
         return mode == Mode.Vanilla;
@@ -63,27 +75,26 @@ public class Server {
         return "mcsd-" + getName();
     }
 
+    private String wrapCmd(@Language("sh") String act) {
+        return ("cd \"%s\" || (echo \"Could not change to server directory\" && exit)" +
+                " && ((%s) || (echo \"Command finished with non-zero exit code\" && exit))" +
+                " && exit").formatted(getDirectory(), act);
+    }
+
     public String cmdStart() {
-        return ("cd \"%s\" || (echo \"Could change to server directory\" && return)" +
-                " && (screen -dmSq %s ./mcsd.sh run %dG)" +
-                " && exit").formatted(getDirectory(), getUnitName(), getRamGB());
+        return wrapCmd("screen -dmSq " + getUnitName() + " ./mcsd.sh run " + getRamGB() + "G");
     }
 
     public String cmdAttach() {
-        return ("cd \"%s\" || (echo \"Could change to server directory\" && return)" +
-                " && (screen -DSRq %s ./mcsd.sh run %dG)" +
-                " && exit").formatted(getDirectory(), getUnitName(), getRamGB());
+        return wrapCmd("screen -DSRq " + getUnitName() + " ./mcsd.sh run " + getRamGB() + "G");
     }
 
     public String cmdStop() {
-        return ("rm %s/.running" +
-                " && exit").formatted(getDirectory());
+        return wrapCmd("rm .running");
     }
 
     public String cmdBackup() {
-        return ("cd \"%s\" || (echo \"Could change to server directory\" && return)" +
-                " && ./mcsd.sh backup %s" +
-                " && exit").formatted(getDirectory(), ApplicationContextProvider.bean(ShRepo.class)
+        return wrapCmd("./mcsd.sh backup " + bean(ShRepo.class)
                 .findById(shConnection)
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + id))
                 .getBackupsDir() + '/' + getUnitName());
