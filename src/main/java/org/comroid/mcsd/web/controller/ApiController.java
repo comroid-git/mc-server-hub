@@ -41,4 +41,13 @@ public class ApiController {
     public User findUserByName(@PathVariable String name) {
         return users.findByName(name).orElseThrow(() -> new EntityNotFoundException(User.class, name));
     }
+
+    @GetMapping("/server/cron/{serverId}")
+    public void triggerCron(HttpSession session, @PathVariable UUID serverId) {
+        users.findBySession(session).require(User.Perm.Admin);
+        servers.findById(serverId)
+                .orElseThrow(() -> new EntityNotFoundException(Server.class, serverId))
+                .getConnection()
+                .cron();
+    }
 }

@@ -32,5 +32,5 @@ public class User {
         return this;
     }
 
-    public enum Perm implements BitmaskAttribute<Perm> { None, ManageServers, ManageShConnections }
+    public enum Perm implements BitmaskAttribute<Perm> { None, ManageServers, ManageShConnections, Admin }
 }
