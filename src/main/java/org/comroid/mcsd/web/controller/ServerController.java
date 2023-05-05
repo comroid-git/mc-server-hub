@@ -4,7 +4,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.IntegerAttribute;
-import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.dto.StatusMessage;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.User;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -38,61 +36,6 @@ public class ServerController {
     private ServerRepo servers;
     @Autowired
     private ShRepo shRepo;
-    @Autowired
-    private ThreadPoolTaskScheduler taskScheduler;
-
-    @PostConstruct
-    void runManageCycle() {
-        for (Server srv : servers.findAll()) {
-            if (!srv.isManaged())
-                continue;
-            CompletableFuture.supplyAsync(() -> {
-                log.info("Auto-Starting Server %s".formatted(srv.getName()));
-                var con = srv.getConnection();
-
-                try {
-                    // is it not offline?
-                    if (con.status().join().getStatus() != Server.Status.Offline) {
-                        log.info("Server %s did not need to be started".formatted(srv.getName()));
-                        return null;
-                    }
-
-                    // manage server.properties file
-                    if (!con.updateProperties())
-                        log.warn("Unable to update server properties for server " + srv.getName());
-
-                    /*
-                    // upload most recent server.jar
-                    final String prefix = "https://serverjars.com/api/fetchJar/";
-                    String type = switch (srv.getMode()) {
-                        case Vanilla -> "vanilla";
-                        case Paper -> "servers";
-                        case Forge, Fabric -> "modded";
-                    };
-                    String detail = srv.getMode().name().toLowerCase();
-                    String version = srv.getMcVersion();
-                    String url = prefix + type + "/" + detail + "/" + version;
-                    log.info("Uploading most recent server.jar for %s from %s".formatted(srv.getName(), url));
-                    try (var download = new URL(url).openStream();
-                         var upload = ServerConnection.upload(srv, "server.jar")) {
-                        download.transferTo(upload);
-                    }
-                     */
-
-                    // start server
-                    if (!con.uploadRunScript())
-                        throw new RuntimeException("Unable to upload runscript to Server " + srv.getName());
-                    log.info("Executing start cmd for Server " + srv.getName());
-                    if (con.sendSh(srv.cmdStart()))
-                        taskScheduler.scheduleWithFixedDelay(this::runManageCycle, Duration.ofMinutes(5));
-                    else log.warn("Auto-Starting server %s did not finish successfully".formatted(srv.getName()));
-                } catch (Exception e) {
-                    log.error("Could not auto-start Server " + srv.getName(), e);
-                }
-                return null;
-            });
-        }
-    }
 
     @GetMapping("/create")
     public String create(HttpSession session, Model model) {

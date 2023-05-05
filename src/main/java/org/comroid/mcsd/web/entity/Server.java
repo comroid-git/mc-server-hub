@@ -5,6 +5,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
@@ -14,12 +16,14 @@ import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.util.ApplicationContextProvider;
 import org.intellij.lang.annotations.Language;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
 @Data
+@Slf4j
 @Entity
 public class Server {
     @Id

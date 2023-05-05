@@ -7,7 +7,7 @@
     <bean class="com.fasterxml.jackson.dataformat.csv.CsvMapper" />
     <bean class="org.comroid.mcsd.web.util.ApplicationContextProvider" />
     <bean class="org.springframework.core.io.DefaultResourceLoader" />
-    <bean class="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler"/>
+    <bean class="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler" primary="true"/>
     <bean id="jstlViewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
         <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
         <property name="prefix" value="/"/>

@@ -1,10 +1,6 @@
 package org.comroid.mcsd.web.model;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
 import com.jcraft.jsch.*;
 import io.graversen.minecraft.rcon.service.IMinecraftRconService;
@@ -18,7 +14,6 @@ import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.util.Delegate;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.messaging.converter.MessageConverter;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -64,6 +59,29 @@ public class ServerConnection implements Closeable {
         } catch (Exception e) {
             log.error("Could not start connection to server " + server.getName(), e);
         }
+    }
+
+    public void cron() {
+        log.info("Running cronjob for Server %s".formatted(server.getName()));
+        var con = server.getConnection();
+
+        // upload runscript + data
+        if (!con.uploadRunScript())
+            log.warn("Unable to upload runscript to server " + server.getName());
+
+        // manage server.properties file
+        if (!con.updateProperties())
+            log.warn("Unable to update server properties for server " + server.getName());
+
+        // is it not offline?
+        if (con.status().join().getStatus() != Server.Status.Offline) {
+            log.info("Server %s did not need to be started".formatted(server.getName()));
+            return;
+        }
+
+        // start server
+        if (!con.sendSh(server.cmdStart()))
+            log.warn("Auto-Starting server %s did not finish successfully".formatted(server.getName()));
     }
 
     public CompletableFuture<StatusMessage> status() {
