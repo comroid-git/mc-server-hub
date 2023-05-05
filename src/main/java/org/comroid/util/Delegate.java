@@ -3,18 +3,18 @@ package org.comroid.util;
 import lombok.SneakyThrows;
 import org.comroid.api.Specifiable;
 import org.comroid.api.ThrowingRunnable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseable {
+public interface Delegate extends Specifiable<Delegate>, AutoCloseable {
     Stream<? extends AutoCloseable> getDependencies();
 
     boolean addDependency(AutoCloseable dependency);
 
-    default <T extends DelegateStream> T plus(AutoCloseable dependency) throws ClassCastException {
+    default <T extends Delegate> T plus(AutoCloseable dependency) throws ClassCastException {
         if (!addDependency(dependency))
             System.err.println("Could not add dependency " + dependency + " to " + this);
         //noinspection unchecked
@@ -36,7 +36,7 @@ public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseab
         return yield;
     }
 
-    class Input extends InputStream implements DelegateStream {
+    class Input extends InputStream implements Delegate {
         private final ThrowingIntSupplier<IOException> read;
         private final Queue<Closeable> dependencies;
 
@@ -73,7 +73,7 @@ public interface DelegateStream extends Specifiable<DelegateStream>, AutoCloseab
         }
     }
 
-    class Output extends OutputStream implements DelegateStream {
+    class Output extends OutputStream implements Delegate {
         private final ThrowingIntConsumer<IOException> write;
         private final ThrowingRunnable<IOException> flush;
         private final Queue<Closeable> dependencies;

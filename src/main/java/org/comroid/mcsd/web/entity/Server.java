@@ -1,5 +1,6 @@
 package org.comroid.mcsd.web.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -37,9 +38,11 @@ public class Server {
     private int queryPort = 25565;
     private int rConPort = 25575;
     private String rConPassword;
+    @JsonIgnore
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
     @Transient
+    @JsonIgnore
     private ServerConnection connection;
 
     @PostLoad
@@ -77,16 +80,17 @@ public class Server {
 
     private String wrapCmd(@Language("sh") String act) {
         return ("cd \"%s\" || (echo \"Could not change to server directory\" && exit)" +
+                " && (chmod 744 mcsd.sh || (echo \"Could not chmod runscript\" && exit))" +
                 " && ((%s) || (echo \"Command finished with non-zero exit code\" && exit))" +
                 " && exit").formatted(getDirectory(), act);
     }
 
     public String cmdStart() {
-        return wrapCmd("screen -dmSq " + getUnitName() + " ./mcsd.sh run " + getRamGB() + "G");
+        return wrapCmd("./mcsd.sh start " + getUnitName() + " " + getRamGB() + "G");
     }
 
     public String cmdAttach() {
-        return wrapCmd("screen -DSRq " + getUnitName() + " ./mcsd.sh run " + getRamGB() + "G");
+        return wrapCmd("./mcsd.sh attach " + getUnitName() + " " + getRamGB() + "G");
     }
 
     public String cmdStop() {

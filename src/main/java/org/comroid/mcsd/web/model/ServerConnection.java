@@ -1,11 +1,13 @@
 package org.comroid.mcsd.web.model;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
 import com.jcraft.jsch.*;
-import io.graversen.minecraft.rcon.service.ConnectOptions;
 import io.graversen.minecraft.rcon.service.IMinecraftRconService;
-import io.graversen.minecraft.rcon.service.MinecraftRconService;
-import io.graversen.minecraft.rcon.service.RconDetails;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
@@ -14,8 +16,9 @@ import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ShRepo;
-import org.comroid.util.DelegateStream;
+import org.comroid.util.Delegate;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.messaging.converter.MessageConverter;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -166,13 +169,32 @@ public class ServerConnection implements Closeable {
     }
 
     public boolean uploadRunScript() {
-        var lfile = "mcsd.sh";
-        var rfile = server.getDirectory() + '/' + lfile;
-        var res = bean(ResourceLoader.class).getResource(lfile);
-        try (var source = res.getInputStream();
-             var target = uploadFile(rfile)) {
-            source.transferTo(target);
-            log.info("Uploaded runscript to Server " + server.getName());
+        var script = "mcsd.sh";
+        var data = "mcsd-unit.properties";
+        var prefix = server.getDirectory() + '/';
+        var res = bean(ResourceLoader.class).getResource(script);
+        try {
+            // upload runscript
+            try (var scriptIn = res.getInputStream();
+                 var scriptOut = uploadFile(prefix + script)) {
+                scriptIn.transferTo(scriptOut);
+                log.info("Uploaded runscript to Server " + server.getName());
+            }
+
+            // upload unit info
+            try (var dataOut = uploadFile(prefix + data)) {
+                var fields = bean(ObjectMapper.class).valueToTree(server).fields();
+                var prop = new Properties();
+                while (fields.hasNext())
+                {
+                    var field = fields.next();
+                    prop.put(field.getKey(), field.getValue().asText());
+                }
+                prop.put("backupDir", shConnection().getBackupsDir());
+                prop.store(dataOut, "MCSD Server Unit Information " + Instant.now());
+                log.info("Uploaded runscript data to Server " + server.getName());
+            }
+
             return true;
         } catch (Exception e) {
             log.error("Unable to upload runscript for Server " + server.getName(), e);
@@ -180,16 +202,16 @@ public class ServerConnection implements Closeable {
         }
     }
 
-    public DelegateStream.Output uploadFile(final String path) throws Exception {
+    public Delegate.Output uploadFile(final String path) throws Exception {
         var sftp = (ChannelSftp) session.openChannel("sftp");
         sftp.connect();
-        return new DelegateStream.Output(sftp.put(path), sftp::disconnect);
+        return new Delegate.Output(sftp.put(path), sftp::disconnect);
     }
 
-    public DelegateStream.Input downloadFile(final String path) throws Exception {
+    public Delegate.Input downloadFile(final String path) throws Exception {
         var sftp = (ChannelSftp) session.openChannel("sftp");
         sftp.connect();
-        return new DelegateStream.Input(sftp.get(path), sftp::disconnect);
+        return new Delegate.Input(sftp.get(path), sftp::disconnect);
     }
 
     public boolean sendSh(String cmd) {
@@ -197,7 +219,8 @@ public class ServerConnection implements Closeable {
         try {
             exec = (ChannelExec) session.openChannel("exec");
             exec.setCommand(cmd);
-            exec.setOutputStream(System.out);
+            //exec.setOutputStream(System.out);
+            //exec.setErrStream(System.err);
 
             exec.connect();
             exec.start();

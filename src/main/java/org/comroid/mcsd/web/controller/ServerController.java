@@ -51,15 +51,15 @@ public class ServerController {
                 var con = srv.getConnection();
 
                 try {
-                    // manage server.properties file
-                    if (!con.updateProperties())
-                        log.warn("Unable to update server properties for server " + srv.getName());
-
                     // is it not offline?
                     if (con.status().join().getStatus() != Server.Status.Offline) {
                         log.info("Server %s did not need to be started".formatted(srv.getName()));
                         return null;
                     }
+
+                    // manage server.properties file
+                    if (!con.updateProperties())
+                        log.warn("Unable to update server properties for server " + srv.getName());
 
                     /*
                     // upload most recent server.jar
@@ -82,6 +82,7 @@ public class ServerController {
                     // start server
                     if (!con.uploadRunScript())
                         throw new RuntimeException("Unable to upload runscript to Server " + srv.getName());
+                    log.info("Executing start cmd for Server " + srv.getName());
                     if (con.sendSh(srv.cmdStart()))
                         taskScheduler.scheduleWithFixedDelay(this::runManageCycle, Duration.ofMinutes(5));
                     else log.warn("Auto-Starting server %s did not finish successfully".formatted(srv.getName()));
