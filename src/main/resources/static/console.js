@@ -61,7 +61,7 @@ function handleStatus(data) {
 
 function handleOutput(msg) {
     let output = document.getElementById('output');
-    output.innerHTML += msg.replace(new RegExp('\r?\n'), '<br/>');
+    output.innerHTML += msg.replaceAll(new RegExp('\r?\n', 'g'), '<br/>');
     output.scrollTop = output.scrollHeight;
 }
 
@@ -69,7 +69,7 @@ function handleError(msg) {
     let output = document.getElementById('output');
     let span = document.createElement('span')
     span.className = 'stderr';
-    span.innerText = msg.replace(new RegExp('\r?\n'), '<br/>');
+    span.innerText = msg.replaceAll(new RegExp('\r?\n', 'g'), '<br/>');
     output.innerHTML += span;
     output.scrollTop = output.scrollHeight;
 }
@@ -92,10 +92,7 @@ function restartServer() {
 }
 
 async function runBackup(id) {
-    sendInput("save-off");
-    sendInput("save-all");
-    await fetch('/server/backup/' + id)
-    sendInput("save-on");
+    stompClient.send('/console/backup');
 }
 
 function init() {

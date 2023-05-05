@@ -8,10 +8,10 @@
 <button id="ui-server-start" onclick="window.location.reload()">Start Server</button>
 <button id="ui-server-stop" onclick="stopServer('${server.id}')">Stop Server</button>
 <button id="ui-server-restart" onclick="restartServer()">Restart Server</button>
-<button id="ui-server-backup" onclick="runBackup('${server.id}')" disabled>Run Backup Script</button>
+<button id="ui-server-backup" onclick="runBackup('${server.id}')">Run Backup Script</button>
 <div id="output"></div>
 <br/>
-<input type="text" id="input" style="width: 80%;" />
+<input type="text" id="input" style="width: 80%;" autofocus />
 <script type="application/javascript">
     let userName = '${user.name}';
     let serverId = '${server.id}';

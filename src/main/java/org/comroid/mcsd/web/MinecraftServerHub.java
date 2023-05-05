@@ -35,10 +35,6 @@ public class MinecraftServerHub {
         SpringApplication.run(MinecraftServerHub.class, args);
     }
 
-    @Autowired
-    @SuppressWarnings("unused") // this is a dependency
-    private ApplicationContextProvider applicationContextProvider;
-
     @Bean
     public ScheduledFuture<?> cronUpdater(@Autowired TaskScheduler scheduler, final @Autowired ServerRepo servers) {
         return scheduler.scheduleAtFixedRate(() -> StreamSupport.stream(servers.findAll().spliterator(), true)

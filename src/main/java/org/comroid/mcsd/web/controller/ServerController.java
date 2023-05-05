@@ -1,6 +1,5 @@
 package org.comroid.mcsd.web.controller;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.IntegerAttribute;
@@ -15,13 +14,11 @@ import org.comroid.mcsd.web.repo.UserRepo;
 import org.comroid.mcsd.web.util.WebPagePreparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -130,6 +127,6 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.validateUserAccess(user, Server.Permission.Backup);
-        return result.getConnection().sendSh(result.cmdBackup());
+        return result.getConnection().runBackup();
     }
 }

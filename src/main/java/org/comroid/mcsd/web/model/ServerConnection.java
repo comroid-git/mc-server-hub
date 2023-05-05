@@ -3,8 +3,13 @@ package org.comroid.mcsd.web.model;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
 import com.jcraft.jsch.*;
+import io.graversen.minecraft.rcon.RconCommandException;
+import io.graversen.minecraft.rcon.RconResponse;
+import io.graversen.minecraft.rcon.service.ConnectOptions;
 import io.graversen.minecraft.rcon.service.IMinecraftRconService;
-import lombok.Data;
+import io.graversen.minecraft.rcon.service.MinecraftRconService;
+import io.graversen.minecraft.rcon.service.RconDetails;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.mcsd.web.dto.StatusMessage;
@@ -13,12 +18,12 @@ import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.util.Delegate;
+import org.intellij.lang.annotations.Language;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -27,21 +32,31 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
-@Data
 @Slf4j
-public class ServerConnection implements Closeable {
-    private final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
-    private final Duration statusCacheLifetime = Duration.ofMinutes(5);
+@Getter
+public final class ServerConnection implements Closeable {
+    public static final String OUTPUT_MARKER = "################ OUTPUT BEGINS ################";
+    private static final Map<UUID, ServerConnection> cache = new ConcurrentHashMap<>();
+    private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
+    private static final Duration statusCacheLifetime = Duration.ofMinutes(5);
     private static final Resource res = bean(ResourceLoader.class).getResource("classpath:mcsd.sh");
-    protected final Server server;
-    protected Session session;
-    protected IMinecraftRconService rcon;
+    private final Server server;
+    private Session session;
+    private IMinecraftRconService rcon;
+    private boolean backupRunning = false;
 
-    public ServerConnection(Server server) {
+    public static ServerConnection getInstance(Server srv) {
+        if (!cache.containsKey(srv.getId()))
+            cache.put(srv.getId(), new ServerConnection(srv));
+        return cache.get(srv.getId());
+    }
+
+    private ServerConnection(Server server) {
         this.server = server;
         try {
             var con = shConnection();
@@ -51,12 +66,11 @@ public class ServerConnection implements Closeable {
             session.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
             session.connect();
 
-            /*
             this.rcon = new MinecraftRconService(
-                    new RconDetails(con.getHost(), server.getPort(), server.getRConPassword()),
-                    new ConnectOptions(3, Duration.ofSeconds(1), Duration.ofSeconds(1)));
+                    new RconDetails(con.getHost(), server.getRConPort(), server.getRConPassword()),
+                    new ConnectOptions(Integer.MAX_VALUE, Duration.ofSeconds(1), Duration.ofMinutes(5)));
+            //ReflectionUtil.setField(rcon, "executorService", Executors.newSingleThreadScheduledExecutor());
             rcon.connect();
-             */
         } catch (Exception e) {
             log.error("Could not start connection to server " + server.getName(), e);
         }
@@ -210,7 +224,7 @@ public class ServerConnection implements Closeable {
                 }
                 var con = shConnection();
                 prop.put("host", con.getHost());
-                prop.put("backupDir", con.getBackupsDir());
+                prop.put("backupDir", con.getBackupsDir() + '/' + server.getUnitName());
                 prop.store(dataOut, "MCSD Server Unit Information " + Instant.now());
                 log.info("Uploaded runscript data to Server " + server.getName());
             }
@@ -220,6 +234,63 @@ public class ServerConnection implements Closeable {
             log.error("Unable to upload runscript for Server " + server.getName(), e);
             return false;
         }
+    }
+
+    public boolean runBackup() {
+        backupRunning = true;
+        var sOff = sendCmd("save-off");
+        var sAll = sendCmd("save-all");
+        if (sOff.isEmpty() || sAll.isEmpty())
+        {
+            log.error("Could not run backup on server %s because save-off and save-all failed".formatted(server.getName()));
+            return false;
+        }
+        OutputStream bufProgress = null;
+        var bufSize = new StringWriter();
+        if (!sendSh(server.wrapCmd("./mcsd.sh backupSize", true), new Delegate.Output(bufSize), new Delegate.Output(bufSize)))
+            log.error("Unable to obtain backup size");
+        else {
+            final long size = Long.parseLong(bufSize.toString());
+            bufProgress = new OutputStream() {
+                private long c = 0;
+                private long s = 1;
+
+                @Override
+                public void write(int b) {
+                    if (b == '\n') {
+                        if (c == 0)
+                            log.info("Backup for server %s just started".formatted(server.getName()));
+                        c++;
+                    }
+                }
+
+                @Override
+                public void flush() {
+                    if (size == 0)
+                        return;
+                    final int b = 8;
+                    IntStream.range(1, b)
+                            .filter(n -> s == (1L << n))
+                            .filter(n -> checkSize(n, b))
+                            .forEach(n -> {
+                                s <<= 1;
+                                log.info("Backup for server %s is %d percent done".formatted(server.getName(), 1));
+                            });
+                }
+
+                @SuppressWarnings("SameParameterValue")
+                private boolean checkSize(int n, int b) {
+                    return (c / size) >= (n / b);
+                }
+            };
+        }
+        if (!sendSh(server.cmdBackup(), bufProgress)) {
+            log.error("Backup for server %s failed".formatted(server.getName()));
+            return false;
+        } else log.info("Backup for server %s finished".formatted(server.getName()));
+        var sOn = sendCmd("save-on");
+        backupRunning = false;
+        return sOn.isPresent();
     }
 
     public Delegate.Output uploadFile(final String path) throws Exception {
@@ -234,13 +305,26 @@ public class ServerConnection implements Closeable {
         return new Delegate.Input(sftp.get(path), sftp::disconnect);
     }
 
-    public boolean sendSh(String cmd) {
+    public boolean sendSh(@Language("sh") String cmd) {
+        return sendSh(cmd, null);
+    }
+
+    public boolean sendSh(@Language("sh") String cmd, @Nullable OutputStream stdout) {
+        return sendSh(cmd, stdout, null);
+    }
+
+    public boolean sendSh(@Language("sh") String cmd, @Nullable OutputStream stdout, @Nullable OutputStream stderr) {
+        return sendSh(cmd, stdout, stderr, null);
+    }
+
+    public boolean sendSh(@Language("sh") String cmd, @Nullable OutputStream stdout, @Nullable OutputStream stderr, @Nullable InputStream stdin) {
         ChannelExec exec = null;
         try {
             exec = (ChannelExec) session.openChannel("exec");
             exec.setCommand(cmd);
-            //exec.setOutputStream(System.out);
-            //exec.setErrStream(System.err);
+            if (stdout != null) exec.setOutputStream(stdout, true);
+            if (stderr != null) exec.setErrStream(stderr, true);
+            if (stdin != null) exec.setInputStream(stdin, true);
 
             exec.connect();
             exec.start();
@@ -257,6 +341,21 @@ public class ServerConnection implements Closeable {
                 exec.disconnect();
         }
         return false;
+    }
+
+    public Optional<RconResponse> sendCmd(final String cmd) {
+        if (rcon == null)
+            return Optional.empty();
+        if (!rcon.isConnected())
+            rcon.connectBlocking(Duration.ofSeconds(30));
+        return rcon.minecraftRcon().map(rc -> {
+            try {
+                return rc.sendSync(() -> cmd);
+            } catch (RconCommandException e) {
+                log.warn("Internal error occurred when sending command %s to server %s".formatted(cmd, server.getName()), e);
+                return null;
+            }
+        });
     }
 
     public ShConnection shConnection() {

@@ -1,10 +1,21 @@
 #!/bin/bash
 
 unitFile="mcsd-unit.properties"
+quiet=""
+
+# parse flags
+
+for var in "$@"; do
+  if [ "$var" = "-q" ]; then
+    quiet="-q"
+  fi
+done
 
 # load unit data
 if [ -f "$unitFile" ]; then
-  echo "Loading Unit Information (wip)"
+  if [ -z $quiet ]; then
+    echo "Loading Unit Information (wip)"
+  fi
 
   while IFS='=' read -r key value; do
     # skip comments
@@ -22,7 +33,9 @@ if [ -f "$unitFile" ]; then
     # strip leading & trailing newlines
     value="$(echo "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | tr -d '\n')"
 
-    echo "Loaded variable [$key] = [$value]"
+    #if [ -z $quiet ]; then
+    #  echo "Loaded variable [$key] = [$value]"
+    #fi
     export "$key"="$value"
   done <mcsd-unit.properties
 fi
@@ -40,14 +53,16 @@ if [ "$1" == "status" ]; then
 elif [ "$1" == "start" ]; then
   scrLs=$(screen -ls | grep "$unitName")
   if [ -z "$scrLs" ]; then
-    screen -OdmSq "$unitName" ./mcsd.sh run || echo "Could not start screen session"
+    screen -OdmSq "$unitName" ./mcsd.sh run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
   else
-    echo "Server $unitName did not need to be started"
+    if [ -z $quiet ]; then
+      echo "Server $unitName did not need to be started"
+    fi
   fi
 
 # attach command
 elif [ "$1" == "attach" ]; then
-  screen -ODSRq "$unitName" ./mcsd.sh run || echo "Could not start screen session"
+  screen -ODSRq "$unitName" ./mcsd.sh run || if [ -z $quiet ]; then echo "Could not attach to screen session"; else :; fi
 
 # run comamnd
 elif [ "$1" == "run" ]; then
@@ -59,13 +74,22 @@ elif [ "$1" == "run" ]; then
     if [ -z "$first" ]; then
       first="no"
     else
-      echo "Restarting Server..."
+      if [ -z $quiet ]; then
+        echo "Restarting Server..."
+      fi
       sleep "5s"
     fi
     java "-Xmx${ramGB}G" -jar server.jar nogui
   done
 
-  echo "Server was stopped"
+  if [ -z $quiet ]; then
+    echo "Server was stopped"
+  fi
+
+# backupSize command
+elif [ "$1" == "backupSize" ]; then
+  # number of files
+  find . -not -type d | grep -Po '^(?!(\.\/(libraries|cache|versions)))\K.+$' | wc -l
 
 # backup command
 elif [ "$1" == "backup" ]; then
@@ -73,18 +97,29 @@ elif [ "$1" == "backup" ]; then
   now=$(date '+%Y_%m_%d_%H_%M')
   backup="$backupDir/$now"
 
+  if [ -d "$backupDir" ]; then
+    :
+  else
+    mkdir "$backupDir"
+  fi
+
   # create backup
-  echo "Compressing backup as $backup.tar.gz"
-  tar -zcvf "$backup.tar.gz" ./*glob*
+  if [ -z $quiet ]; then
+    echo "Compressing backup as $backup.tar.gz"
+  fi
+  tar --exclude='./cache/**' --exclude='./libraries/**' --exclude='./versions/**' -zcvf "$backup.tar.gz" "."
 
 # install dependencies command
 elif [ "$1" == "installDeps" ]; then
   if [ -f "$(which pacman)" ]; then
-    sudo pacman -Sy jre-openjdk-headless screen tar grep coreutils sed wget
+    sudo pacman -Sy jre-openjdk-headless screen tar grep sed wget coreutils findutils
   else
     # use apt-get
-    sudo apt-get update && (sudo apt-get install default-jre screen tar grep coreutils sed wget || (echo "Uh-Oh, looks like that was wrong" && return 1))
-    # todo: some packages might be wrong
+    (sudo apt-get update && (sudo apt-get install default-jre screen tar grep sed wget coreutils findutils) ||
+     # todo: some packages might be wrong
+     (echo "Uh-Oh, looks like that didn't work
+     Only Arch-based Linux is currently supported entirely
+     Please report to https://github.com/comroid-git/mc-server-hub">&2))
   fi
 
 # install command
@@ -120,7 +155,7 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
       read -r agree
       if [ "$agree" == "no" ]; then
         echo "Goodbye"
-        return
+        exit 3
       fi
     done
     echo "eula=true" >"eula.txt"
@@ -169,5 +204,6 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
 
 # invalid command
 else
-  echo "Invalid command"
+  echo "Invalid command">&2
+  exit 2
 fi

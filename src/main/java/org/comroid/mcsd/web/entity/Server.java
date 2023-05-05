@@ -1,11 +1,8 @@
 package org.comroid.mcsd.web.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.annotation.PostConstruct;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
@@ -13,17 +10,16 @@ import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ShRepo;
-import org.comroid.mcsd.web.util.ApplicationContextProvider;
 import org.intellij.lang.annotations.Language;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
-@Data
 @Slf4j
+@Getter
+@Setter
 @Entity
 public class Server {
     @Id
@@ -41,17 +37,14 @@ public class Server {
     private int maxPlayers = 20;
     private int queryPort = 25565;
     private int rConPort = 25575;
-    private String rConPassword;
+    private String rConPassword = UUID.randomUUID().toString();
     @JsonIgnore
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
-    @Transient
-    @JsonIgnore
-    private ServerConnection connection;
 
-    @PostLoad
-    private void init() {
-        connection = new ServerConnection(this);
+    @JsonIgnore
+    public ServerConnection getConnection() {
+        return ServerConnection.getInstance(this);
     }
 
     public boolean isVanilla() {
@@ -82,11 +75,19 @@ public class Server {
         return "mcsd-" + getName();
     }
 
-    private String wrapCmd(@Language("sh") String act) {
-        return ("cd \"%s\" || (echo \"Could not change to server directory\" && exit)" +
-                " && (chmod 755 mcsd.sh || (echo \"Could not chmod runscript\" && exit))" +
-                " && ((%s) || (echo \"Command finished with non-zero exit code\" && exit))" +
-                " && exit").formatted(getDirectory(), act);
+    @Language("sh")
+    public String wrapCmd(@Language("sh") String cmd) {
+        return wrapCmd(cmd, false);
+    }
+
+    @Language("sh")
+    public String wrapCmd(@Language("sh") String cmd, boolean quiet) {
+        return "((cd '" + getDirectory() + "' && " +
+                "chmod 755 mcsd.sh && " +
+                (quiet ? "" : "echo '" + ServerConnection.OUTPUT_MARKER + "' && ") +
+                "(" + (cmd.contains("mcsd.sh") && quiet ? cmd + "-q" : cmd) + "))" +
+                (quiet ? "" : " || echo 'Command finished with non-zero exit code'>&2") +
+                ") && exit";
     }
 
     public String cmdStart() {
@@ -106,6 +107,11 @@ public class Server {
                 .findById(shConnection)
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + id))
                 .getBackupsDir() + '/' + getUnitName());
+    }
+
+    @Override
+    public String toString() {
+        return "Server " + name;
     }
 
     public enum Status implements IntegerAttribute {

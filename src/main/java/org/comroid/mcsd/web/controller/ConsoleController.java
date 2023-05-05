@@ -46,7 +46,7 @@ public class ConsoleController {
         WebInterfaceConnection connection = new WebInterfaceConnection(user, server);
         connections.put(user.getId(), connection);
         respond.convertAndSendToUser(user.getName(), "/console/handshake", "\"%s\"".formatted(user.getId().toString()));
-        connection.status().thenAccept(status -> respond.convertAndSendToUser(user.getName(), "/console/status", status));
+        connection.con.status().thenAccept(status -> respond.convertAndSendToUser(user.getName(), "/console/status", status));
     }
 
     @MessageMapping("/console/input")
@@ -59,6 +59,17 @@ public class ConsoleController {
         res.input(input.substring(1, input.length() - 1));
     }
 
+    @MessageMapping("/console/backup")
+    public void backup(@Header("simpSessionAttributes") Map<String, Object> sessionAttributes) {
+        var session = (HttpSession) sessionAttributes.get(WebSocketConfig.HTTP_SESSION_KEY);
+        var user = userRepo.findBySession(session);
+        var res = connections.getOrDefault(user.getId(), null);
+        if (res == null)
+            throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
+        if (!res.con.runBackup())
+            log.error("Could not finish backup for server " + res.getServer().getName());
+    }
+
     @MessageMapping("/console/disconnect")
     public void disconnect(@Header("simpSessionAttributes") Map<String, Object> sessionAttributes) {
         var session = (HttpSession) sessionAttributes.get(WebSocketConfig.HTTP_SESSION_KEY);
@@ -69,8 +80,11 @@ public class ConsoleController {
     }
 
     @Getter
-    private class WebInterfaceConnection extends ServerConnection {
+    @ToString
+    private class WebInterfaceConnection implements Closeable {
         private final CompletableFuture<Void> connected = new CompletableFuture<>();
+        private final ServerConnection con;
+        private final Server server;
         private final User user;
         private final Channel channel;
         private final Input input;
@@ -78,9 +92,10 @@ public class ConsoleController {
         private final Output error;
 
         public WebInterfaceConnection(User user, Server server) throws JSchException {
-            super(server);
+            this.con = server.getConnection();
+            this.server = server;
             this.user = user;
-            this.channel = session.openChannel("shell");
+            this.channel = con.getSession().openChannel("shell");
 
             channel.setInputStream(this.input = new Input());
             channel.setOutputStream(this.output = new Output(false));
@@ -94,7 +109,6 @@ public class ConsoleController {
         public void close() {
             respond.convertAndSendToUser(user.getName(), "/console/disconnect", "");
             channel.disconnect();
-            super.close();
         }
 
         public void input(String input) {
