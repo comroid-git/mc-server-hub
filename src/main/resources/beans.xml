@@ -2,9 +2,6 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean class="com.fasterxml.jackson.databind.ObjectMapper" primary="true" />
-    <bean class="com.fasterxml.jackson.dataformat.xml.XmlMapper" />
-    <bean class="com.fasterxml.jackson.dataformat.csv.CsvMapper" />
     <bean class="org.comroid.mcsd.web.util.ApplicationContextProvider" />
     <bean class="org.springframework.core.io.DefaultResourceLoader" />
     <bean class="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler" primary="true"/>
