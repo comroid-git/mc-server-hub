@@ -28,7 +28,16 @@ if [ -f "$unitFile" ]; then
 fi
 
 # start command
-if [ "$1" == "start" ]; then
+if [ "$1" == "status" ]; then
+  scrLs=$(screen -ls | grep "$unitName")
+  if [ -z "$scrLs" ]; then
+    echo "Server $unitName is not runnning"
+  else
+    echo "Server $unitName is running"
+  fi
+
+# start command
+elif [ "$1" == "start" ]; then
   scrLs=$(screen -ls | grep "$unitName")
   if [ -z "$scrLs" ]; then
     screen -OdmSq "$unitName" ./mcsd.sh run || echo "Could not start screen session"
