@@ -82,7 +82,7 @@ public class ServerConnection implements Closeable {
                 CompletableFuture.supplyAsync(() -> {
                     var msg = StatusMessage.builder()
                             .serverId(server.getId());
-                    try (var query = new MCQuery(host, server.getPort())) {
+                    try (var query = new MCQuery(host, server.getQueryPort())) {
                         var stat = query.fullStat();
                         if (stat != null)
                             msg.status(server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online)
