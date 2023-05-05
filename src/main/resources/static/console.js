@@ -7,7 +7,7 @@ let sessionId;
 
 function connect() {
     writeLine('Connecting...')
-    var socket = new SockJS('/console');
+    let socket = new SockJS('/console');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function() {
         subscriptionDisconnect = stompClient.subscribe('/user/'+userName+'/console/disconnect', function(){
@@ -61,7 +61,7 @@ function handleStatus(data) {
 
 function handleOutput(msg) {
     let output = document.getElementById('output');
-    output.innerHTML += msg.replaceAll(new RegExp('\r?\n', 'g'), '<br/>');
+    output.innerHTML += msg;
     output.scrollTop = output.scrollHeight;
 }
 
@@ -69,13 +69,13 @@ function handleError(msg) {
     let output = document.getElementById('output');
     let span = document.createElement('span')
     span.className = 'stderr';
-    span.innerText = msg.replaceAll(new RegExp('\r?\n', 'g'), '<br/>');
+    span.innerText = msg;
     output.innerHTML += span;
     output.scrollTop = output.scrollHeight;
 }
 
 function writeLine(msg) {
-    handleOutput(msg + '\r\n');
+    handleOutput(msg + '<br/>');
 }
 
 function sendMessage() {

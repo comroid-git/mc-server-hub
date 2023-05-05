@@ -26,6 +26,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import static org.comroid.mcsd.web.model.ServerConnection.OutputMarker;
+import static org.comroid.mcsd.web.model.ServerConnection.br;
+
 @Slf4j
 @Controller
 public class ConsoleController {
@@ -67,7 +70,7 @@ public class ConsoleController {
         if (res == null)
             throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
         if (!res.con.runBackup())
-            log.error("Could not finish backup for server " + res.getServer().getName());
+            log.error("Could not finish backup for server %s".formatted(res.getServer()));
     }
 
     @MessageMapping("/console/disconnect")
@@ -161,10 +164,12 @@ public class ConsoleController {
 
         private class Output extends OutputStream {
             private final boolean error;
+            private boolean active;
             private StringWriter buf = new StringWriter();
 
             public Output(boolean error) {
                 this.error = error;
+                this.active = error;
             }
 
             @Override
@@ -173,16 +178,19 @@ public class ConsoleController {
             }
 
             @Override
-            public void flush() throws IOException {
+            public void flush() {
                 if (!connected.isDone())
                     connected.join();
-                var str = Utils.removeAnsiEscapeSequences(buf.toString());
-                respond.convertAndSendToUser(user.getName(), "/console/" + (error ? "error" : "output"), str);
-                buf.close();
-                if (Arrays.stream(new String[]{"no screen to be resumed", "command not found", "Invalid operation"})
-                        .anyMatch(str::contains)) {
-                    WebInterfaceConnection.this.close();
-                    return;
+                var str = Utils.removeAnsiEscapeSequences(buf.toString()).replaceAll("\r?\n", br);
+                if (!active && str.equals(OutputMarker + br))
+                    active = true;
+                else if (active) {
+                    respond.convertAndSendToUser(user.getName(), "/console/" + (error ? "error" : "output"), str);
+                    if (Arrays.stream(new String[]{"no screen to be resumed", "command not found", "Invalid operation"})
+                            .anyMatch(str::contains)) {
+                        WebInterfaceConnection.this.close();
+                        return;
+                    }
                 }
                 buf = new StringWriter();
             }

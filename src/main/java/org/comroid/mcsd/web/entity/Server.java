@@ -1,6 +1,7 @@
 package org.comroid.mcsd.web.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.graversen.minecraft.rcon.Defaults;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,8 @@ import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.intellij.lang.annotations.Language;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -36,8 +39,10 @@ public class Server {
     private boolean maintenance = false;
     private int maxPlayers = 20;
     private int queryPort = 25565;
-    private int rConPort = 25575;
+    private int rConPort = Defaults.RCON_PORT;
     private String rConPassword = UUID.randomUUID().toString();
+    private Duration backupPeriod = Duration.ofHours(12);
+    private Instant lastBackup = Instant.ofEpochMilli(0);
     @JsonIgnore
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
@@ -47,18 +52,22 @@ public class Server {
         return ServerConnection.getInstance(this);
     }
 
+    @JsonIgnore
     public boolean isVanilla() {
         return mode == Mode.Vanilla;
     }
 
+    @JsonIgnore
     public boolean isPaper() {
         return mode == Mode.Paper;
     }
 
+    @JsonIgnore
     public boolean isForge() {
         return mode == Mode.Forge;
     }
 
+    @JsonIgnore
     public boolean isFabric() {
         return mode == Mode.Fabric;
     }
@@ -84,7 +93,7 @@ public class Server {
     public String wrapCmd(@Language("sh") String cmd, boolean quiet) {
         return "((cd '" + getDirectory() + "' && " +
                 "chmod 755 mcsd.sh && " +
-                (quiet ? "" : "echo '" + ServerConnection.OUTPUT_MARKER + "' && ") +
+                (quiet ? "" : "echo '" + ServerConnection.OutputMarker + "' && ") +
                 "(" + (cmd.contains("mcsd.sh") && quiet ? cmd + "-q" : cmd) + "))" +
                 (quiet ? "" : " || echo 'Command finished with non-zero exit code'>&2") +
                 ") && exit";

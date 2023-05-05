@@ -17,6 +17,7 @@ public class StatusMessage {
     private final Instant timestamp = Instant.now();
     private final UUID serverId;
     private @Builder.Default Server.Status status = Server.Status.Offline;
+    private @Builder.Default Server.Status rcon = Server.Status.Offline;
     private @Builder.Default int playerCount = 0;
     private @Builder.Default int playerMax = 0;
     private @Builder.Default String motd = "Server is unreachable";
@@ -30,6 +31,7 @@ public class StatusMessage {
         return builder()
                 .serverId(serverId)
                 .status(msg.status)
+                .rcon(msg.rcon)
                 .players(msg.players != null ? msg.players : players)
                 .playerCount(msg.playerCount)
                 .playerMax(msg.playerMax)

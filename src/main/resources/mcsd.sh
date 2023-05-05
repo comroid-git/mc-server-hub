@@ -1,7 +1,15 @@
 #!/bin/bash
-
 unitFile="mcsd-unit.properties"
+
+# exit codes
+# 1 - runtime error
+# 2 - unknown command
+# 3 - compatibility issue
+
+# empty (-n) == false
+# value (-z) == true
 quiet=""
+verbose=""
 
 # parse flags
 
@@ -9,14 +17,13 @@ for var in "$@"; do
   if [ "$var" = "-q" ]; then
     quiet="-q"
   fi
+  if [ "$var" = "-v" ]; then
+    verbose="-v"
+  fi
 done
 
 # load unit data
 if [ -f "$unitFile" ]; then
-  if [ -z $quiet ]; then
-    echo "Loading Unit Information (wip)"
-  fi
-
   while IFS='=' read -r key value; do
     # skip comments
     isComment=$(echo "$key" | grep -Po '#\K.+')
@@ -33,9 +40,9 @@ if [ -f "$unitFile" ]; then
     # strip leading & trailing newlines
     value="$(echo "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | tr -d '\n')"
 
-    #if [ -z $quiet ]; then
-    #  echo "Loaded variable [$key] = [$value]"
-    #fi
+    if [ -n "$verbose" ]; then
+      echo "Loaded variable [$key] = [$value]"
+    fi
     export "$key"="$value"
   done <mcsd-unit.properties
 fi
@@ -53,7 +60,7 @@ if [ "$1" == "status" ]; then
 elif [ "$1" == "start" ]; then
   scrLs=$(screen -ls | grep "$unitName")
   if [ -z "$scrLs" ]; then
-    screen -OdmSq "$unitName" ./mcsd.sh run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
+    screen -OdmSq "$unitName" ./mcsd.sh -h 300 run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
   else
     if [ -z $quiet ]; then
       echo "Server $unitName did not need to be started"
@@ -62,7 +69,7 @@ elif [ "$1" == "start" ]; then
 
 # attach command
 elif [ "$1" == "attach" ]; then
-  screen -ODSRq "$unitName" ./mcsd.sh run || if [ -z $quiet ]; then echo "Could not attach to screen session"; else :; fi
+  screen -ODSRq "$unitName" -h 300 ./mcsd.sh run || if [ -z $quiet ]; then echo "Could not attach to screen session"; else :; fi
 
 # run comamnd
 elif [ "$1" == "run" ]; then
@@ -119,7 +126,7 @@ elif [ "$1" == "installDeps" ]; then
      # todo: some packages might be wrong
      (echo "Uh-Oh, looks like that didn't work
      Only Arch-based Linux is currently supported entirely
-     Please report to https://github.com/comroid-git/mc-server-hub">&2))
+     Please report to https://github.com/comroid-git/mc-server-hub">&2 && exit 3))
   fi
 
 # install command
@@ -155,7 +162,7 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
       read -r agree
       if [ "$agree" == "no" ]; then
         echo "Goodbye"
-        exit 3
+        exit 1
       fi
     done
     echo "eula=true" >"eula.txt"

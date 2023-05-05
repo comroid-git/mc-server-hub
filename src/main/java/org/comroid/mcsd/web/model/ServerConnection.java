@@ -40,10 +40,13 @@ import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 @Slf4j
 @Getter
 public final class ServerConnection implements Closeable {
-    public static final String OUTPUT_MARKER = "################ OUTPUT BEGINS ################";
+    @Language("html")
+    public static final String br = "<br/>";
+    public static final String OutputMarker = "################ Output Begins ################";
     private static final Map<UUID, ServerConnection> cache = new ConcurrentHashMap<>();
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
-    private static final Duration statusCacheLifetime = Duration.ofMinutes(5);
+    private static final Duration statusCacheLifetime = Duration.ofMinutes(1);
+    private static final Duration rConConnectionTimeout = Duration.ofSeconds(10);
     private static final Resource res = bean(ResourceLoader.class).getResource("classpath:mcsd.sh");
     private final Server server;
     private Session session;
@@ -68,39 +71,50 @@ public final class ServerConnection implements Closeable {
 
             this.rcon = new MinecraftRconService(
                     new RconDetails(con.getHost(), server.getRConPort(), server.getRConPassword()),
-                    new ConnectOptions(Integer.MAX_VALUE, Duration.ofSeconds(1), Duration.ofMinutes(5)));
+                    new ConnectOptions(1, Duration.ofSeconds(1), Duration.ofMinutes(5)));
             //ReflectionUtil.setField(rcon, "executorService", Executors.newSingleThreadScheduledExecutor());
-            rcon.connect();
+            assertRcon();
         } catch (Exception e) {
-            log.error("Could not start connection to server " + server.getName(), e);
+            log.error("Could not start connection to %s".formatted(server), e);
+        }
+    }
+
+    private void assertRcon() {
+        try {
+            if (!rcon.isConnected() || !rcon.connectBlocking(rConConnectionTimeout) || !rcon.isConnected())
+                log.warn("Could not connect RCon to " + server);
+        } catch (Exception e) {
+            log.error("Unable to connect RCon to " + server, e);
         }
     }
 
     public void cron() {
-        log.info("Running cronjob for Server %s".formatted(server.getName()));
+        log.info("Running cronjob for %s".formatted(server));
         var con = server.getConnection();
 
         // upload runscript + data
         if (!con.uploadRunScript())
-            log.warn("Unable to upload runscript to server " + server.getName());
+            log.warn("Unable to upload runscript to %s".formatted(server));
 
         // manage server.properties file
         if (!con.updateProperties())
-            log.warn("Unable to update server properties for server " + server.getName());
+            log.warn("Unable to upload managed server properties to %s".formatted(server));
 
-        // is it not offline?
-        if (con.status().join().getStatus() != Server.Status.Offline) {
-            log.info("Server %s did not need to be started".formatted(server.getName()));
-            return;
+        // is it offline?
+        if (con.status().join().getStatus() == Server.Status.Offline) {
+            // then start server
+            if (!con.sendSh(server.cmdStart()))
+                log.warn("Auto-Starting %s did not finish successfully".formatted(server));
+        } else {
+            log.info("%s did not need to be started".formatted(server));
         }
 
-        // start server
-        if (!con.sendSh(server.cmdStart()))
-            log.warn("Auto-Starting server %s did not finish successfully".formatted(server.getName()));
+        // validate RCON connection works
+        assertRcon();
     }
 
     public CompletableFuture<StatusMessage> status() {
-        log.debug("Getting status of Server " + server.getName());
+        log.debug("Getting status of Server %s".formatted(server));
         if (statusCache.containsKey(server.getId())) {
             var entry = statusCache.get(server.getId());
             if (entry.getTimestamp().plus(statusCacheLifetime).isAfter(Instant.now()))
@@ -109,30 +123,32 @@ public final class ServerConnection implements Closeable {
         var host = StreamSupport.stream(bean(ShRepo.class).findAll().spliterator(), false)
                 .filter(con -> con.getId().equals(server.getShConnection()))
                 .findFirst()
-                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + server.getName()))
+                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server))
                 .getHost();
         var viae = new CompletableFuture[]{
                 CompletableFuture.supplyAsync(() -> {
-                    var msg = StatusMessage.builder()
-                            .serverId(server.getId());
+                    var builder = StatusMessage.builder()
+                            .serverId(server.getId())
+                            .rcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline);
                     try (var query = new MCQuery(host, server.getQueryPort())) {
                         var stat = query.fullStat();
                         if (stat != null)
-                            msg.status(server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online)
+                            builder.status(server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online)
                                     .playerCount(stat.getOnlinePlayers())
                                     .playerMax(stat.getMaxPlayers())
                                     .motd(stat.getMOTD().replaceAll("§\\w", ""))
                                     .gameMode(stat.getGameMode())
                                     .players(stat.getPlayerList())
                                     .worldName(stat.getMapName());
-                        return msg.build();
+                        return builder.build();
                     }
                 }),
                 CompletableFuture.supplyAsync(() -> {
                     var stat = new MineStat(host, server.getPort(), 3);
                     return StatusMessage.builder()
-                            .serverId(server.getId())
                             .status(stat.isServerUp() ? server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online : Server.Status.Offline)
+                            .serverId(server.getId())
+                            .rcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
                             .playerCount(stat.getCurrentPlayers())
                             .playerMax(stat.getMaximumPlayers())
                             .motd(Objects.requireNonNullElse(stat.getStrippedMotd(), "").replaceAll("§\\w", ""))
@@ -175,10 +191,10 @@ public final class ServerConnection implements Closeable {
                 prop.store(out, "Managed Server Properties by MCSD");
             }
         } catch (Exception e) {
-            log.error("Error uploading managed server.properties for server " + server.getName(), e);
+            log.error("Error uploading managed server.properties for server " + server, e);
             return false;
         }
-        log.info("Uploaded managed properties of server " + server.getName());
+        log.info("Uploaded managed properties of server " + server);
         return true;
     }
 
@@ -211,7 +227,7 @@ public final class ServerConnection implements Closeable {
             try (var scriptIn = res.getInputStream();
                  var scriptOut = uploadFile(prefix + script)) {
                 scriptIn.transferTo(scriptOut);
-                log.info("Uploaded runscript to Server " + server.getName());
+                log.info("Uploaded runscript to Server " + server);
             }
 
             // upload unit info
@@ -225,13 +241,13 @@ public final class ServerConnection implements Closeable {
                 var con = shConnection();
                 prop.put("host", con.getHost());
                 prop.put("backupDir", con.getBackupsDir() + '/' + server.getUnitName());
-                prop.store(dataOut, "MCSD Server Unit Information " + Instant.now());
-                log.info("Uploaded runscript data to Server " + server.getName());
+                prop.store(dataOut, "MCSD Server Unit Information");
+                log.info("Uploaded runscript data to Server " + server);
             }
 
             return true;
         } catch (Exception e) {
-            log.error("Unable to upload runscript for Server " + server.getName(), e);
+            log.error("Unable to upload runscript for Server " + server, e);
             return false;
         }
     }
@@ -242,7 +258,7 @@ public final class ServerConnection implements Closeable {
         var sAll = sendCmd("save-all");
         if (sOff.isEmpty() || sAll.isEmpty())
         {
-            log.error("Could not run backup on server %s because save-off and save-all failed".formatted(server.getName()));
+            log.error("Could not run backup on server %s because save-off and save-all failed".formatted(server));
             return false;
         }
         OutputStream bufProgress = null;
@@ -259,7 +275,7 @@ public final class ServerConnection implements Closeable {
                 public void write(int b) {
                     if (b == '\n') {
                         if (c == 0)
-                            log.info("Backup for server %s just started".formatted(server.getName()));
+                            log.info("Backup for server %s just started".formatted(server));
                         c++;
                     }
                 }
@@ -274,7 +290,7 @@ public final class ServerConnection implements Closeable {
                             .filter(n -> checkSize(n, b))
                             .forEach(n -> {
                                 s <<= 1;
-                                log.info("Backup for server %s is %d percent done".formatted(server.getName(), 1));
+                                log.info("Backup for server %s is %d percent done".formatted(server, 1));
                             });
                 }
 
@@ -285,9 +301,9 @@ public final class ServerConnection implements Closeable {
             };
         }
         if (!sendSh(server.cmdBackup(), bufProgress)) {
-            log.error("Backup for server %s failed".formatted(server.getName()));
+            log.error("Backup for server %s failed".formatted(server));
             return false;
-        } else log.info("Backup for server %s finished".formatted(server.getName()));
+        } else log.info("Backup for server %s finished".formatted(server));
         var sOn = sendCmd("save-on");
         backupRunning = false;
         return sOn.isPresent();
@@ -335,7 +351,7 @@ public final class ServerConnection implements Closeable {
 
             return true;
         } catch (Exception e) {
-            log.error("Could not send command to server " + server.getName(), e);
+            log.error("Could not send command to server " + server, e);
         } finally {
             if (exec != null)
                 exec.disconnect();
@@ -346,13 +362,12 @@ public final class ServerConnection implements Closeable {
     public Optional<RconResponse> sendCmd(final String cmd) {
         if (rcon == null)
             return Optional.empty();
-        if (!rcon.isConnected())
-            rcon.connectBlocking(Duration.ofSeconds(30));
+        assertRcon();
         return rcon.minecraftRcon().map(rc -> {
             try {
                 return rc.sendSync(() -> cmd);
             } catch (RconCommandException e) {
-                log.warn("Internal error occurred when sending command %s to server %s".formatted(cmd, server.getName()), e);
+                log.warn("Internal error occurred when sending command %s to server %s".formatted(cmd, server), e);
                 return null;
             }
         });
