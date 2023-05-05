@@ -13,6 +13,7 @@ import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.util.Delegate;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
 import java.io.Closeable;
@@ -35,6 +36,7 @@ import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 public class ServerConnection implements Closeable {
     private final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     private final Duration statusCacheLifetime = Duration.ofMinutes(5);
+    private static final Resource res = bean(ResourceLoader.class).getResource("classpath:mcsd.sh");
     protected final Server server;
     protected Session session;
     protected IMinecraftRconService rcon;
@@ -190,7 +192,6 @@ public class ServerConnection implements Closeable {
         var script = "mcsd.sh";
         var data = "mcsd-unit.properties";
         var prefix = server.getDirectory() + '/';
-        var res = bean(ResourceLoader.class).getResource(script);
         try {
             // upload runscript
             try (var scriptIn = res.getInputStream();
