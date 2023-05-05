@@ -182,7 +182,7 @@ public class ServerConnection implements Closeable {
         // rcon
         prop.setProperty("enable-rcon", String.valueOf(server.getRConPassword() != null && !server.getRConPassword().isBlank()));
         prop.setProperty("rcon.port", String.valueOf(server.getRConPort()));
-        prop.setProperty("rcon.password", server.getRConPassword());
+        prop.setProperty("rcon.password", Objects.requireNonNullElse(server.getRConPassword(), ""));
 
         return prop;
     }
