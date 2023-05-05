@@ -208,7 +208,9 @@ public class ServerConnection implements Closeable {
                     var field = fields.next();
                     prop.put(field.getKey(), field.getValue().asText());
                 }
-                prop.put("backupDir", shConnection().getBackupsDir());
+                var con = shConnection();
+                prop.put("host", con.getHost());
+                prop.put("backupDir", con.getBackupsDir());
                 prop.store(dataOut, "MCSD Server Unit Information " + Instant.now());
                 log.info("Uploaded runscript data to Server " + server.getName());
             }
