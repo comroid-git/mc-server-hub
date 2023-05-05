@@ -38,6 +38,7 @@ import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 @Data
 @Slf4j
 public class ServerConnection implements Closeable {
+    private static final Object resourceLock = new Object();
     private final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     private final Duration statusCacheLifetime = Duration.ofMinutes(5);
     protected final Server server;
@@ -169,36 +170,37 @@ public class ServerConnection implements Closeable {
     }
 
     public boolean uploadRunScript() {
-        var script = "mcsd.sh";
-        var data = "mcsd-unit.properties";
-        var prefix = server.getDirectory() + '/';
-        var res = bean(ResourceLoader.class).getResource(script);
-        try {
-            // upload runscript
-            try (var scriptIn = res.getInputStream();
-                 var scriptOut = uploadFile(prefix + script)) {
-                scriptIn.transferTo(scriptOut);
-                log.info("Uploaded runscript to Server " + server.getName());
-            }
-
-            // upload unit info
-            try (var dataOut = uploadFile(prefix + data)) {
-                var fields = bean(ObjectMapper.class).valueToTree(server).fields();
-                var prop = new Properties();
-                while (fields.hasNext())
-                {
-                    var field = fields.next();
-                    prop.put(field.getKey(), field.getValue().asText());
+        synchronized (resourceLock) {
+            var script = "mcsd.sh";
+            var data = "mcsd-unit.properties";
+            var prefix = server.getDirectory() + '/';
+            var res = bean(ResourceLoader.class).getResource(script);
+            try {
+                // upload runscript
+                try (var scriptIn = res.getInputStream();
+                     var scriptOut = uploadFile(prefix + script)) {
+                    scriptIn.transferTo(scriptOut);
+                    log.info("Uploaded runscript to Server " + server.getName());
                 }
-                prop.put("backupDir", shConnection().getBackupsDir());
-                prop.store(dataOut, "MCSD Server Unit Information " + Instant.now());
-                log.info("Uploaded runscript data to Server " + server.getName());
-            }
 
-            return true;
-        } catch (Exception e) {
-            log.error("Unable to upload runscript for Server " + server.getName(), e);
-            return false;
+                // upload unit info
+                try (var dataOut = uploadFile(prefix + data)) {
+                    var fields = bean(ObjectMapper.class).valueToTree(server).fields();
+                    var prop = new Properties();
+                    while (fields.hasNext()) {
+                        var field = fields.next();
+                        prop.put(field.getKey(), field.getValue().asText());
+                    }
+                    prop.put("backupDir", shConnection().getBackupsDir());
+                    prop.store(dataOut, "MCSD Server Unit Information " + Instant.now());
+                    log.info("Uploaded runscript data to Server " + server.getName());
+                }
+
+                return true;
+            } catch (Exception e) {
+                log.error("Unable to upload runscript for Server " + server.getName(), e);
+                return false;
+            }
         }
     }
 
