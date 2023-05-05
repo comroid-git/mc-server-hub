@@ -68,6 +68,16 @@ elif [ "$1" == "backup" ]; then
   echo "Compressing backup as $backup.tar.gz"
   tar -zcvf "$backup.tar.gz" ./*glob*
 
+# install dependencies command
+elif [ "$1" == "installDeps" ]; then
+  if [ -f "$(which pacman)" ]; then
+    sudo pacman -Sy screen tar grep coreutils sed wget
+  else
+    # use apt-get
+    sudo apt-get update && (sudo apt-get install screen tar grep coreutils sed wget || (echo "Uh-Oh, looks like that was wrong" && return 1))
+    # todo: some packages might be wrong
+  fi
+
 # install command
 elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   if [ "$1" == "install" ]; then
