@@ -71,10 +71,10 @@ elif [ "$1" == "backup" ]; then
 # install dependencies command
 elif [ "$1" == "installDeps" ]; then
   if [ -f "$(which pacman)" ]; then
-    sudo pacman -Sy screen tar grep coreutils sed wget
+    sudo pacman -Sy jre-openjdk-headless screen tar grep coreutils sed wget
   else
     # use apt-get
-    sudo apt-get update && (sudo apt-get install screen tar grep coreutils sed wget || (echo "Uh-Oh, looks like that was wrong" && return 1))
+    sudo apt-get update && (sudo apt-get install default-jre screen tar grep coreutils sed wget || (echo "Uh-Oh, looks like that was wrong" && return 1))
     # todo: some packages might be wrong
   fi
 
