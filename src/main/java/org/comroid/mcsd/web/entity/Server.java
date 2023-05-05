@@ -84,7 +84,7 @@ public class Server {
 
     private String wrapCmd(@Language("sh") String act) {
         return ("cd \"%s\" || (echo \"Could not change to server directory\" && exit)" +
-                " && (chmod 744 mcsd.sh || (echo \"Could not chmod runscript\" && exit))" +
+                " && (chmod 755 mcsd.sh || (echo \"Could not chmod runscript\" && exit))" +
                 " && ((%s) || (echo \"Command finished with non-zero exit code\" && exit))" +
                 " && exit").formatted(getDirectory(), act);
     }
