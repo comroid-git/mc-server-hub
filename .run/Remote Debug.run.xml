@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Remove Debug" type="Remote">
+  <configuration default="false" name="Remote Debug" type="Remote">
     <module name="mc-server-hub.main" />
     <option name="USE_SOCKET_TRANSPORT" value="true" />
     <option name="SERVER_MODE" value="false" />
@@ -7,6 +7,10 @@
     <option name="HOST" value="eu.comroid.org" />
     <option name="PORT" value="5005" />
     <option name="AUTO_RESTART" value="false" />
+    <RunnerSettings RunnerId="Debug">
+      <option name="DEBUG_PORT" value="5005" />
+      <option name="LOCAL" value="false" />
+    </RunnerSettings>
     <method v="2">
       <option name="RunConfigurationTask" enabled="true" run_configuration_name="Restart MCSD" run_configuration_type="ShConfigurationType" />
     </method>
