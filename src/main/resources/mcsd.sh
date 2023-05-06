@@ -230,6 +230,7 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   md5new="$(curl -s "$md5Api$runscriptUrl" | md5sum | grep -Po '\K\w*(?=\s)' ||
     echo "Unable to parse server response">&2)"
   if [ "$md5current" != "$md5new" ]; then
+    echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
     if [ -z "$q" ]; then echo "Downloading runscript ..."; fi
     wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$runscript" "$runscriptUrl"
     chmod 777 "$runscript"
