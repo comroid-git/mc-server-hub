@@ -1,8 +1,8 @@
 #!/bin/bash
 unitFile="unit.properties"
 socketFile=".running"
-runscript="mcsd.sh"
-serverjar="server.jar"
+runScript="mcsd.sh"
+serverJar="server.jar"
 
 # exit codes
 # 1 - runtime error
@@ -81,7 +81,7 @@ if [ "$1" == "status" ]; then
 elif [ "$1" == "start" ]; then
   scrLs=$(screen -ls | grep "$unitName")
   if [ -z "$scrLs" ]; then
-    screen "-OdmSq$attach" "$unitName" "./$runscript" -h 300 run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
+    screen "-OdmSq$attach" "$unitName" "./$runScript" -h 300 run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
   else
     if [ -z $quiet ]; then
       echo "Server $unitName did not need to be started"
@@ -90,7 +90,7 @@ elif [ "$1" == "start" ]; then
 
 # attach command
 elif [ "$1" == "attach" ]; then
-  screen -ODSRq "$unitName" -h 300 "./$runscript" run || if [ -z $quiet ]; then echo "Could not attach to screen session"; else :; fi
+  screen -ODSRq "$unitName" -h 300 "./$runScript" run || if [ -z $quiet ]; then echo "Could not attach to screen session"; else :; fi
 
 # run comamnd
 elif [ "$1" == "run" ]; then
@@ -221,20 +221,20 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
     fi
   fi
 
-  runscriptUrl="https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/$runscript"
+  runscriptUrl="https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/$runScript"
   md5Api="https://api.comroid.org/md5.php?url="
 
-  # download runscript if necessary
-  if [ -z "$q" ]; then echo "Fetching $runscript md5 using api.comroid.org/md5 ..."; fi
-  md5current=$(md5sum "$runscript" | grep -Po '\K\w*(?=\s)')
+  # download runScript if necessary
+  if [ -z "$q" ]; then echo "Fetching $runScript md5 using api.comroid.org/md5 ..."; fi
+  md5current=$(md5sum "$runScript" | grep -Po '\K\w*(?=\s)')
   md5new="$(curl -s "$md5Api$runscriptUrl" || echo "Unable to parse server response">&2)"
   if [ "$md5current" != "$md5new" ]; then
     echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
-    if [ -z "$q" ]; then echo "Downloading runscript ..."; fi
-    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$runscript" "$runscriptUrl"
-    chmod 777 "$runscript"
+    if [ -z "$q" ]; then echo "Downloading runScript ..."; fi
+    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$runScript" "$runscriptUrl"
+    chmod 777 "$runScript"
   else
-    if [ -z "$q" ]; then echo "$runscript is up to date"; fi
+    if [ -z "$q" ]; then echo "$runScript is up to date"; fi
   fi
 
   # serverjars.com path variables
