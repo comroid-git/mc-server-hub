@@ -2,7 +2,6 @@ package org.comroid.mcsd.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.jdbc.Driver;
-import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.web.entity.Server;
@@ -36,7 +35,8 @@ public class MinecraftServerHub {
     public static final Duration CRON_QUEUE_RATE = Duration.ofHours(1);
     private final Object cronLock = new Object();
 
-    @Lazy @Autowired
+    @Lazy
+    @Autowired
     private ServerRepo servers;
 
     public static void main(String[] args) {

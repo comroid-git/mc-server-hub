@@ -2,8 +2,11 @@ package org.comroid.mcsd.web.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.graversen.minecraft.rcon.Defaults;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import lombok.Data;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
@@ -17,7 +20,9 @@ import org.intellij.lang.annotations.Language;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
@@ -102,7 +107,7 @@ public class Server {
                 "(" + (cmd.contains("mcsd.sh") && quiet ? cmd + " -q" : cmd) + "))" +
                 (quiet ? "" : " || echo 'Command finished with non-zero exit code'>&2") +
                 ") && " +
-                (quiet ? "" : "echo '"+ServerConnection.EndMarker+"' && ") +
+                (quiet ? "" : "echo '" + ServerConnection.EndMarker + "' && ") +
                 "exit";
     }
 

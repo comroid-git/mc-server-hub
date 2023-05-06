@@ -1,6 +1,5 @@
 package org.comroid.mcsd.web.exception;
 
-import lombok.experimental.StandardException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.HttpStatusCodeException;

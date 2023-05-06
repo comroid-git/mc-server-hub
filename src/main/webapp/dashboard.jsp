@@ -1,7 +1,7 @@
 <%--suppress HtmlFormInputWithoutLabel --%>
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
-<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%--@elvariable id="user" type="org.comroid.mcsd.web.entity.User"--%>
 <%--@elvariable id="servers" type="java.util.List<org.comroid.mcsd.web.entity.Server>"--%>
 <%--@elvariable id="connections" type="java.util.List<org.comroid.mcsd.web.entity.ShConnection>"--%>
@@ -9,38 +9,39 @@
 <h5>You have access to ${servers.size()} Server${(servers.size() == 1 ? "" : "s")}</h5>
 <h4>Servers</h4>
 <table>
-<tr>
-    <th/>
-    <th>
-        <c:if test="${user.canManageServers()}">
-            <button onclick="window.location.href = '<c:url value="/server/create"/>'">Create</button>
-        </c:if>
-    </th>
-    <th>MOTD</th>
-    <th>Players</th>
-    <th>Host</th>
-    <th/>
-    <th>Port</th>
-    <th/>
-</tr>
+    <tr>
+        <th/>
+        <th>
+            <c:if test="${user.canManageServers()}">
+                <button onclick="window.location.href = '<c:url value="/server/create"/>'">Create</button>
+            </c:if>
+        </th>
+        <th>MOTD</th>
+        <th>Players</th>
+        <th>Host</th>
+        <th/>
+        <th>Port</th>
+        <th/>
+    </tr>
     <c:forEach var="server" items="${servers}">
         <tr class="serverEntry ui-button">
             <td class="serverEntryId" style="display: none">${server.id}</td>
             <td class="serverEntryStatus">
-                <div class="serverStatusUnknown" />
+                <div class="serverStatusUnknown"/>
             </td>
             <td class="serverEntryInteract">
                 <button onclick="window.location.href = '<c:url value="/server/${server.id}'"/>">View</button>
-                <button onclick="window.location.href = '<c:url value="/server/console/${server.id}'"/>">Console</button>
+                <button onclick="window.location.href = '<c:url value="/server/console/${server.id}'"/>">Console
+                </button>
             </td>
             <td class="serverEntryMotd">...</td>
             <td class="serverEntryPlayers">...</td>
             <td class="serverEntryHost">${connections.stream()
-            .filter(con -> con.getId().equals(server.shConnection))
-            .findFirst()
-            .get()
-            .getHost()
-            }</td>
+                    .filter(con -> con.getId().equals(server.shConnection))
+                    .findFirst()
+                    .get()
+                    .getHost()
+                    }</td>
             <td class="serverEntrySeparator">:</td>
             <td class="serverEntryPort">${server.port}</td>
             <td class="serverEntryManage">
@@ -54,7 +55,9 @@
     <h4>SSH Connections</h4>
     <table>
         <tr>
-            <th><button onclick="window.location.href = '<c:url value="/connection/create"/>'">Create</button></th>
+            <th>
+                <button onclick="window.location.href = '<c:url value="/connection/create"/>'">Create</button>
+            </th>
             <th>Username</th>
             <th/>
             <th>Host</th>
@@ -64,7 +67,9 @@
         </tr>
         <c:forEach var="con" items="${connections}">
             <tr class="connectionEntry ui-button">
-                <td><button onclick="window.location.href = '<c:url value="/connection/${con.id}"/>'">View</button></td>
+                <td>
+                    <button onclick="window.location.href = '<c:url value="/connection/${con.id}"/>'">View</button>
+                </td>
                 <td>${con.username}</td>
                 <td>@</td>
                 <td>${con.host}</td>
@@ -72,7 +77,8 @@
                 <td>${con.port}</td>
                 <td>
                     <button onclick="window.location.href = '<c:url value="/connection/edit/${con.id}"/>'">Edit</button>
-                    <button onclick="window.location.href = '<c:url value="/connection/delete/${con.id}"/>'">Delete</button>
+                    <button onclick="window.location.href = '<c:url value="/connection/delete/${con.id}"/>'">Delete
+                    </button>
                 </td>
             </tr>
         </c:forEach>

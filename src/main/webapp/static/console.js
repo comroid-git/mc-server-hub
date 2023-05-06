@@ -9,11 +9,11 @@ function connect() {
     writeLine('Connecting...')
     let socket = new SockJS('/console');
     stompClient = Stomp.over(socket);
-    stompClient.connect({}, function() {
-        subscriptionDisconnect = stompClient.subscribe('/user/'+userName+'/console/disconnect', function(){
+    stompClient.connect({}, function () {
+        subscriptionDisconnect = stompClient.subscribe('/user/' + userName + '/console/disconnect', function () {
             disconnect();
         });
-        subscriptionHandshake = stompClient.subscribe('/user/'+userName+'/console/handshake', function(msg){
+        subscriptionHandshake = stompClient.subscribe('/user/' + userName + '/console/handshake', function (msg) {
             handleHandshake(JSON.parse(msg.body));
         });
         stompClient.send('/console/connect', {}, JSON.stringify(serverId));
@@ -21,7 +21,7 @@ function connect() {
 }
 
 function disconnect() {
-    if(stompClient != null) {
+    if (stompClient != null) {
         stompClient.send('/console/disconnect', {}, sessionId);
         subscriptionDisconnect.unsubscribe();
         subscriptionOutput.unsubscribe();
@@ -38,13 +38,13 @@ function handleHandshake(session) {
     }
     sessionId = session;
     subscriptionHandshake.unsubscribe();
-    subscriptionStatus = stompClient.subscribe('/user/'+userName+'/console/status', function(msg){
+    subscriptionStatus = stompClient.subscribe('/user/' + userName + '/console/status', function (msg) {
         handleStatus(msg.body);
     });
-    subscriptionOutput = stompClient.subscribe('/user/'+userName+'/console/output', function(msg){
+    subscriptionOutput = stompClient.subscribe('/user/' + userName + '/console/output', function (msg) {
         handleOutput(msg.body);
     });
-    subscriptionOutput = stompClient.subscribe('/user/'+userName+'/console/error', function(msg){
+    subscriptionOutput = stompClient.subscribe('/user/' + userName + '/console/error', function (msg) {
         handleError(msg.body);
     });
     writeLine("Connected")

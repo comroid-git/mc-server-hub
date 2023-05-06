@@ -3,7 +3,6 @@ package org.comroid.mcsd.web.repo;
 import jakarta.persistence.Table;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.RepositoryDefinition;
 
 import java.util.Map;
 import java.util.UUID;

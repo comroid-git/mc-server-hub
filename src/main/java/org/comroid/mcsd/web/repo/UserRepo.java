@@ -18,7 +18,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
     Optional<User> findByName(String name);
 
     default User findBySession(HttpSession session) {
-        var oAuth2User = ((OAuth2User)((SecurityContext)session.getAttribute("SPRING_SECURITY_CONTEXT"))
+        var oAuth2User = ((OAuth2User) ((SecurityContext) session.getAttribute("SPRING_SECURITY_CONTEXT"))
                 .getAuthentication().getPrincipal());
         UUID id = UUID.fromString(Objects.requireNonNull(oAuth2User.getAttribute("id"), "User ID cannot be null"));
         return findById(id).orElseGet(() -> {

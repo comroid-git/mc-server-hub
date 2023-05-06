@@ -1,15 +1,16 @@
 package org.comroid.mcsd.web.controller;
 
-import com.jcraft.jsch.*;
+import com.jcraft.jsch.JSchException;
 import jakarta.servlet.http.HttpSession;
-import lombok.*;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.mcsd.web.model.AttachedConnection;
 import org.comroid.mcsd.web.config.WebSocketConfig;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.entity.User;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
+import org.comroid.mcsd.web.model.AttachedConnection;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
@@ -21,7 +22,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
-import java.util.*;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -90,12 +92,12 @@ public class ConsoleController {
 
         @Override
         protected void handleStdOut(String txt) {
-            respond.convertAndSendToUser(user.getName(), "/console/output", txt);
+            respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br);
         }
 
         @Override
         protected void handleStdErr(String txt) {
-            respond.convertAndSendToUser(user.getName(), "/console/error", txt);
+            respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br);
         }
 
         @Override

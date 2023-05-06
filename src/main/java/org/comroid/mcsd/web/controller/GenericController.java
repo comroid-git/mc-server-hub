@@ -48,7 +48,7 @@ public class GenericController implements ErrorController {
             ex = ex.getCause();
             ex.printStackTrace(pw);
         }
-        int code = (int)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        int code = (int) request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         String codeMessage = code + " - ";
         HttpStatus status = HttpStatus.resolve(code);
         if (status == null)

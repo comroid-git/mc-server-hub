@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
-<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%--@elvariable id="user" type="org.comroid.mcsd.web.entity.User"--%>
 <%--@elvariable id="servers" type="java.util.List<org.comroid.mcsd.web.entity.Server>"--%>
 <%--@elvariable id="connections" type="java.util.List<org.comroid.mcsd.web.entity.ShConnection>"--%>
@@ -36,6 +36,9 @@
 </style>
 <script type="application/javascript">
     // todo
-    function expand() {}
-    function collapse() {}
+    function expand() {
+    }
+
+    function collapse() {
+    }
 </script>

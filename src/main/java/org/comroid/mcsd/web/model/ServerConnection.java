@@ -15,6 +15,7 @@ import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
+import org.comroid.api.DelegateStream;
 import org.comroid.api.ThrowingFunction;
 import org.comroid.mcsd.web.dto.StatusMessage;
 import org.comroid.mcsd.web.entity.Server;
@@ -22,7 +23,6 @@ import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.exception.StatusCode;
 import org.comroid.mcsd.web.repo.ShRepo;
-import org.comroid.api.DelegateStream;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.event.Level;
@@ -66,10 +66,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private final IMinecraftRconService rcon;
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
 
-    public static ServerConnection getInstance(final Server srv) {
-        return cache.computeIfAbsent(srv.getId(), ThrowingFunction.rethrowing($ -> new ServerConnection(srv), RuntimeException::new));
-    }
-
     private ServerConnection(Server server) throws JSchException {
         this.server = server;
         var con = shConnection();
@@ -81,6 +77,10 @@ public final class ServerConnection implements Closeable, ServerHolder {
         this.rcon = new MinecraftRconService(
                 new RconDetails(con.getHost(), server.getRConPort(), server.getRConPassword()),
                 new ConnectOptions(Integer.MAX_VALUE, Duration.ofSeconds(3), Duration.ofMinutes(5)));
+    }
+
+    public static ServerConnection getInstance(final Server srv) {
+        return cache.computeIfAbsent(srv.getId(), ThrowingFunction.rethrowing($ -> new ServerConnection(srv), RuntimeException::new));
     }
 
     @Synchronized("rcon")
@@ -405,7 +405,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         if (!sendSh(server.wrapCmd("./mcsd.sh disable", false)))
             log.warn("Could not disable server restarts when trying to stop " + server);
         try (var screen = attach()) {
-            screen.exec("stop", "^.*"+ServerConnection.EndMarker+".*$");
+            screen.exec("stop", "^.*" + ServerConnection.EndMarker + ".*$");
             return true;
         } catch (Throwable e) {
             log.error("Could not stop " + server, e);

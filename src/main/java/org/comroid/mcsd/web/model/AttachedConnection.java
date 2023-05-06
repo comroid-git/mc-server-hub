@@ -29,13 +29,13 @@ import static org.comroid.mcsd.web.model.ServerConnection.br;
 
 @Slf4j
 public class AttachedConnection implements Closeable {
-    private final @Delegate(excludes = {Closeable.class}) ServerConnection $;
     public final CompletableFuture<Void> connected = new CompletableFuture<>();
     public final Server server;
     public final ChannelShell channel;
     public final DelegateStream.IOE ioe;
     public final Input input;
     public final Output output, error;
+    private final @Delegate(excludes = {Closeable.class}) ServerConnection $;
     private @Nullable Predicate<String> successMatcher;
     private @Nullable CompletableFuture<String> future;
     private @Nullable StringBuilder result;
@@ -174,7 +174,8 @@ public class AttachedConnection implements Closeable {
             if (!active && str.equals(OutputMarker + br))
                 active = true;
             else if (active) {
-                handler.accept(str);
+                for (String line : str.split("\r?\n"))
+                    handler.accept(line);
                 if (Arrays.stream(new String[]{"no screen to be resumed", "command not found", "Invalid operation"})
                         .anyMatch(str::contains)) {
                     AttachedConnection.this.close();

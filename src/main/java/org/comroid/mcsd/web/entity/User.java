@@ -1,12 +1,11 @@
 package org.comroid.mcsd.web.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import lombok.Data;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -37,5 +36,5 @@ public class User {
         return "User " + name;
     }
 
-    public enum Perm implements BitmaskAttribute<Perm> { None, ManageServers, ManageShConnections, Admin }
+    public enum Perm implements BitmaskAttribute<Perm> {None, ManageServers, ManageShConnections, Admin}
 }

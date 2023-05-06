@@ -2,7 +2,6 @@ package org.comroid.mcsd.web.dto;
 
 import lombok.*;
 import org.comroid.mcsd.web.entity.Server;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -20,9 +19,12 @@ public class StatusMessage {
     public @With int playerCount = 0;
     public @With int playerMax = 0;
     public @With String motd = "Server is unreachable";
-    public @With @Nullable List<String> players;
-    public @With @Nullable String gameMode;
-    public @With @Nullable String worldName;
+    public @With
+    @Nullable List<String> players;
+    public @With
+    @Nullable String gameMode;
+    public @With
+    @Nullable String worldName;
 
     public StatusMessage combine(@Nullable StatusMessage msg) {
         if (msg == null)

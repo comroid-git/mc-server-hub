@@ -1,9 +1,8 @@
 package org.comroid.mcsd.web.entity;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import lombok.*;
+import lombok.Data;
 
 import java.util.UUID;
 
@@ -21,6 +20,6 @@ public class ShConnection {
 
     @Override
     public String toString() {
-        return "%s@%s:%d".formatted(username,host,port);
+        return "%s@%s:%d".formatted(username, host, port);
     }
 }

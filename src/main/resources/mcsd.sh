@@ -153,7 +153,7 @@ elif [ "$1" == "installDeps" ]; then
      Please report to https://github.com/comroid-git/mc-server-hub">&2 && exit 3))
   fi
 
-# install command
+# install/update command
 elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   if [ "$1" == "install" ]; then
     while [ -z "$unitName" ]; do
@@ -220,8 +220,10 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   fi
 
   echo "Downloading runscript..."
+  wget -O mcsd.sh "https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/mcsd.sh"
+  chmod 755 mcsd.sh
 
-  echo "Downloading server.jar..."
+  # serverjars.com path variables
   mode=$(echo "$mode" | tr '[:upper:]' '[:lower:]')
   if [ "$mode" == "paper" ]; then
     type="servers"
@@ -232,8 +234,18 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   else
     type="vanilla"
   fi
-  wget -O server.jar "https://serverjars.com/api/fetchJar/$type/$mode/$mcVersion"
-  chmod 755 server.jar
+
+  echo "Fetching server.jar md5..."
+  md5current=$(md5sum server.jar | grep -Po '\K.+(?=\s)')
+  md5new="$(curl "https://serverjars.com/api/fetchDetails/$type/$mode/$mcVersion" | jq '.response.md5' | grep -Po '"\K.+(?=")')"
+
+  if [ "$md5current" == "$md5new" ]; then
+    echo "Downloading server.jar..."
+    wget -O server.jar "https://serverjars.com/api/fetchJar/$type/$mode/$mcVersion"
+    chmod 755 server.jar
+  else
+    echo "server.jar is up to date"
+  fi
 
 # invalid command
 else

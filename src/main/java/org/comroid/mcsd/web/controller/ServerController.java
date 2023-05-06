@@ -6,8 +6,8 @@ import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.dto.StatusMessage;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.User;
-import org.comroid.mcsd.web.exception.StatusCode;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
+import org.comroid.mcsd.web.exception.StatusCode;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
@@ -21,10 +21,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static org.comroid.mcsd.web.model.ServerConnection.BackupMethod.Screen;
 
 @Slf4j
 @Controller

@@ -1,7 +1,7 @@
 <%--suppress HtmlFormInputWithoutLabel --%>
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
-<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%--@elvariable id="user" type="org.comroid.mcsd.web.entity.User"--%>
 <%--@elvariable id="creating" type="java.lang.Boolean"--%>
 <%--@elvariable id="editing" type="org.comroid.mcsd.web.entity.Server"--%>
@@ -11,29 +11,29 @@
 <script type="application/javascript">
     let perms = {
         <c:forEach var="entry" items="${editing.userPermissions}">
-            '${entry.key}': ${entry.value},
+        '${entry.key}': ${entry.value},
         </c:forEach>
     }
 </script>
 <form id="editForm" method="post" action="/server/${editing.id}">
     <h5>Name
-        <input type="text" name="name" value="${editing.name}" required />
+        <input type="text" name="name" value="${editing.name}" required/>
     </h5>
 
     <h5>Minecraft Version
-        <input type="text" name="mcVersion" value="${editing.mcVersion}" required />
+        <input type="text" name="mcVersion" value="${editing.mcVersion}" required/>
     </h5>
 
     <h5>Port
-        <input type="number" name="port" value="${editing.port}" min="1" max="65535" required />
+        <input type="number" name="port" value="${editing.port}" min="1" max="65535" required/>
     </h5>
 
     <h5>Directory
-        <input type="text" name="directory" value="${editing.directory}" required />
+        <input type="text" name="directory" value="${editing.directory}" required/>
     </h5>
 
     <h5>RAM
-        <input type="number" name="ramGB" value="${editing.ramGB}" min="1" max="512" required /> GB
+        <input type="number" name="ramGB" value="${editing.ramGB}" min="1" max="512" required/> GB
     </h5>
 
     <h5>Mode
@@ -50,7 +50,9 @@
             <c:forEach var="entry" items="${shMap}">
                 <option value="${entry.value}">${entry.key}</option>
             </c:forEach>
-            <option value="createNew" onselect="window.location.href = '<c:url value="/connection/create"/>">Create new...</option>
+            <option value="createNew" onselect="window.location.href = '<c:url value="/connection/create"/>">Create
+                new...
+            </option>
         </select>
     </h5>
 
@@ -65,10 +67,11 @@
             </c:if>
         </c:forEach>
     </select>
-    <h6><button onclick="addUser()">Add User</button>
-        <input id="add-user" type="text" alt="User ID" />
+    <h6>
+        <button onclick="addUser()">Add User</button>
+        <input id="add-user" type="text" alt="User ID"/>
     </h6>
     <br/>
-    <input type="hidden" name="id" value="${editing.id}" required readonly />
-    <input type="button" value="Submit" onclick="submitForm()" style="width: 10%; height: 2%" />
+    <input type="hidden" name="id" value="${editing.id}" required readonly/>
+    <input type="button" value="Submit" onclick="submitForm()" style="width: 10%; height: 2%"/>
 </form>
