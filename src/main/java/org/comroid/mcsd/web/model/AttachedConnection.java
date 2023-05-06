@@ -67,7 +67,7 @@ public class AttachedConnection implements Closeable {
     }
 
     public synchronized String exec(String cmd, @Nullable @Language("RegExp") String successMatcher) {
-        this.successMatcher = successMatcher == null ? null : Pattern.compile("^.*(" + successMatcher + ").*$").asMatchPredicate();
+        this.successMatcher = successMatcher == null ? null : Pattern.compile(successMatcher).asMatchPredicate();
         this.future = new CompletableFuture<>();
         this.result = new StringBuilder();
         future.thenRun(() -> {

@@ -281,9 +281,8 @@ public final class ServerConnection implements Closeable {
             return false;
         }
 
-        Optional<RconResponse> sOff = Optional.empty();
         try {
-            sOff = sendCmdRCon("save-off");
+            var sOff = sendCmdRCon("save-off");
             var sAll = sendCmdRCon("save-all");
             if (sOff.isEmpty() || sAll.isEmpty()) {
                 log.error("Could not run backup on server %s because save-off and save-all failed".formatted(server));
@@ -294,9 +293,9 @@ public final class ServerConnection implements Closeable {
                 return false;
             }
         } finally {
-            var sOn = sOff.map($->sendCmdRCon("save-on"));
+            var sOn = sendCmdRCon("save-on");
             if (sOn.isEmpty())
-                log.error("Could not ");
+                log.error("Could not enable autosave after backup for " + server);
         }
         backupRunning.set(false);
         return true;
@@ -311,14 +310,14 @@ public final class ServerConnection implements Closeable {
 
         try (var screen = attach()) {
             try {
-                screen.exec("save-off", "Automatic saving is now disabled");
-                screen.exec("save-all", "Saved the game");
+                screen.exec("save-off", "^.*(Automatic saving is now disabled).*$");
+                screen.exec("save-all", "^.*(Saved the game).*$");
                 if (!doBackup()) {
                     log.error("Could not run backup on server %s using screen".formatted(server));
                     return false;
                 }
             } finally {
-                screen.exec("save-on", "Automatic saving is now enabled");
+                screen.exec("save-on", "^.*(Automatic saving is now enabled).*$");
             }
             backupRunning.set(false);
             return true;

@@ -54,7 +54,7 @@ public class MinecraftServerHub {
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(Server::getConnection)
                 .filter(con -> !con.getBackupRunning().get())
-                .filter(ServerConnection::runBackupRCon)
+                .filter(con -> con.runBackup())
                 .map(ServerConnection::getServer)
                 .forEach(servers::bumpLastBackup), CRON_BACKUP_RATE);
     }
