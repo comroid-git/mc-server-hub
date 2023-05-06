@@ -227,8 +227,7 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   # download runscript if necessary
   if [ -z "$q" ]; then echo "Fetching $runscript md5 using api.comroid.org/md5 ..."; fi
   md5current=$(md5sum "$runscript" | grep -Po '\K\w*(?=\s)')
-  md5new="$(curl -s "$md5Api$runscriptUrl" | md5sum | grep -Po '\K\w*(?=\s)' ||
-    echo "Unable to parse server response">&2)"
+  md5new="$(curl -s "$md5Api$runscriptUrl" || echo "Unable to parse server response">&2)"
   if [ "$md5current" != "$md5new" ]; then
     echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
     if [ -z "$q" ]; then echo "Downloading runscript ..."; fi
