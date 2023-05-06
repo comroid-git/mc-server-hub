@@ -20,9 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
+@Data
 @Slf4j
-@Getter
-@Setter
 @Entity
 public class Server {
     @Id

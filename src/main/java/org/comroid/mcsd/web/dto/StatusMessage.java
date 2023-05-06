@@ -10,34 +10,31 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-@Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class StatusMessage {
-    private final Instant timestamp = Instant.now();
-    private final UUID serverId;
-    private @Builder.Default Server.Status status = Server.Status.Offline;
-    private @Builder.Default Server.Status rcon = Server.Status.Offline;
-    private @Builder.Default int playerCount = 0;
-    private @Builder.Default int playerMax = 0;
-    private @Builder.Default String motd = "Server is unreachable";
-    private @Nullable List<String> players;
-    private @Nullable String gameMode;
-    private @Nullable String worldName;
+    public final Instant timestamp = Instant.now();
+    public final @NonNull UUID serverId;
+    public @With Server.Status status = Server.Status.Offline;
+    public @With Server.Status rcon = Server.Status.Offline;
+    public @With int playerCount = 0;
+    public @With int playerMax = 0;
+    public @With String motd = "Server is unreachable";
+    public @With @Nullable List<String> players;
+    public @With @Nullable String gameMode;
+    public @With @Nullable String worldName;
 
-    public StatusMessage combine(StatusMessage msg) {
+    public StatusMessage combine(@Nullable StatusMessage msg) {
+        if (msg == null)
+            return this;
         if (!serverId.equals(msg.serverId))
             throw new IllegalArgumentException("Server IDs must be equal");
-        return builder()
-                .serverId(serverId)
-                .status(msg.status)
-                .rcon(msg.rcon)
-                .players(msg.players != null ? msg.players : players)
-                .playerCount(msg.playerCount)
-                .playerMax(msg.playerMax)
-                .motd(msg.motd)
-                .gameMode(msg.gameMode)
-                .worldName(msg.worldName != null ? msg.worldName : worldName)
-                .build();
+        if (msg.players == null)
+            msg = msg.withPlayers(players);
+        if (msg.gameMode == null)
+            msg = msg.withWorldName(gameMode);
+        if (msg.worldName == null)
+            msg = msg.withWorldName(worldName);
+        return msg;
     }
 }

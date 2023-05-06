@@ -3,7 +3,7 @@ package org.comroid.mcsd.web.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import lombok.Data;
+import lombok.*;
 
 import java.util.UUID;
 

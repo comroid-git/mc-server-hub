@@ -6,13 +6,15 @@ import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.dto.StatusMessage;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.User;
-import org.comroid.mcsd.web.exception.BadRequestException;
+import org.comroid.mcsd.web.exception.StatusCode;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
 import org.comroid.mcsd.web.util.WebPagePreparator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -63,7 +65,7 @@ public class ServerController {
     public String _edit(HttpSession session, @PathVariable UUID id, @RequestBody Server srv) {
         users.findBySession(session).require(User.Perm.ManageServers);
         if (!id.equals(srv.getId()))
-            throw new BadRequestException("ID Mismatch");
+            throw new StatusCode(HttpStatus.BAD_REQUEST, "ID Mismatch");
         servers.save(srv);
         return "redirect:/server/" + srv.getId();
     }

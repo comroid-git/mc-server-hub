@@ -3,6 +3,7 @@ package org.comroid.mcsd.web.controller;
 import com.jcraft.jsch.*;
 import jakarta.servlet.http.HttpSession;
 import lombok.*;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.config.WebSocketConfig;

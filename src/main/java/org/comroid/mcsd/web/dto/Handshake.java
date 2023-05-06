@@ -1,13 +1,10 @@
 package org.comroid.mcsd.web.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 import java.util.UUID;
 
-@Data
-@AllArgsConstructor
+@Value
 public class Handshake {
     private UUID connectionId;
 }

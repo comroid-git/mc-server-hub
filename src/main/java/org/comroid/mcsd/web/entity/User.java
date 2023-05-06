@@ -1,7 +1,7 @@
 package org.comroid.mcsd.web.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
 
@@ -30,6 +30,11 @@ public class User {
         if (!perm.isFlagSet(permissions))
             throw new InsufficientPermissionsException(this, perm);
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return "User " + name;
     }
 
     public enum Perm implements BitmaskAttribute<Perm> { None, ManageServers, ManageShConnections, Admin }
