@@ -219,9 +219,21 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
     fi
   fi
 
-  if [ -z "$q" ]; then echo "Downloading runscript ..."; fi
-  wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O mcsd.sh "https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/mcsd.sh"
-  chmod 755 mcsd.sh
+  runscriptUrl="https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/mcsd.sh"
+  md5Api="https://api.comroid.org/md5.php?url="
+
+  # download mcsd.sh
+  if [ -z "$q" ]; then echo "Fetching mcsd.sh md5 using api.comroid.org ..."; fi
+  md5current=$(md5sum server.jar | grep -Po '\K\w*(?=\s)')
+  md5new="$(curl -s "$md5Api$runscriptUrl" | md5sum | grep -Po '\K\w*(?=\s)' ||
+    echo "Unable to parse server response">&2)"
+  if [ "$md5current" != "$md5new" ]; then
+    if [ -z "$q" ]; then echo "Downloading runscript ..."; fi
+    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O mcsd.sh "$runscriptUrl"
+    chmod 777 mcsd.sh
+  else
+    if [ -z "$q" ]; then echo "mcsd.sh is up to date"; fi
+  fi
 
   # serverjars.com path variables
   mode=$(echo "$mode" | tr '[:upper:]' '[:lower:]')
@@ -236,16 +248,16 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   fi
   path="$type/$mode/$mcVersion"
 
+  # download server.jar
   if [ -z "$q" ]; then echo "Fetching server.jar md5 from serverjars.com:/$path ..."; fi
   md5current=$(md5sum server.jar | grep -Po '\K\w*(?=\s)')
-  md5new="$(curl -q "https://serverjars.com/api/fetchDetails/$path" | jq '.response.md5' | grep -Po '"\K\w+(?=")' ||
-   echo "Unable to parse server response">&2)"
-
+  md5new="$(curl -s "https://serverjars.com/api/fetchDetails/$path" | jq '.response.md5' | grep -Po '"\K\w+(?=")' ||
+    echo "Unable to parse server response">&2)"
   if [ "$md5current" != "$md5new" ]; then
     echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
     if [ -z "$q" ]; then echo "Downloading server.jar ..."; fi
     wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O server.jar "https://serverjars.com/api/fetchJar/$path"
-    chmod 755 server.jar
+    chmod 777 server.jar
   else
     if [ -z "$q" ]; then echo "server.jar is up to date"; fi
   fi
