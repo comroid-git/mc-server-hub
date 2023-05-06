@@ -104,7 +104,7 @@ public class Server {
         return "((cd '" + getDirectory() + "' && " +
                 "chmod 755 mcsd.sh && " +
                 (quiet ? "" : "echo '" + ServerConnection.OutputMarker + "' && ") +
-                "(" + (cmd.contains("mcsd.sh") && quiet ? cmd + " -q" : cmd) + "))" +
+                "(" + (cmd.contains(ServerConnection.RunScript) && quiet ? cmd + " -q" : cmd) + "))" +
                 (quiet ? "" : " || echo 'Command finished with non-zero exit code'>&2") +
                 ") && " +
                 (quiet ? "" : "echo '" + ServerConnection.EndMarker + "' && ") +

@@ -55,6 +55,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
     public static final String br = "<br/>";
     public static final String OutputMarker = "################ Output Began ################";
     public static final String EndMarker = "################ Output Ended ################";
+    public static final String RunScript = "mcsd.sh";
+    public static final String UnitFile = "unit.properties";
     private static final Map<UUID, ServerConnection> cache = new ConcurrentHashMap<>();
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     private static final Map<String, Object> locks = new ConcurrentHashMap<>();
@@ -220,19 +222,17 @@ public final class ServerConnection implements Closeable, ServerHolder {
     }
 
     public boolean uploadRunScript() {
-        var script = "mcsd.sh";
-        var data = "mcsd-unit.properties";
         var prefix = server.getDirectory() + '/';
         try {
             // upload runscript
             try (var scriptIn = res.getInputStream();
-                 var scriptOut = uploadFile(prefix + script)) {
+                 var scriptOut = uploadFile(prefix + RunScript)) {
                 scriptIn.transferTo(scriptOut);
                 log.info("Uploaded runscript to Server " + server);
             }
 
             // upload unit info
-            try (var dataOut = uploadFile(prefix + data)) {
+            try (var dataOut = uploadFile(prefix + UnitFile)) {
                 var fields = bean(ObjectMapper.class).valueToTree(server).fields();
                 var prop = new Properties();
                 while (fields.hasNext()) {

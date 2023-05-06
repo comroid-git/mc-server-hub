@@ -1,5 +1,5 @@
 #!/bin/bash
-unitFile="mcsd-unit.properties"
+unitFile="unit.properties"
 socketFile=".running"
 
 # exit codes
@@ -63,7 +63,7 @@ if [ -f "$unitFile" ]; then
       echo "Loaded variable [$key] = [$value]"
     fi
     export "$key"="$value"
-  done <mcsd-unit.properties
+  done < $unitFile
 fi
 
 # status command todo: wip
@@ -143,14 +143,14 @@ elif [ "$1" == "backup" ]; then
 # install dependencies command
 elif [ "$1" == "installDeps" ]; then
   if [ -f "$(which pacman)" ]; then
-    sudo pacman -Sy jre-openjdk-headless screen tar grep sed wget coreutils findutils
+    sudo pacman -Sy jre-openjdk-headless screen tar grep sed wget curl jq coreutils findutils
   else
     # use apt-get
-    (sudo apt-get update && (sudo apt-get install default-jre screen tar grep sed wget coreutils findutils) ||
+    (sudo apt-get update && sudo apt-get install default-jre screen tar grep sed wget curl jq coreutils findutils) ||
      # todo: some packages might be wrong
      (echo "Uh-Oh, looks like that didn't work
      Only Arch-based Linux is currently supported entirely
-     Please report to https://github.com/comroid-git/mc-server-hub">&2 && exit 3))
+     Please report to https://github.com/comroid-git/mc-server-hub">&2 && exit 3)
   fi
 
 # install/update command
@@ -237,7 +237,8 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
 
   echo "Fetching server.jar md5..."
   md5current=$(md5sum server.jar | grep -Po '\K.+(?=\s)')
-  md5new="$(curl "https://serverjars.com/api/fetchDetails/$type/$mode/$mcVersion" | jq '.response.md5' | grep -Po '"\K.+(?=")')"
+  md5new="$(curl "https://serverjars.com/api/fetchDetails/$type/$mode/$mcVersion" | jq '.response.md5' | grep -Po '"\K.+(?=")' ||
+   echo "Unable to parse server response">&2)"
 
   if [ "$md5current" == "$md5new" ]; then
     echo "Downloading server.jar..."
