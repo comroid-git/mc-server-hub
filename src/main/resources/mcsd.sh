@@ -145,10 +145,10 @@ elif [ "$1" == "backup" ]; then
 # install dependencies command
 elif [ "$1" == "installDeps" ]; then
   if [ -f "$(which pacman)" ]; then
-    sudo pacman -Sy jre-openjdk-headless screen tar grep sed wget curl jq coreutils findutils --asexplicit
+    sudo pacman -Sy jre-openjdk-headless screen tar grep sed curl jq coreutils findutils --asexplicit
   else
     # use apt-get
-    (sudo apt-get update && sudo apt-get install default-jre screen tar grep sed wget curl jq coreutils findutils) ||
+    (sudo apt-get update && sudo apt-get install default-jre screen tar grep sed curl jq coreutils findutils) ||
      # todo: some packages might be wrong
      (echo "Uh-Oh, looks like that didn't work
      Only Arch-based Linux is currently supported entirely
@@ -225,22 +225,8 @@ mcVersion=$mcVersion" >"$unitFile"
   socketFile=".running"
   runScript="mcsd.sh"
   serverJar="server.jar"
-  runScriptUrl="https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/$runScript"
+  runScriptUrl="https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/"
   md5Api="https://api.comroid.org/md5.php?url="
-
-  # download runScript if necessary
-  if [ -z "$q" ]; then echo "Fetching $runScript md5 using api.comroid.org/md5 ..."; fi
-  md5current=$(md5sum "$runScript" | grep -Po '\K\w*(?=\s)')
-  md5new="$(curl -s "$md5Api$runScriptUrl" || echo "Unable to parse server response">&2)"
-  if [ "$md5current" != "$md5new" ]; then
-    echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
-    if [ -z "$q" ]; then echo "Downloading runScript ..."; fi
-    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$runScript.tmp" "$runScriptUrl"
-    mv "$runScript.tmp" "$runScript"
-    chmod 777 "$runScript"
-  else
-    if [ -z "$q" ]; then echo "$runScript is up to date"; fi
-  fi
 
   # serverjars.com path variables
   mode=$(echo "$mode" | tr '[:upper:]' '[:lower:]')
@@ -255,20 +241,35 @@ mcVersion=$mcVersion" >"$unitFile"
   fi
   path="$type/$mode/$mcVersion"
 
-  # download serverjar
-  if [ -z "$q" ]; then echo "Fetching $serverJar md5 from serverjars.com:/$path ..."; fi
-  md5current=$(md5sum "$serverJar" | grep -Po '\K\w*(?=\s)')
-  md5new="$(curl -s "https://serverjars.com/api/fetchDetails/$path" | jq '.response.md5' | grep -Po '"\K\w+(?=")' ||
-    echo "Unable to parse server response">&2)"
-  if [ "$md5current" != "$md5new" ]; then
-    echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
-    if [ -z "$q" ]; then echo "Downloading $serverJar ..."; fi
-    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$serverJar.tmp" "https://serverjars.com/api/fetchJar/$path"
-    mv "$serverJar.tmp" "$serverJar"
-    chmod +xxx "$serverJar"
-  else
-    if [ -z "$q" ]; then echo "$serverJar is up to date"; fi
-  fi
+  md5AndDownload() {
+    # $0 -> .sh
+    # $1 -> localSum
+    # $2 -> newSum
+    # $3 -> dl url
+    # $4 -> target file
+    # $5 -> mod
+
+    localSum="$(md5sum "$1" | grep -Po '\K\w*(?=\s)')"
+    newSum="$2"
+    dlUrl="$3"
+    fileName="$4"
+    mod="$5"
+
+    if [ -z "$q" ]; then echo "Validating file $fileName using source $dlUrl ..."; fi
+    touch "$fileName"
+    if [ "$localSum" != "$newSum" ]; then
+      echo "MD5 sums for [$fileName] mismatch: [$localSum] != [$newSum]">&2
+      curl -sH "Cache-Control: no-cache" "$dlUrl" > "$fileName.tmp"
+      mv -f "$fileName.tmp" "$fileName"
+      chmod -f "$mod" "$fileName"
+    else
+      if [ -z "$q" ]; then echo "$fileName is up to date"; fi
+    fi
+  }
+
+  md5AndDownload "$runScript" "$(curl -s "$md5Api$runScriptUrl$runScript")" "$runScriptUrl$runScript" "$runScript" 2777
+  md5AndDownload "$runScript.bash" "$(curl -s "$md5Api$runScriptUrl$runScript.bash")" "$runScriptUrl$runScript.bash" "$runScript.bash" 2777
+  md5AndDownload "$serverJar" "$(curl -s "https://serverjars.com/api/fetchDetails/$path" | jq '.response.md5' | grep -Po '"\K\w+(?=")')" "https://serverjars.com/api/fetchJar/$path" "$serverJar" 2777
 
 # invalid command
 else
