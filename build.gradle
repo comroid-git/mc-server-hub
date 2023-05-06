@@ -8,6 +8,7 @@ plugins {
 group = 'org.comroid'
 version = '0.0.2-SNAPSHOT'
 sourceCompatibility = '17'
+targetCompatibility = '17'
 
 tasks.register('simplifyDist', Copy) {
     dependsOn 'bootWar'
