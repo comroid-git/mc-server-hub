@@ -220,7 +220,7 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   fi
 
   if [ -z "$q" ]; then echo "Downloading runscript..."; fi
-  wget "$q" --show-progress -O mcsd.sh "https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/mcsd.sh"
+  wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O mcsd.sh "https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/mcsd.sh"
   chmod 755 mcsd.sh
 
   # serverjars.com path variables
@@ -243,7 +243,7 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
 
   if [ "$md5current" != "$md5new" ]; then
     if [ -z "$q" ]; then echo "Downloading server.jar..."; fi
-    wget "$q" --show-progress -O server.jar "https://serverjars.com/api/fetchJar/$path"
+    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O server.jar "https://serverjars.com/api/fetchJar/$path"
     chmod 755 server.jar
   else
     if [ -z "$q" ]; then echo "server.jar is up to date"; fi
