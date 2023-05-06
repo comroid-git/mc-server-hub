@@ -219,8 +219,8 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
     fi
   fi
 
-  echo "Downloading runscript..."
-  wget -O mcsd.sh "https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/mcsd.sh"
+  if [ -z "$q" ]; then echo "Downloading runscript..."; fi
+  wget "$q" --show-progress -O mcsd.sh "https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/mcsd.sh"
   chmod 755 mcsd.sh
 
   # serverjars.com path variables
@@ -234,18 +234,19 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   else
     type="vanilla"
   fi
+  path="$type/$mode/$mcVersion"
 
-  echo "Fetching server.jar md5..."
+  if [ -z "$q" ]; then echo "Fetching server.jar md5 from serverjars.com:/$path"; fi
   md5current=$(md5sum server.jar | grep -Po '\K.+(?=\s)')
-  md5new="$(curl "https://serverjars.com/api/fetchDetails/$type/$mode/$mcVersion" | jq '.response.md5' | grep -Po '"\K.+(?=")' ||
+  md5new="$(curl "https://serverjars.com/api/fetchDetails/$path" | jq '.response.md5' | grep -Po '"\K.+(?=")' ||
    echo "Unable to parse server response">&2)"
 
-  if [ "$md5current" == "$md5new" ]; then
-    echo "Downloading server.jar..."
-    wget -O server.jar "https://serverjars.com/api/fetchJar/$type/$mode/$mcVersion"
+  if [ "$md5current" != "$md5new" ]; then
+    if [ -z "$q" ]; then echo "Downloading server.jar..."; fi
+    wget "$q" --show-progress -O server.jar "https://serverjars.com/api/fetchJar/$path"
     chmod 755 server.jar
   else
-    echo "server.jar is up to date"
+    if [ -z "$q" ]; then echo "server.jar is up to date"; fi
   fi
 
 # invalid command
