@@ -1,6 +1,8 @@
 #!/bin/bash
 unitFile="unit.properties"
 socketFile=".running"
+runscript="mcsd.sh"
+serverjar="server.jar"
 
 # exit codes
 # 1 - runtime error
@@ -79,7 +81,7 @@ if [ "$1" == "status" ]; then
 elif [ "$1" == "start" ]; then
   scrLs=$(screen -ls | grep "$unitName")
   if [ -z "$scrLs" ]; then
-    screen "-OdmSq$attach" "$unitName" ./mcsd.sh -h 300 run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
+    screen "-OdmSq$attach" "$unitName" "./$runscript" -h 300 run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
   else
     if [ -z $quiet ]; then
       echo "Server $unitName did not need to be started"
@@ -88,7 +90,7 @@ elif [ "$1" == "start" ]; then
 
 # attach command
 elif [ "$1" == "attach" ]; then
-  screen -ODSRq "$unitName" -h 300 ./mcsd.sh run || if [ -z $quiet ]; then echo "Could not attach to screen session"; else :; fi
+  screen -ODSRq "$unitName" -h 300 "./$runscript" run || if [ -z $quiet ]; then echo "Could not attach to screen session"; else :; fi
 
 # run comamnd
 elif [ "$1" == "run" ]; then
@@ -104,7 +106,7 @@ elif [ "$1" == "run" ]; then
       fi
       sleep "5s"
     fi
-    java "-Xmx${ramGB}G" -jar server.jar nogui
+    java "-Xmx${ramGB}G" -jar "$serverJar" nogui
   done
 
   if [ -z $quiet ]; then
@@ -219,20 +221,20 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
     fi
   fi
 
-  runscriptUrl="https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/mcsd.sh"
+  runscriptUrl="https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/$runscript"
   md5Api="https://api.comroid.org/md5.php?url="
 
-  # download mcsd.sh
-  if [ -z "$q" ]; then echo "Fetching mcsd.sh md5 using api.comroid.org ..."; fi
-  md5current=$(md5sum server.jar | grep -Po '\K\w*(?=\s)')
+  # download runscript if necessary
+  if [ -z "$q" ]; then echo "Fetching $runscript md5 using api.comroid.org ..."; fi
+  md5current=$(md5sum "$runscript" | grep -Po '\K\w*(?=\s)')
   md5new="$(curl -s "$md5Api$runscriptUrl" | md5sum | grep -Po '\K\w*(?=\s)' ||
     echo "Unable to parse server response">&2)"
   if [ "$md5current" != "$md5new" ]; then
     if [ -z "$q" ]; then echo "Downloading runscript ..."; fi
-    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O mcsd.sh "$runscriptUrl"
-    chmod 777 mcsd.sh
+    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$runscript" "$runscriptUrl"
+    chmod 777 "$runscript"
   else
-    if [ -z "$q" ]; then echo "mcsd.sh is up to date"; fi
+    if [ -z "$q" ]; then echo "$runscript is up to date"; fi
   fi
 
   # serverjars.com path variables
@@ -248,18 +250,18 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   fi
   path="$type/$mode/$mcVersion"
 
-  # download server.jar
-  if [ -z "$q" ]; then echo "Fetching server.jar md5 from serverjars.com:/$path ..."; fi
-  md5current=$(md5sum server.jar | grep -Po '\K\w*(?=\s)')
+  # download serverjar
+  if [ -z "$q" ]; then echo "Fetching $serverJar md5 from serverjars.com:/$path ..."; fi
+  md5current=$(md5sum "$serverJar" | grep -Po '\K\w*(?=\s)')
   md5new="$(curl -s "https://serverjars.com/api/fetchDetails/$path" | jq '.response.md5' | grep -Po '"\K\w+(?=")' ||
     echo "Unable to parse server response">&2)"
   if [ "$md5current" != "$md5new" ]; then
     echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
-    if [ -z "$q" ]; then echo "Downloading server.jar ..."; fi
-    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O server.jar "https://serverjars.com/api/fetchJar/$path"
-    chmod 777 server.jar
+    if [ -z "$q" ]; then echo "Downloading $serverJar ..."; fi
+    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$serverJar" "https://serverjars.com/api/fetchJar/$path"
+    chmod 777 "$serverJar"
   else
-    if [ -z "$q" ]; then echo "server.jar is up to date"; fi
+    if [ -z "$q" ]; then echo "$serverJar is up to date"; fi
   fi
 
 # invalid command
