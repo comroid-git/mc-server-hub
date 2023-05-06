@@ -166,13 +166,16 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 (k, v) -> Objects.requireNonNullElseGet(msg, getOrCreateMsg).combine(v));
         Function<Throwable, @Nullable StatusMessage> logger = e -> {
             log.error("Internal error during status check", e);
-            if (Arrays.stream(viae).allMatch(CompletableFuture::isCompletedExceptionally))
+            if (Arrays.stream(viae).allMatch(CompletableFuture::isDone))
                 return getOrCreateMsg.get();
             return null;
         };
         Consumer<@Nullable StatusMessage> cacheAcceptor = msg -> {
-            if (msg != null && !result.isDone())
-                result.complete(msg);
+            if (msg != null) {
+                if (result.isDone())
+                    statusCache.compute(msg.serverId, (k, it) -> it == null ? msg : it.combine(msg));
+                else result.complete(msg);
+            }
         };
         for (var via : viae)
             //noinspection unchecked

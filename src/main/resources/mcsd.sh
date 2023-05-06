@@ -70,7 +70,7 @@ fi
 
 # status command todo: wip
 if [ "$1" == "status" ]; then
-  scrLs=$(screen -ls | grep "$unitName")
+  scrLs=$(screen -ls "$unitName")
   if [ -z "$scrLs" ]; then
     echo "Server $unitName is not runnning"
   else
@@ -79,12 +79,25 @@ if [ "$1" == "status" ]; then
 
 # start command
 elif [ "$1" == "start" ]; then
-  scrLs=$(screen -ls | grep "$unitName")
+  scrLs=$(screen -ls "$unitName")
   if [ -z "$scrLs" ]; then
     screen "-OdmSq$attach" "$unitName" "./$runScript" -h 300 run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
   else
     if [ -z $quiet ]; then
       echo "Server $unitName did not need to be started"
+    fi
+  fi
+
+# stop command
+elif [ "$1" == "stop" ]; then
+  scrLs=$(screen -ls "$unitName")
+  if [ -z "$scrLs" ]; then
+    rm -f "$socketFile"
+    kill -s SIGABRT "$(screen -ls "$unitName" | grep -Po '\s\K[0-9]+')"
+    screen -wipe
+  else
+    if [ -z $quiet ]; then
+      echo "Server $unitName was not running"
     fi
   fi
 
@@ -159,21 +172,18 @@ elif [ "$1" == "installDeps" ]; then
 elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   if [ "$1" == "install" ]; then
     while [ -z "$unitName" ]; do
-      echo "Enter a unit name:"
-      read -r unitName
+      read -r -p "Enter a unit name" unitName
     done
 
     if [ -z "$backupDir" ]; then
-      echo "Enter a backup directory (~/backup):"
-      read -r backupDir
+      read -r -p "Enter a backup directory (~/backup):" backupDir
     fi
     if [ -z "$backupDir" ]; then
       backupDir="$HOME/backup"
     fi
 
     if [ -z "$ramGB" ]; then
-      echo "Enter the maximum RAM amount in GB (4):"
-      read -r ramGB
+      read -r -p "Enter the maximum RAM amount in GB (4):" ramGB
     fi
     if [ -z "$ramGB" ]; then
       ramGB="4"
@@ -184,8 +194,7 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
       if [ "$agree" != "unset" ]; then
         echo "Please type 'yes' or 'no'"
       fi
-      echo "Do you agree with Minecraft's EULA? (https://www.minecraft.net/eula) [yes/no]:"
-      read -r agree
+      read -r -p "Do you agree with Minecraft's EULA? (https://www.minecraft.net/eula) [yes/no]:" agree
       if [ "$agree" == "no" ]; then
         echo "Goodbye"
         exit 1
@@ -194,18 +203,16 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
     echo "eula=true" >"eula.txt"
 
     if [ -z "$mode" ]; then
-      mode="unset"
+      mode=""
       while [ $mode != "vanilla" ] && [ $mode != "paper" ] && [ $mode != "forge" ] && [ $mode != "fabric" ]; do
-        echo "Please select a mode [vanilla/paper/forge/fabric]:"
-        read -r mode
+        read -r -p "Please select a mode [vanilla/paper/forge/fabric]:" mode
       done
     fi
 
     if [ -z "$mcVersion" ]; then
-      mcVersion="unset"
-      while [ -z "$mcVersion" ] || [ $mcVersion == "unset" ]; do
-        echo "Please select a version:"
-        read -r mcVersion
+      mcVersion=""
+      while [ -z "$mcVersion" ]; do
+        read -r -p "Please enter a Minecraft version:" mcVersion
       done
     fi
 
