@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Git Push" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="git add * --chmod=+x --ignore-errors &amp;&amp; git commit -m &quot;$(read -sp 'Enter a commit message')&quot; &amp;&amp; git push" />
+    <option name="SCRIPT_TEXT" value="git add -A ** || true &amp;&amp; git commit -m &quot;$(read -p 'Enter a commit message: ')&quot; || true &amp;&amp; git push || true" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />
@@ -9,7 +9,7 @@
     <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
     <option name="INTERPRETER_PATH" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
-    <option name="EXECUTE_IN_TERMINAL" value="true" />
+    <option name="EXECUTE_IN_TERMINAL" value="false" />
     <option name="EXECUTE_SCRIPT_FILE" value="false" />
     <envs />
     <method v="2" />
