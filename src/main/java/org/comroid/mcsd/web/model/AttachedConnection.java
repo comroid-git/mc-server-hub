@@ -1,6 +1,7 @@
 package org.comroid.mcsd.web.model;
 
 import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSchException;
 import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
@@ -31,7 +32,7 @@ public class AttachedConnection implements Closeable {
     private final @Delegate(excludes = {Closeable.class}) ServerConnection $;
     public final CompletableFuture<Void> connected = new CompletableFuture<>();
     public final Server server;
-    public final ChannelExec channel;
+    public final ChannelShell channel;
     public final Input input;
     public final Output output, error;
     private @Nullable Predicate<String> successMatcher;
@@ -45,17 +46,17 @@ public class AttachedConnection implements Closeable {
     public AttachedConnection(Server server, @Nullable @Language("sh") String cmd) throws JSchException {
         this.$ = server.getConnection();
         this.server = server;
-        this.channel = (ChannelExec) getSsh().openChannel("exec");
-
-        channel.setCommand(Objects.requireNonNullElseGet(cmd, server::cmdAttach));
+        this.channel = (ChannelShell) getSsh().openChannel("shell");
 
         channel.setInputStream(this.input = new Input());
         channel.setOutputStream(this.output = new Output(false));
         channel.setExtOutputStream(this.error = new Output(true));
 
+        input(Objects.requireNonNullElseGet(cmd, server::cmdAttach));
+
         channel.connect();
         connected.complete(null);
-        channel.start();
+        //channel.start();
     }
 
     @SneakyThrows

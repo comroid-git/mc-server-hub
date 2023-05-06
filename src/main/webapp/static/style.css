@@ -49,6 +49,7 @@ body {
     color: var(--text-color);
     background-color: var(--background-color);
     line-height: 1.5;
+    font-size: 1rem;
 }
 
 a {
@@ -63,14 +64,6 @@ a:hover {
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Fira Mono', monospace;
     margin-bottom: 1rem;
-}
-
-h3 {
-    font-size: 2rem;
-}
-
-h4 {
-    font-size: 1.5rem;
 }
 
 table {
@@ -114,11 +107,18 @@ button:hover {
     background-color: var(--primary-color);
     color: #fff;
     padding: 0.5rem;
+    height: max-content;
+    font-size: 1.5rem;
 }
 
-.ui-menubar a {
-    font-size: 1.5rem;
-    font-weight: bold;
+.ui-logout {
+    float: right;
+    right: 1.5rem;
+    height: max-content;
+    background: var(--table-header-background-color);
+    border-radius: 10px;
+    padding: 0.1rem 0.5rem;
+    font-size: small;
 }
 
 .ui-container-page {
@@ -136,7 +136,6 @@ button:hover {
     border-right: 2px solid black;
     background-color: var(--secondary-color);
     padding: 1rem;
-    font-size: 14px;
 }
 
 .ui-content {
@@ -228,28 +227,8 @@ button:hover {
 
 /* Media queries for mobile devices */
 @media only screen and (max-width: 768px) {
-    body {
-        font-size: 16px;
-    }
-
-    h3 {
-        font-size: 1.5rem;
-    }
-
-    h4 {
-        font-size: 1.25rem;
-    }
-
-    table {
-        font-size: 0.8rem;
-    }
-
     th, td {
         padding: 0.25rem;
-    }
-
-    button {
-        font-size: 0.8rem;
     }
 
     .ui-sidebar {

@@ -58,7 +58,7 @@ public final class ServerConnection implements Closeable {
     private static final Map<String, Object> locks = new ConcurrentHashMap<>();
     private static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     private static final Duration rConTimeout = Duration.ofMinutes(1);
-    private static final Resource res = bean(ResourceLoader.class).getResource("classpath:/static/mcsd.sh");
+    private static final Resource res = bean(ResourceLoader.class).getResource("classpath:/mcsd.sh");
     private final Server server;
     private final Session ssh;
     private final IMinecraftRconService rcon;

@@ -10,16 +10,22 @@ unitFile="mcsd-unit.properties"
 # value (-z) == true
 quiet=""
 verbose=""
+attach=""
 
 # parse flags
-
 for var in "$@"; do
-  if [ "$var" = "-q" ]; then
-    quiet="-q"
-  fi
-  if [ "$var" = "-v" ]; then
-    verbose="-v"
-  fi
+  while IFS='' read -r c; do
+    echo "found flag: [$c]"
+    if [ "$c" = "q" ]; then
+      quiet="-q"
+    fi
+    if [ "$c" = "v" ]; then
+      verbose="-v"
+    fi
+    if [ "$c" = "a" ]; then
+      attach="r"
+    fi
+  done < "$(echo "$var" | grep -Po '\-\K[a-z]+')"
 done
 
 # load unit data
@@ -60,7 +66,7 @@ if [ "$1" == "status" ]; then
 elif [ "$1" == "start" ]; then
   scrLs=$(screen -ls | grep "$unitName")
   if [ -z "$scrLs" ]; then
-    screen -OdmSq "$unitName" ./mcsd.sh -h 300 run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
+    screen "-OdmSq$attach" "$unitName" ./mcsd.sh -h 300 run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
   else
     if [ -z $quiet ]; then
       echo "Server $unitName did not need to be started"
