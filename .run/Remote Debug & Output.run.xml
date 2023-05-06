@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Remote Debug &amp; Output" type="CompoundRunConfigurationType">
+    <toRun name="Remote Debug (slave)" type="Remote" />
+    <toRun name="Restart and attach to remote MCSD" type="ShConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -7,6 +7,7 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
 import org.comroid.mcsd.web.entity.Server;
+import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.util.Utils;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +37,7 @@ public class AttachedConnection implements Closeable {
     public final Input input;
     public final Output output, error;
     private final @Delegate(excludes = {Closeable.class}) ServerConnection $;
+
     private @Nullable Predicate<String> successMatcher;
     private @Nullable CompletableFuture<String> future;
     private @Nullable StringBuilder result;
@@ -89,7 +91,7 @@ public class AttachedConnection implements Closeable {
 
     protected void handleStdOut(String txt) {
         if (result == null) {
-            log.debug("[%s] %s".formatted(shConnection().getHost(), txt));
+            log.debug("[%s] %s".formatted(getCon().toString(), txt));
             return;
         }
 
@@ -102,7 +104,7 @@ public class AttachedConnection implements Closeable {
     }
 
     protected void handleStdErr(String txt) {
-        log.error("[%s] %s".formatted(shConnection().getHost(), txt));
+        log.error("[%s] %s".formatted(toString(), txt));
     }
 
     public void input(String input) {

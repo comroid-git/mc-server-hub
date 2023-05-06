@@ -62,7 +62,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private static final Map<String, Object> locks = new ConcurrentHashMap<>();
     private static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     private static final Duration rConTimeout = Duration.ofSeconds(10);
-    private static final Resource res = bean(ResourceLoader.class).getResource("classpath:/mcsd.sh");
+    private static final Resource runscript = bean(ResourceLoader.class).getResource("classpath:/mcsd.sh");
+    private final ShConnection con;
     private final Server server;
     private final Session ssh;
     private final IMinecraftRconService rcon;
@@ -70,7 +71,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
     private ServerConnection(Server server) throws JSchException {
         this.server = server;
-        var con = shConnection();
+        this.con = shConnection();
         this.ssh = bean(JSch.class).getSession(con.getUsername(), con.getHost(), con.getPort());
         ssh.setPassword(con.getPassword());
         ssh.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
@@ -228,7 +229,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         var prefix = server.getDirectory() + '/';
         try {
             // upload runscript
-            try (var scriptIn = res.getInputStream();
+            try (var scriptIn = runscript.getInputStream();
                  var scriptOut = uploadFile(prefix + RunScript)) {
                 scriptIn.transferTo(scriptOut);
                 log.info("Uploaded runscript to Server " + server);
@@ -505,7 +506,12 @@ public final class ServerConnection implements Closeable, ServerHolder {
             rcon.disconnect();
     }
 
-    public ShConnection shConnection() {
+    @Override
+    public String toString() {
+        return "%s (%s)".formatted(con.getHost(), server.getUnitName());
+    }
+
+    private ShConnection shConnection() {
         return bean(ShRepo.class)
                 .findById(server.getShConnection())
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server.getShConnection()));
