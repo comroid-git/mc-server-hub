@@ -237,12 +237,12 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   path="$type/$mode/$mcVersion"
 
   if [ -z "$q" ]; then echo "Fetching server.jar md5 from serverjars.com:/$path ..."; fi
-  md5current=$(md5sum server.jar | grep -Po '\K.+(?=\s)')
-  md5new="$(curl -q "https://serverjars.com/api/fetchDetails/$path" | jq '.response.md5' | grep -Po '"\K.+(?=")' ||
+  md5current=$(md5sum server.jar | grep -Po '\K\w*(?=\s)')
+  md5new="$(curl -q "https://serverjars.com/api/fetchDetails/$path" | jq '.response.md5' | grep -Po '"\K\w+(?=")' ||
    echo "Unable to parse server response">&2)"
 
   if [ "$md5current" != "$md5new" ]; then
-    echo "MD5 sums mismatch: $md5current != $md5new">&2
+    echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
     if [ -z "$q" ]; then echo "Downloading server.jar ..."; fi
     wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O server.jar "https://serverjars.com/api/fetchJar/$path"
     chmod 755 server.jar
