@@ -71,12 +71,13 @@ public class Server {
         return mode == Mode.Fabric;
     }
 
-    public void validateUserAccess(User user, Permission... permissions) {
+    public Server requireUserAccess(User user, Permission... permissions) {
         var insufficient = Arrays.stream(permissions)
                 .filter(x -> !x.isFlagSet(userPermissions.getOrDefault(user.getId(), 0)))
                 .toArray(Permission[]::new);
         if (insufficient.length > 0)
             throw new InsufficientPermissionsException(user, this, insufficient);
+        return this;
     }
 
     public String getUnitName() {
@@ -93,7 +94,7 @@ public class Server {
         return "((cd '" + getDirectory() + "' && " +
                 "chmod 755 mcsd.sh && " +
                 (quiet ? "" : "echo '" + ServerConnection.OutputMarker + "' && ") +
-                "(" + (cmd.contains("mcsd.sh") && quiet ? cmd + "-q" : cmd) + "))" +
+                "(" + (cmd.contains("static/mcsd.sh") && quiet ? cmd + "-q" : cmd) + "))" +
                 (quiet ? "" : " || echo 'Command finished with non-zero exit code'>&2") +
                 ") && exit";
     }

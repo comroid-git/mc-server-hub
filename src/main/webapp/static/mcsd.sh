@@ -195,6 +195,8 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
     fi
   fi
 
+  echo "Downloading runscript..."
+
   echo "Downloading server.jar..."
   mode=$(echo "$mode" | tr '[:upper:]' '[:lower:]')
   if [ "$mode" == "paper" ]; then

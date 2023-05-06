@@ -53,8 +53,8 @@ public class MinecraftServerHub {
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(Server::getConnection)
-                .filter(Predicate.not(ServerConnection::isBackupRunning))
-                .filter(ServerConnection::runBackup)
+                .filter(con -> !con.getBackupRunning().get())
+                .filter(ServerConnection::runBackupRCon)
                 .map(ServerConnection::getServer)
                 .forEach(servers::bumpLastBackup), CRON_BACKUP_RATE);
     }

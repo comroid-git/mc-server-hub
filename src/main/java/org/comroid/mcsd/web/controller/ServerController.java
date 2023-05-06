@@ -8,13 +8,14 @@ import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.User;
 import org.comroid.mcsd.web.exception.StatusCode;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
+import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
 import org.comroid.mcsd.web.util.WebPagePreparator;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.comroid.mcsd.web.model.ServerConnection.BackupMethod.Screen;
 
 @Slf4j
 @Controller
@@ -82,7 +85,7 @@ public class ServerController {
     public String console(HttpSession session, Model model, @PathVariable UUID id) {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
-        result.validateUserAccess(user, Server.Permission.Console);
+        result.requireUserAccess(user, Server.Permission.Console);
         return new WebPagePreparator(model, "server/console", session)
                 .setAttribute("server", result)
                 .setAttribute("scripts", List.of(
@@ -101,7 +104,7 @@ public class ServerController {
     public StatusMessage status(HttpSession session, @PathVariable UUID id) {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
-        result.validateUserAccess(user, Server.Permission.Status);
+        result.requireUserAccess(user, Server.Permission.Status);
         return result.getConnection().status().join();
     }
 
@@ -110,7 +113,7 @@ public class ServerController {
     public boolean start(HttpSession session, @PathVariable UUID id) {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
-        result.validateUserAccess(user, Server.Permission.Start);
+        result.requireUserAccess(user, Server.Permission.Start);
         return result.getConnection().sendSh(result.cmdStart());
     }
 
@@ -119,16 +122,17 @@ public class ServerController {
     public boolean stop(HttpSession session, @PathVariable UUID id) {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
-        result.validateUserAccess(user, Server.Permission.Stop);
+        result.requireUserAccess(user, Server.Permission.Stop);
         return result.getConnection().sendSh(result.cmdStop());
     }
 
     @ResponseBody
     @GetMapping("/backup/{id}")
-    public boolean backup(HttpSession session, @PathVariable UUID id) {
+    public int backup(HttpSession session, @PathVariable UUID id, @RequestBody(required = false) @Nullable ServerConnection.BackupMethod method) {
         var user = users.findBySession(session);
-        var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
-        result.validateUserAccess(user, Server.Permission.Backup);
-        return result.getConnection().runBackup();
+        var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id))
+                .requireUserAccess(user, Server.Permission.Backup);
+        if (method == null) method = ServerConnection.BackupMethod.Evaluate;
+        return result.getConnection().runBackup(method);
     }
 }

@@ -10,21 +10,24 @@ import io.graversen.minecraft.rcon.service.IMinecraftRconService;
 import io.graversen.minecraft.rcon.service.MinecraftRconService;
 import io.graversen.minecraft.rcon.service.RconDetails;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
+import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.ThrowingFunction;
 import org.comroid.mcsd.web.dto.StatusMessage;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
+import org.comroid.mcsd.web.exception.StatusCode;
 import org.comroid.mcsd.web.repo.ShRepo;
-import org.comroid.util.Delegate;
-import org.hibernate.dialect.function.CommonFunctionFactory;
+import org.comroid.api.Delegate;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpStatus;
 
 import java.io.*;
 import java.time.Duration;
@@ -32,6 +35,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -39,6 +43,8 @@ import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
+import static org.comroid.mcsd.web.model.ServerConnection.BackupMethod.RCon;
+import static org.comroid.mcsd.web.model.ServerConnection.BackupMethod.Screen;
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
 @Slf4j
@@ -52,11 +58,11 @@ public final class ServerConnection implements Closeable {
     private static final Map<String, Object> locks = new ConcurrentHashMap<>();
     private static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     private static final Duration rConTimeout = Duration.ofMinutes(1);
-    private static final Resource res = bean(ResourceLoader.class).getResource("classpath:mcsd.sh");
+    private static final Resource res = bean(ResourceLoader.class).getResource("classpath:/static/mcsd.sh");
     private final Server server;
-    private final Session session;
+    private final Session ssh;
     private final IMinecraftRconService rcon;
-    private boolean backupRunning = false;
+    private final AtomicBoolean backupRunning = new AtomicBoolean(false);
 
     public static ServerConnection getInstance(final Server srv) {
         return cache.computeIfAbsent(srv.getId(), ThrowingFunction.rethrowing($ -> new ServerConnection(srv), RuntimeException::new));
@@ -65,10 +71,10 @@ public final class ServerConnection implements Closeable {
     private ServerConnection(Server server) throws JSchException {
         this.server = server;
         var con = shConnection();
-        this.session = bean(JSch.class).getSession(con.getUsername(), con.getHost(), con.getPort());
-        session.setPassword(con.getPassword());
-        session.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
-        session.connect();
+        this.ssh = bean(JSch.class).getSession(con.getUsername(), con.getHost(), con.getPort());
+        ssh.setPassword(con.getPassword());
+        ssh.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
+        ssh.connect();
 
         this.rcon = new MinecraftRconService(
                 new RconDetails(con.getHost(), server.getRConPort(), server.getRConPassword()),
@@ -215,7 +221,7 @@ public final class ServerConnection implements Closeable {
     }
 
     public synchronized boolean uploadRunScript() {
-        var script = "mcsd.sh";
+        var script = "static/mcsd.sh";
         var data = "mcsd-unit.properties";
         var prefix = server.getDirectory() + '/';
         try {
@@ -248,14 +254,85 @@ public final class ServerConnection implements Closeable {
         }
     }
 
-    public synchronized boolean runBackup() {
-        backupRunning = true;
-        var sOff = sendCmd("save-off");
-        var sAll = sendCmd("save-all");
-        if (sOff.isEmpty() || sAll.isEmpty()) {
-            log.error("Could not run backup on server %s because save-off and save-all failed".formatted(server));
+    public int runBackup(BackupMethod method) {
+        switch (method) {
+            case Evaluate -> {
+                var mask = 0;
+                if (rcon != null && rcon.isConnected())
+                    mask |= RCon.getAsInt();
+                if (ssh != null && ssh.isConnected())
+                    mask |= Screen.getAsInt();
+                return mask;
+            }
+            case RCon -> {
+                if (runBackupRCon())
+                    return 0;
+                throw new StatusCode(HttpStatus.SERVICE_UNAVAILABLE, "RCon is not available right now for " + server);
+            }
+            case Screen -> {
+                if (runBackupScreen())
+                    return 0;
+                throw new StatusCode(HttpStatus.SERVICE_UNAVAILABLE, "Could not run backup through screen on " + server);
+            }
+            default -> throw new StatusCode(HttpStatus.BAD_REQUEST, "Unexpected backup method " + method);
+        }
+    }
+
+    public synchronized boolean runBackupRCon() {
+        if (!startBackup()) {
+            log.warn("A backup on server %s is already running".formatted(server));
             return false;
         }
+
+        Optional<RconResponse> sOff = Optional.empty();
+        try {
+            sOff = sendCmdRCon("save-off");
+            var sAll = sendCmdRCon("save-all");
+            if (sOff.isEmpty() || sAll.isEmpty()) {
+                log.error("Could not run backup on server %s because save-off and save-all failed".formatted(server));
+                return false;
+            }
+            if (!doBackup()) {
+                log.error("Could not run backup on server %s using RCon".formatted(server));
+                return false;
+            }
+        } finally {
+            var sOn = sOff.map($->sendCmdRCon("save-on"));
+            if (sOn.isEmpty())
+                log.error("Could not ");
+        }
+        backupRunning.set(false);
+        return true;
+    }
+
+    @SneakyThrows
+    public synchronized boolean runBackupScreen() {
+        if (!startBackup()) {
+            log.warn("A backup on server %s is already running".formatted(server));
+            return false;
+        }
+
+        try (var screen = attach()) {
+            try {
+                screen.exec("save-off", "Automatic saving is now disabled");
+                screen.exec("save-all", "Saved the game");
+                if (!doBackup()) {
+                    log.error("Could not run backup on server %s using screen".formatted(server));
+                    return false;
+                }
+            } finally {
+                screen.exec("save-on", "Automatic saving is now enabled");
+            }
+            backupRunning.set(false);
+            return true;
+        }
+    }
+
+    private boolean startBackup() {
+        return backupRunning.compareAndSet(false, true);
+    }
+
+    private boolean doBackup() {
         OutputStream bufProgress = null;
         var bufSize = new StringWriter();
         if (!sendSh(server.wrapCmd("./mcsd.sh backupSize", true), new Delegate.Output(bufSize), new Delegate.Output(bufSize)))
@@ -298,15 +375,22 @@ public final class ServerConnection implements Closeable {
         if (!sendSh(server.cmdBackup(), bufProgress)) {
             log.error("Backup for server %s failed".formatted(server));
             return false;
-        } else log.info("Backup for server %s finished".formatted(server));
-        var sOn = sendCmd("save-on");
-        backupRunning = false;
-        return sOn.isPresent();
+        }
+        log.info("Backup for server %s finished".formatted(server));
+        return true;
+    }
+
+    public AttachedConnection attach() throws JSchException {
+        return attach(null);
+    }
+
+    public AttachedConnection attach(@Nullable @Language("sh") String cmd) throws JSchException {
+        return new AttachedConnection(server, cmd);
     }
 
     public Delegate.Output uploadFile(final String path) throws Exception {
         synchronized (lock(':' + path)) {
-            var sftp = (ChannelSftp) session.openChannel("sftp");
+            var sftp = (ChannelSftp) ssh.openChannel("sftp");
             sftp.connect();
             return new Delegate.Output(sftp.put(path), sftp::disconnect);
         }
@@ -314,7 +398,7 @@ public final class ServerConnection implements Closeable {
 
     public Delegate.Input downloadFile(final String path) throws Exception {
         synchronized (lock(':' + path)) {
-            var sftp = (ChannelSftp) session.openChannel("sftp");
+            var sftp = (ChannelSftp) ssh.openChannel("sftp");
             sftp.connect();
             return new Delegate.Input(sftp.get(path), sftp::disconnect);
         }
@@ -336,7 +420,7 @@ public final class ServerConnection implements Closeable {
         synchronized (lock('$' + cmd)) {
             ChannelExec exec = null;
             try {
-                exec = (ChannelExec) session.openChannel("exec");
+                exec = (ChannelExec) ssh.openChannel("exec");
                 exec.setCommand(cmd);
                 if (stdout != null) exec.setOutputStream(stdout, true);
                 if (stderr != null) exec.setErrStream(stderr, true);
@@ -360,7 +444,7 @@ public final class ServerConnection implements Closeable {
         }
     }
 
-    public Optional<RconResponse> sendCmd(final String cmd) {
+    public Optional<RconResponse> sendCmdRCon(final String cmd) {
         if (rcon == null)
             return Optional.empty();
         tryRcon();
@@ -376,19 +460,25 @@ public final class ServerConnection implements Closeable {
 
     @Override
     public void close() {
-        if (session != null)
-            session.disconnect();
+        if (ssh != null)
+            ssh.disconnect();
         if (rcon != null)
             rcon.disconnect();
     }
 
-    private ShConnection shConnection() {
+    public ShConnection shConnection() {
         return bean(ShRepo.class)
                 .findById(server.getShConnection())
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server.getShConnection()));
     }
 
     private Object lock(String route) {
-        return locks.computeIfAbsent(session.getHost() + route, $ -> new Object());
+        return locks.computeIfAbsent(ssh.getHost() + route, $ -> new Object());
+    }
+
+    public enum BackupMethod implements BitmaskAttribute<BackupMethod> {
+        Evaluate,
+        RCon,
+        Screen
     }
 }
