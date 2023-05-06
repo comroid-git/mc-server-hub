@@ -170,7 +170,7 @@ public class AttachedConnection implements Closeable {
         public void flush() {
             if (!connected.isDone())
                 connected.join();
-            var str = Utils.removeAnsiEscapeSequences(buf.toString()).replaceAll("\r?\n", br);
+            var str = Utils.removeAnsiEscapeSequences(buf.toString()).replaceAll("\r?\n", "");
             if (!active && str.equals(OutputMarker + br))
                 active = true;
             else if (active) {
