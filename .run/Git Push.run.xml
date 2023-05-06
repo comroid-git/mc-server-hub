@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Git Push" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="git add -A ** || true &amp;&amp; git commit || true &amp;&amp; git push || true" />
+    <option name="SCRIPT_TEXT" value="git add -A ** || true &amp;&amp; git commit -m &quot;$(read -p 'Please enter a commit message: ' -t 10 || echo &quot;stuff&quot;)&quot; || true &amp;&amp; git push || true" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />
