@@ -213,25 +213,30 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
       echo "Not overwriting unit data"
     else
       # write collected data to unit file
-      echo "unitName=$unitName" >"$unitFile"
-      echo "backupDir=$backupDir" >"$unitFile"
-      echo "ramGB=$ramGB" >"$unitFile"
-      echo "mode=$mode" >"$unitFile"
-      echo "mcVersion=$mcVersion" >>"$unitFile"
+      echo "unitName=$unitName
+backupDir=$backupDir
+ramGB=$ramGB
+mode=$mode
+mcVersion=$mcVersion" >"$unitFile"
     fi
   fi
 
-  runscriptUrl="https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/$runScript"
+  unitFile="unit.properties"
+  socketFile=".running"
+  runScript="mcsd.sh"
+  serverJar="server.jar"
+  runScriptUrl="https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/src/main/resources/$runScript"
   md5Api="https://api.comroid.org/md5.php?url="
 
   # download runScript if necessary
   if [ -z "$q" ]; then echo "Fetching $runScript md5 using api.comroid.org/md5 ..."; fi
   md5current=$(md5sum "$runScript" | grep -Po '\K\w*(?=\s)')
-  md5new="$(curl -s "$md5Api$runscriptUrl" || echo "Unable to parse server response">&2)"
+  md5new="$(curl -s "$md5Api$runScriptUrl" || echo "Unable to parse server response">&2)"
   if [ "$md5current" != "$md5new" ]; then
     echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
     if [ -z "$q" ]; then echo "Downloading runScript ..."; fi
-    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$runScript" "$runscriptUrl"
+    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$runScript.tmp" "$runScriptUrl"
+    mv "$runScript.tmp" "$runScript"
     chmod 777 "$runScript"
   else
     if [ -z "$q" ]; then echo "$runScript is up to date"; fi
@@ -258,8 +263,9 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
   if [ "$md5current" != "$md5new" ]; then
     echo "MD5 sums mismatch: [$md5current] != [$md5new]">&2
     if [ -z "$q" ]; then echo "Downloading $serverJar ..."; fi
-    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$serverJar" "https://serverjars.com/api/fetchJar/$path"
-    chmod 777 "$serverJar"
+    wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O "$serverJar.tmp" "https://serverjars.com/api/fetchJar/$path"
+    mv "$serverJar.tmp" "$serverJar"
+    chmod +xxx "$serverJar"
   else
     if [ -z "$q" ]; then echo "$serverJar is up to date"; fi
   fi
