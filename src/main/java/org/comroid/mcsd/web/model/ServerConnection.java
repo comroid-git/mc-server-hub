@@ -57,7 +57,7 @@ public final class ServerConnection implements Closeable {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     private static final Map<String, Object> locks = new ConcurrentHashMap<>();
     private static final Duration statusCacheLifetime = Duration.ofMinutes(1);
-    private static final Duration rConTimeout = Duration.ofMinutes(1);
+    private static final Duration rConTimeout = Duration.ofSeconds(10);
     private static final Resource res = bean(ResourceLoader.class).getResource("classpath:/mcsd.sh");
     private final Server server;
     private final Session ssh;
@@ -79,8 +79,6 @@ public final class ServerConnection implements Closeable {
         this.rcon = new MinecraftRconService(
                 new RconDetails(con.getHost(), server.getRConPort(), server.getRConPassword()),
                 new ConnectOptions(Integer.MAX_VALUE, Duration.ofSeconds(3), Duration.ofMinutes(5)));
-        //ReflectionUtil.setField(rcon, "executorService", Executors.newSingleThreadScheduledExecutor());
-        tryRcon();
     }
 
     @Synchronized("rcon")
