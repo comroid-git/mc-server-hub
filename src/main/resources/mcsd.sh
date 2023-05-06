@@ -242,6 +242,7 @@ elif [ "$1" == "install" ] || [ "$1" == "update" ]; then
    echo "Unable to parse server response">&2)"
 
   if [ "$md5current" != "$md5new" ]; then
+    echo "MD5 sums mismatch: $md5current != $md5new">&2
     if [ -z "$q" ]; then echo "Downloading server.jar ..."; fi
     wget "-q" "$(if [ -z "$q" ]; then echo '--show-progress'; fi)" --no-cache -O server.jar "https://serverjars.com/api/fetchJar/$path"
     chmod 755 server.jar
