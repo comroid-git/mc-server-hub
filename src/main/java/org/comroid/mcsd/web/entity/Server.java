@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.graversen.minecraft.rcon.Defaults;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.web.model.ServerConnection;
+import org.comroid.mcsd.web.model.ServerHolder;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.intellij.lang.annotations.Language;
 
@@ -41,12 +43,15 @@ public class Server {
     private int rConPort = Defaults.RCON_PORT;
     private String rConPassword = UUID.randomUUID().toString();
     private Duration backupPeriod = Duration.ofHours(12);
+    private Duration updatePeriod = Duration.ofDays(7);
     private Instant lastBackup = Instant.ofEpochMilli(0);
+    private Instant lastUpdate = Instant.ofEpochMilli(0);
     @JsonIgnore
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
 
     @JsonIgnore
+    @Delegate(excludes = ServerHolder.class)
     public ServerConnection getConnection() {
         return ServerConnection.getInstance(this);
     }
@@ -94,21 +99,19 @@ public class Server {
         return "((cd '" + getDirectory() + "' && " +
                 "chmod 755 mcsd.sh && " +
                 (quiet ? "" : "echo '" + ServerConnection.OutputMarker + "' && ") +
-                "(" + (cmd.contains("static/mcsd.sh") && quiet ? cmd + "-q" : cmd) + "))" +
+                "(" + (cmd.contains("mcsd.sh") && quiet ? cmd + " -q" : cmd) + "))" +
                 (quiet ? "" : " || echo 'Command finished with non-zero exit code'>&2") +
-                ") && exit";
+                ") && " +
+                (quiet ? "" : "echo '"+ServerConnection.EndMarker+"' && ") +
+                "exit";
     }
 
     public String cmdStart() {
-        return wrapCmd("./mcsd.sh start " + getUnitName() + " " + getRamGB() + "G");
+        return wrapCmd("./mcsd.sh start " + getUnitName() + " " + getRamGB() + "G", false);
     }
 
     public String cmdAttach() {
-        return wrapCmd("./mcsd.sh attach " + getUnitName() + " " + getRamGB() + "G");
-    }
-
-    public String cmdStop() {
-        return wrapCmd("rm .running");
+        return wrapCmd("./mcsd.sh attach " + getUnitName() + " " + getRamGB() + "G", false);
     }
 
     public String cmdBackup() {

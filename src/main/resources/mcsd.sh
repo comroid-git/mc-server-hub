@@ -1,5 +1,6 @@
 #!/bin/bash
 unitFile="mcsd-unit.properties"
+socketFile=".running"
 
 # exit codes
 # 1 - runtime error
@@ -14,8 +15,20 @@ attach=""
 
 # parse flags
 for var in "$@"; do
-  while IFS='' read -r c; do
-    echo "found flag: [$c]"
+  var=$(echo "$var" | grep -Po '\-\K[a-z]+')
+
+  if [ -z "$var" ]; then
+    continue;
+  fi
+
+  # is flag
+  for (( i=0; i<${#var}; i++ )); do
+    c="${var:i:1}"
+
+    if [ -n "$quiet" ]; then
+      echo "Found Flag: [$c]"
+    fi
+
     if [ "$c" = "q" ]; then
       quiet="-q"
     fi
@@ -25,7 +38,7 @@ for var in "$@"; do
     if [ "$c" = "a" ]; then
       attach="r"
     fi
-  done < "$(echo "$var" | grep -Po '\-\K[a-z]+')"
+  done
 done
 
 # load unit data
@@ -53,7 +66,7 @@ if [ -f "$unitFile" ]; then
   done <mcsd-unit.properties
 fi
 
-# start command
+# status command todo: wip
 if [ "$1" == "status" ]; then
   scrLs=$(screen -ls | grep "$unitName")
   if [ -z "$scrLs" ]; then
@@ -80,10 +93,9 @@ elif [ "$1" == "attach" ]; then
 # run comamnd
 elif [ "$1" == "run" ]; then
   # exec loop
-  sock=".running"
-  touch $sock
+  touch $socketFile
   first=""
-  while [ -f $sock ]; do
+  while [ -f $socketFile ]; do
     if [ -z "$first" ]; then
       first="no"
     else
@@ -97,6 +109,12 @@ elif [ "$1" == "run" ]; then
 
   if [ -z $quiet ]; then
     echo "Server was stopped"
+  fi
+
+# disable command
+elif [ "$1" == "disable" ]; then
+  if [ -f "$socketFile" ]; then
+    rm "$socketFile"
   fi
 
 # backupSize command

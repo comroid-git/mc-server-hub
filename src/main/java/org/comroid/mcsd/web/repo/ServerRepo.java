@@ -18,7 +18,14 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
     @Query("UPDATE Server s SET s.lastBackup = :time WHERE s.id = :srvId")
     void bumpLastBackup(@Param("srv") Server srv, @Param("time") Instant time);
 
-    default void bumpLastBackup(@Param("srv") Server srv) {
+    @Query("UPDATE Server s SET s.lastUpdate = :time WHERE s.id = :srvId")
+    void bumpLastUpdate(@Param("srv") Server srv, @Param("time") Instant time);
+
+    default void bumpLastBackup(Server srv) {
         bumpLastBackup(srv, Instant.now());
+    }
+
+    default void bumpLastUpdate(Server srv) {
+        bumpLastUpdate(srv, Instant.now());
     }
 }

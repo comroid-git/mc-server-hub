@@ -1,11 +1,11 @@
 package org.comroid.mcsd.web.model;
 
-import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSchException;
 import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.DelegateStream;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.util.Utils;
 import org.intellij.lang.annotations.Language;
@@ -33,10 +33,11 @@ public class AttachedConnection implements Closeable {
     public final CompletableFuture<Void> connected = new CompletableFuture<>();
     public final Server server;
     public final ChannelShell channel;
+    public final DelegateStream.IOE ioe;
     public final Input input;
     public final Output output, error;
     private @Nullable Predicate<String> successMatcher;
-    private @Nullable CompletableFuture<?> future;
+    private @Nullable CompletableFuture<String> future;
     private @Nullable StringBuilder result;
 
     public AttachedConnection(Server server) throws JSchException {
@@ -51,6 +52,7 @@ public class AttachedConnection implements Closeable {
         channel.setInputStream(this.input = new Input());
         channel.setOutputStream(this.output = new Output(false));
         channel.setExtOutputStream(this.error = new Output(true));
+        this.ioe = new DelegateStream.IOE(input, output, error);
 
         input(Objects.requireNonNullElseGet(cmd, server::cmdAttach));
 
@@ -76,13 +78,13 @@ public class AttachedConnection implements Closeable {
             this.result = null;
         });
         input(cmd + '\n');
-        future.join();
-        return result.toString();
+        return future.join();
     }
 
     @Override
     public void close() {
         channel.disconnect();
+        ioe.close();
     }
 
     protected void handleStdOut(String txt) {
@@ -96,7 +98,7 @@ public class AttachedConnection implements Closeable {
 
         result.append(txt);
         if (successMatcher.test(txt))
-            future.complete(null);
+            future.complete(result.toString());
     }
 
     protected void handleStdErr(String txt) {

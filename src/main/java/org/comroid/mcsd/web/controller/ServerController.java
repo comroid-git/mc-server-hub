@@ -114,7 +114,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.requireUserAccess(user, Server.Permission.Start);
-        return result.getConnection().sendSh(result.cmdStart());
+        return result.getConnection().startServer();
     }
 
     @ResponseBody
@@ -123,7 +123,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.requireUserAccess(user, Server.Permission.Stop);
-        return result.getConnection().sendSh(result.cmdStop());
+        return result.getConnection().stopServer();
     }
 
     @ResponseBody

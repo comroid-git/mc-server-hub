@@ -22,9 +22,10 @@ import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.exception.StatusCode;
 import org.comroid.mcsd.web.repo.ShRepo;
-import org.comroid.api.Delegate;
+import org.comroid.api.DelegateStream;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.event.Level;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
@@ -49,10 +50,11 @@ import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
 @Slf4j
 @Getter
-public final class ServerConnection implements Closeable {
+public final class ServerConnection implements Closeable, ServerHolder {
     @Language("html")
     public static final String br = "<br/>";
-    public static final String OutputMarker = "################ Output Begins ################";
+    public static final String OutputMarker = "################ Output Began ################";
+    public static final String EndMarker = "################ Output Ended ################";
     private static final Map<UUID, ServerConnection> cache = new ConcurrentHashMap<>();
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     private static final Map<String, Object> locks = new ConcurrentHashMap<>();
@@ -100,7 +102,7 @@ public final class ServerConnection implements Closeable {
             log.warn("Unable to upload runscript to %s".formatted(server));
 
         // manage server.properties file
-        if (!con.updateProperties())
+        if (!con.uploadProperties())
             log.warn("Unable to upload managed server properties to %s".formatted(server));
 
         // is it offline?
@@ -179,7 +181,7 @@ public final class ServerConnection implements Closeable {
         return result;
     }
 
-    public boolean updateProperties() {
+    public boolean uploadProperties() {
         final var fileName = "server.properties";
         final var path = server.getDirectory() + '/' + fileName;
 
@@ -331,7 +333,7 @@ public final class ServerConnection implements Closeable {
     private boolean doBackup() {
         OutputStream bufProgress = null;
         var bufSize = new StringWriter();
-        if (!sendSh(server.wrapCmd("./mcsd.sh backupSize", true), new Delegate.Output(bufSize), new Delegate.Output(bufSize)))
+        if (!sendSh(server.wrapCmd("./mcsd.sh backupSize", true), new DelegateStream.Output(bufSize), new DelegateStream.Output(bufSize)))
             log.error("Unable to obtain backup size");
         else {
             final long size = Long.parseLong(bufSize.toString());
@@ -376,6 +378,41 @@ public final class ServerConnection implements Closeable {
         return true;
     }
 
+    public boolean runUpdate() {
+        if (!uploadRunScript())
+            log.warn("Could not upload runscript when trying to update " + server);
+        if (!uploadProperties())
+            log.warn("Could not upload properties when trying to update " + server);
+        if (sendSh(server.wrapCmd("./mcsd.sh update"))) {
+            return true;
+        }
+        log.error("Could not update " + server);
+        return false;
+    }
+
+    @SneakyThrows
+    public boolean startServer() {
+        try (var screen = attach(server.cmdStart())) {
+            screen.waitForExitStatus();
+            return true;
+        } catch (Throwable t) {
+            log.error("Could not start " + server, t);
+        }
+        return false;
+    }
+
+    public boolean stopServer() {
+        if (!sendSh(server.wrapCmd("./mcsd.sh disable", false)))
+            log.warn("Could not disable server restarts when trying to stop " + server);
+        try (var screen = attach()) {
+            screen.exec("stop", "^.*"+ServerConnection.EndMarker+".*$");
+            return true;
+        } catch (Throwable e) {
+            log.error("Could not stop " + server, e);
+            return false;
+        }
+    }
+
     public AttachedConnection attach() throws JSchException {
         return attach(null);
     }
@@ -384,19 +421,19 @@ public final class ServerConnection implements Closeable {
         return new AttachedConnection(server, cmd);
     }
 
-    public Delegate.Output uploadFile(final String path) throws Exception {
+    public DelegateStream.Output uploadFile(final String path) throws Exception {
         synchronized (lock(':' + path)) {
             var sftp = (ChannelSftp) ssh.openChannel("sftp");
             sftp.connect();
-            return new Delegate.Output(sftp.put(path), sftp::disconnect);
+            return new DelegateStream.Output(sftp.put(path), sftp::disconnect);
         }
     }
 
-    public Delegate.Input downloadFile(final String path) throws Exception {
+    public DelegateStream.Input downloadFile(final String path) throws Exception {
         synchronized (lock(':' + path)) {
             var sftp = (ChannelSftp) ssh.openChannel("sftp");
             sftp.connect();
-            return new Delegate.Input(sftp.get(path), sftp::disconnect);
+            return new DelegateStream.Input(sftp.get(path), sftp::disconnect);
         }
     }
 
@@ -412,14 +449,17 @@ public final class ServerConnection implements Closeable {
         return sendSh(cmd, stdout, stderr, null);
     }
 
+    @SuppressWarnings("resource")
     public boolean sendSh(@Language("sh") String cmd, @Nullable OutputStream stdout, @Nullable OutputStream stderr, @Nullable InputStream stdin) {
         synchronized (lock('$' + cmd)) {
             ChannelExec exec = null;
             try {
                 exec = (ChannelExec) ssh.openChannel("exec");
                 exec.setCommand(cmd);
-                if (stdout != null) exec.setOutputStream(stdout, true);
-                if (stderr != null) exec.setErrStream(stderr, true);
+
+                var prefix = "[" + shConnection() + " $ " + cmd + "] ";
+                exec.setOutputStream(Objects.requireNonNullElseGet(stdout, () -> new DelegateStream.Output(log, Level.INFO).withPrefix(prefix)));
+                exec.setErrStream(Objects.requireNonNullElseGet(stderr, () -> new DelegateStream.Output(log, Level.ERROR).withPrefix(prefix)));
                 if (stdin != null) exec.setInputStream(stdin, true);
 
                 exec.connect();
