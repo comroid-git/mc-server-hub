@@ -14,6 +14,7 @@ fi
 
 if [ "$variant" == "dev" ]; then
   # switch to dev variant
+  git checkout dev
   git pull
   exec="gradle"
   if [ -z "$(which "$exec")" ]; then
