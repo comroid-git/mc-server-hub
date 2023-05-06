@@ -181,8 +181,7 @@ public final class ServerConnection implements Closeable {
         return result;
     }
 
-
-    public synchronized boolean updateProperties() {
+    public boolean updateProperties() {
         final var fileName = "server.properties";
         final var path = server.getDirectory() + '/' + fileName;
 
@@ -220,8 +219,8 @@ public final class ServerConnection implements Closeable {
         return prop;
     }
 
-    public synchronized boolean uploadRunScript() {
-        var script = "static/mcsd.sh";
+    public boolean uploadRunScript() {
+        var script = "mcsd.sh";
         var data = "mcsd-unit.properties";
         var prefix = server.getDirectory() + '/';
         try {
