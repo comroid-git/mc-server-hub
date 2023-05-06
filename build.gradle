@@ -28,7 +28,7 @@ repositories {
 dependencies {
     if (findProject(':api') != null)
         implementation project(':api')
-    else implementation 'org.comroid:api:0.+'
+    else implementation 'org.comroid:api:+'
 
     // db
     implementation 'com.mysql:mysql-connector-j'
