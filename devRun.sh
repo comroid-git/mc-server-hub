@@ -2,9 +2,9 @@
 
 export DEBUG="true"
 
-export pidFile="/run/mcsd.pid"
+export pidFile="/srv/mcsd.pid"
 echo $$ > $pidFile
-trap 'rf -f $pidFile' EXIT
+trap 'rm -f $pidFile' EXIT
 
 switchDataDir() {
   echo "wip"
