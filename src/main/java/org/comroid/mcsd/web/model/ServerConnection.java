@@ -134,7 +134,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server))
                 .getHost();
         Supplier<StatusMessage> getOrCreateMsg = () -> statusCache
-                .computeIfAbsent(server.getId(), StatusMessage::new)
+                .computeIfAbsent(server.getId(), serverId -> new StatusMessage(serverId))
                 .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline);
         var viae = new CompletableFuture[]{
                 CompletableFuture.supplyAsync(() -> {
