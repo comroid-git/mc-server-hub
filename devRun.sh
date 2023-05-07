@@ -1,5 +1,7 @@
 #!/bin/bash
 
+DEBUG="true"
+
 switchDataDir() {
   echo "wip"
   #sudo rm "/srv/mcsd"
@@ -25,7 +27,7 @@ if [ "$variant" == "dev" ]; then
   if [ -f ".slave" ]; then
     debugArgs="-agentlib:jdwp=transport=dt_socket,server=n,address=dev.kaleidox.de:5005,suspend=y,onuncaught=y"
   else debugArgs="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"; fi
-  DEV="true" $exec --no-daemon bootRun -DDEBUG="true" -Dorg.gradle.jvmargs="-Xdebug -XX:+HeapDumpOnOutOfMemoryError $debugArgs"
+  $exec --no-daemon bootRun -Dorg.gradle.jvmargs="-Xdebug -XX:+HeapDumpOnOutOfMemoryError $debugArgs"
 else
   # switch to production variant
   sudo systemctl enable mcsd-web --now
