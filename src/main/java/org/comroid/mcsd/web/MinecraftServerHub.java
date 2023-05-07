@@ -94,7 +94,7 @@ public class MinecraftServerHub {
     @Order(Ordered.HIGHEST_PRECEDENCE)
     @ConditionalOnExpression(value = "environment.containsProperty('DEBUG')")
     public FileHandle configDir_Debug() {
-        log.warn("Using debug configuration directory");
+        log.info("Using debug configuration directory");
         return new FileHandle("/srv/mcsd-dev/", true);
     }
 
@@ -102,7 +102,7 @@ public class MinecraftServerHub {
     @Order
     @ConditionalOnMissingBean(name = "configDir")
     public FileHandle configDir() {
-        log.warn("Using production configuration directory");
+        log.info("Using production configuration directory");
         return new FileHandle("/srv/mcsd/", true);
     }
 
