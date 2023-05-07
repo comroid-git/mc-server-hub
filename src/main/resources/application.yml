@@ -24,4 +24,4 @@ spring:
 logging:
   level:
     root: info
-    org.comroid: debug
+    org.comroid: trace
