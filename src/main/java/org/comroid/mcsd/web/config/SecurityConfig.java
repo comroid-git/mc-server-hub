@@ -1,7 +1,9 @@
 package org.comroid.mcsd.web.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.web.MinecraftServerHub;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,8 +29,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public ClientRegistrationRepository clientRegistrationRepository() throws IOException {
-        var data = new ObjectMapper().readValue(MinecraftServerHub.OAUTH_FILE, OAuth2Info.class);
+    public ClientRegistrationRepository clientRegistrationRepository(@Autowired FileHandle oAuthInfo) throws IOException {
+        var data = new ObjectMapper().readValue(oAuthInfo, OAuth2Info.class);
         return new InMemoryClientRegistrationRepository(ClientRegistration.withRegistrationId("jb-hub")
                 .clientId(data.clientId)
                 .clientSecret(data.secret)
