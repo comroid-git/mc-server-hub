@@ -3,6 +3,7 @@ unitFile="unit.properties"
 socketFile=".running"
 runScript="mcsd.sh"
 serverJar="server.jar"
+pidFile="/run/mcsd.pid"
 
 # exit codes
 # 1 - runtime error
@@ -107,10 +108,13 @@ elif [ "$1" == "attach" ]; then
 
 # run comamnd
 elif [ "$1" == "run" ]; then
-  # exec loop
   touch $socketFile
+  echo $$ > $pidFile
+  trap 'rf -f $pidFile' EXIT
+
+  # exec loop
   first=""
-  while [ -f $socketFile ]; do
+  while [ -f $socketFile ] && [ -f $pidFile ]; do
     if [ -z "$first" ]; then
       first="no"
     else

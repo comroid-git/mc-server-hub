@@ -1,6 +1,10 @@
 #!/bin/bash
 
-DEBUG="true"
+export DEBUG="true"
+
+export pidFile="/run/mcsd.pid"
+echo $$ > $pidFile
+trap 'rf -f $pidFile' EXIT
 
 switchDataDir() {
   echo "wip"
