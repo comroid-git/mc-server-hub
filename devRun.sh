@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export DEV="true"
+
 switchDataDir() {
   echo "wip"
   #sudo rm "/srv/mcsd"

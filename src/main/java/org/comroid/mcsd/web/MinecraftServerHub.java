@@ -9,11 +9,15 @@ import org.comroid.mcsd.web.repo.ServerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.TaskScheduler;
 
 import javax.sql.DataSource;
@@ -28,9 +32,6 @@ import java.util.stream.StreamSupport;
 //@ComponentScan(basePackages = {"org.comroid.mcsd.web.config","org.comroid.mcsd.web.repo","org.comroid.mcsd.web.controller"})
 @ImportResource("classpath:beans.xml")
 public class MinecraftServerHub {
-    public static final FileHandle PATH_BASE = new FileHandle("/srv/mcsd/", true); // server path base
-    public static final FileHandle OAUTH_FILE = PATH_BASE.createSubFile("oauth2.json");
-    public static final FileHandle DB_FILE = PATH_BASE.createSubFile("db.json");
     public static final Duration CRON_MANAGE_RATE = Duration.ofMinutes(10);
     public static final Duration CRON_QUEUE_RATE = Duration.ofHours(1);
     private final Object cronLock = new Object();
@@ -87,9 +88,35 @@ public class MinecraftServerHub {
                 .forEach(servers::bumpLastUpdate);
     }
 
+    @Bean(name = "configDir")
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ConditionalOnExpression(value = "environment.containsProperty('DEBUG')")
+    public FileHandle configDir_Debug() {
+        log.warn("Using debug configuration directory");
+        return new FileHandle("/srv/mcsd-dev/", true);
+    }
+
     @Bean
-    public DataSource dataSource(@Autowired ObjectMapper objectMapper) throws IOException {
-        var dbInfo = objectMapper.readValue(DB_FILE.openReader(), DBInfo.class);
+    @Order
+    @ConditionalOnMissingBean(name = "configDir")
+    public FileHandle configDir() {
+        log.warn("Using production configuration directory");
+        return new FileHandle("/srv/mcsd/", true);
+    }
+
+    @Bean
+    public FileHandle dataSourceInfo(@Autowired FileHandle configDir) {
+        return configDir.createSubFile("db.json");
+    }
+
+    @Bean
+    public FileHandle oAuthInfo(@Autowired FileHandle configDir) {
+        return configDir.createSubFile("oauth2.json");
+    }
+
+    @Bean
+    public DataSource dataSource(@Autowired ObjectMapper objectMapper, @Autowired FileHandle dataSourceInfo) throws IOException {
+        var dbInfo = objectMapper.readValue(dataSourceInfo.openReader(), DBInfo.class);
         return DataSourceBuilder.create()
                 .driverClassName(Driver.class.getCanonicalName())
                 .url(dbInfo.url)
