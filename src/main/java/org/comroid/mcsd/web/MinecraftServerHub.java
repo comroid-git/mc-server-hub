@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.jdbc.Driver;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.io.FileHandle;
+import org.comroid.mcsd.web.dto.DBInfo;
+import org.comroid.mcsd.web.dto.OAuth2Info;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,30 +107,24 @@ public class MinecraftServerHub {
     }
 
     @Bean
-    public FileHandle dataSourceInfo(@Autowired FileHandle configDir) {
-        return configDir.createSubFile("db.json");
+    public DBInfo dataSourceInfo(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
+        return objectMapper.readValue(configDir.createSubFile("db.json"), DBInfo.class);
     }
 
     @Bean
-    public FileHandle oAuthInfo(@Autowired FileHandle configDir) {
-        return configDir.createSubFile("oauth2.json");
+    public OAuth2Info oAuthInfo(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
+        return objectMapper.readValue(configDir.createSubFile("oauth2.json"), OAuth2Info.class);
     }
 
     @Bean
-    public DataSource dataSource(@Autowired ObjectMapper objectMapper, @Autowired FileHandle dataSourceInfo) throws IOException {
-        var dbInfo = objectMapper.readValue(dataSourceInfo.openReader(), DBInfo.class);
+    public DataSource dataSource(@Autowired DBInfo dbInfo) {
         return DataSourceBuilder.create()
                 .driverClassName(Driver.class.getCanonicalName())
-                .url(dbInfo.url)
-                .username(dbInfo.username)
-                .password(dbInfo.password)
+                .url(dbInfo.getUrl())
+                .username(dbInfo.getUsername())
+                .password(dbInfo.getPassword())
                 .build();
     }
 
-    private static class DBInfo {
-        public String url;
-        public String username;
-        public String password;
-    }
 }
 

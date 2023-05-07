@@ -1,8 +1,6 @@
 package org.comroid.mcsd.web.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.comroid.api.io.FileHandle;
-import org.comroid.mcsd.web.MinecraftServerHub;
+import org.comroid.mcsd.web.dto.OAuth2Info;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,26 +27,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public ClientRegistrationRepository clientRegistrationRepository(@Autowired FileHandle oAuthInfo) throws IOException {
-        var data = new ObjectMapper().readValue(oAuthInfo, OAuth2Info.class);
+    public ClientRegistrationRepository clientRegistrationRepository(@Autowired OAuth2Info info) {
         return new InMemoryClientRegistrationRepository(ClientRegistration.withRegistrationId("jb-hub")
-                .clientId(data.clientId)
-                .clientSecret(data.secret)
-                .scope(data.scope)
+                .clientId(info.getClientId())
+                .clientSecret(info.getSecret())
+                .scope(info.getScope())
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri(data.urlBase + "/login/oauth2/code/{registrationId}")
-                .authorizationUri(data.hubUrl + "/api/rest/oauth2/auth")
-                .tokenUri(data.hubUrl + "/api/rest/oauth2/token")
-                .userInfoUri(data.hubUrl + "/api/rest/users/me")
+                .redirectUri(info.getUrlBase() + "/login/oauth2/code/{registrationId}")
+                .authorizationUri(info.getHubUrl() + "/api/rest/oauth2/auth")
+                .tokenUri(info.getHubUrl() + "/api/rest/oauth2/token")
+                .userInfoUri(info.getHubUrl() + "/api/rest/users/me")
                 .userNameAttributeName("login")
                 .build());
     }
 
-    private static class OAuth2Info {
-        public String clientId;
-        public String secret;
-        public String scope;
-        public String urlBase;
-        public String hubUrl;
-    }
 }
