@@ -123,19 +123,20 @@ public final class ServerConnection implements Closeable, ServerHolder {
     }
 
     @SneakyThrows
-    public synchronized CompletableFuture<StatusMessage> status() {
+    public CompletableFuture<StatusMessage> status() {
         log.debug("Getting status of Server %s".formatted(server));
-        if (statusCache.containsKey(server.getId())) {
-            var entry = statusCache.get(server.getId());
-            if (entry.getTimestamp().plus(statusCacheLifetime).isAfter(Instant.now()))
-                return CompletableFuture.completedFuture(entry);
-        }
         var host = StreamSupport.stream(bean(ShRepo.class).findAll().spliterator(), false)
                 .filter(con -> con.getId().equals(server.getShConnection()))
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server))
                 .getHost();
-        return CompletableFuture.supplyAsync(() -> {
+        return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(statusCache.computeIfPresent(server.getId(), (k, v) -> {
+                    if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
+                        return null;
+                    return v;
+                })))
+                .exceptionally(t -> {
+                    log.trace("Unable to get server status from cache, using Query...", t);
                     try (var query = new MCQuery(host, server.getQueryPort())) {
                         var stat = query.fullStat();
                         return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
