@@ -173,7 +173,7 @@ public class AttachedConnection implements Closeable {
             if (!connected.isDone())
                 connected.join();
             var str = Utils.removeAnsiEscapeSequences(buf.toString()).replaceAll("\r?\n", "");
-            if (!active && str.equals(OutputMarker + br))
+            if (!active && str.startsWith(OutputMarker))
                 active = true;
             else if (active) {
                 for (String line : str.split("\r?\n"))

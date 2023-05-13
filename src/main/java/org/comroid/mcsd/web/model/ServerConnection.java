@@ -38,10 +38,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
@@ -62,7 +58,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     private static final Map<String, Object> locks = new ConcurrentHashMap<>();
     private static final Duration statusCacheLifetime = Duration.ofMinutes(1);
-    private static final Duration rConTimeout = Duration.ofSeconds(10);
+    private static final Duration statusTimeout = Duration.ofSeconds(10);
     private static final Resource runscript = bean(ResourceLoader.class).getResource("classpath:/mcsd.sh");
     private final ShConnection con;
     private final Server server;
@@ -90,7 +86,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     @Synchronized("rcon")
     private void tryRcon() {
         try {
-            if (!rcon.connectBlocking(rConTimeout))
+            if (!rcon.connectBlocking(statusTimeout))
                 log.warn("RCon handshake timed out for " + server);
         } catch (Exception e) {
             log.error("Unable to connect RCon to " + server, e);
@@ -134,7 +130,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
                         return null;
                     return v;
-                }), "Status not cached or cache too old"))
+                }), "Status cache outdated"))
                 .exceptionally(t -> {
                     log.trace("Unable to get server status from cache, using Query...", t);
                     try (var query = new MCQuery(host, server.getQueryPort())) {
@@ -161,7 +157,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                             .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), "").replaceAll("§\\w", ""))
                             .withGameMode(stat.getGameMode());
                 })
-                .orTimeout(5, TimeUnit.SECONDS)
+                .orTimeout(statusTimeout.toSeconds(), TimeUnit.SECONDS)
                 .exceptionally(t -> {
                     log.warn("Unable to get server status", t);
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
@@ -170,7 +166,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 .thenApply(msg -> {
                     statusCache.put(server.getId(), msg);
                     return msg;
-                });
+                })
+                .orTimeout(statusTimeout.toSeconds() + 1, TimeUnit.SECONDS);
     }
 
     public boolean uploadProperties() {

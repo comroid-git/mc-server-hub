@@ -30,13 +30,14 @@ function disconnect() {
     writeLine("Disconnected")
 }
 
-function handleHandshake(session) {
-    if (session === undefined) {
+function handleHandshake(status) {
+    if (status === undefined) {
         let msg = 'Handshake was not successful';
         handleOutput(msg)
         throw new Error(msg)
     }
-    sessionId = session;
+    console.log("Session started with status " + JSON.stringify(status));
+    sessionId = status.userId;
     subscriptionHandshake.unsubscribe();
     subscriptionStatus = stompClient.subscribe('/user/' + userName + '/console/status', function (msg) {
         handleStatus(msg.body);
