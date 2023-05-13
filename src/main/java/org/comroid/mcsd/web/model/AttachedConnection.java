@@ -30,13 +30,13 @@ import static org.comroid.mcsd.web.model.ServerConnection.br;
 
 @Slf4j
 public class AttachedConnection implements Closeable {
+    private final @Delegate(excludes = {Closeable.class}) ServerConnection $;
     public final CompletableFuture<Void> connected = new CompletableFuture<>();
     public final Server server;
     public final ChannelShell channel;
     public final DelegateStream.IOE ioe;
     public final Input input;
     public final Output output, error;
-    private final @Delegate(excludes = {Closeable.class}) ServerConnection $;
 
     private @Nullable Predicate<String> successMatcher;
     private @Nullable CompletableFuture<String> future;

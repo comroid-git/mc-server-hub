@@ -106,7 +106,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.requireUserAccess(user, Server.Permission.Status);
-        return result.getConnection().status().join();
+        return result.status().join();
     }
 
     @ResponseBody
@@ -115,7 +115,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.requireUserAccess(user, Server.Permission.Start);
-        return result.getConnection().startServer();
+        return result.startServer();
     }
 
     @ResponseBody
@@ -124,7 +124,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.requireUserAccess(user, Server.Permission.Stop);
-        return result.getConnection().stopServer();
+        return result.stopServer();
     }
 
     @ResponseBody
@@ -134,6 +134,6 @@ public class ServerController {
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id))
                 .requireUserAccess(user, Server.Permission.Backup);
         if (method == null) method = ServerConnection.BackupMethod.Evaluate;
-        return result.getConnection().runBackup(method);
+        return result.runBackup(method);
     }
 }

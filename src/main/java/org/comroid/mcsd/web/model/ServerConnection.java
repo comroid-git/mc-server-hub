@@ -36,6 +36,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -114,13 +115,14 @@ public final class ServerConnection implements Closeable, ServerHolder {
             if (!con.sendSh(server.cmdStart()))
                 log.warn("Auto-Starting %s did not finish successfully".formatted(server));
         } else {
-            log.info("%s did not need to be started".formatted(server));
+            log.debug("%s did not need to be started".formatted(server));
         }
 
         // validate RCON connection works
         tryRcon();
     }
 
+    @SneakyThrows
     public synchronized CompletableFuture<StatusMessage> status() {
         log.debug("Getting status of Server %s".formatted(server));
         if (statusCache.containsKey(server.getId())) {
@@ -133,58 +135,41 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server))
                 .getHost();
-        Supplier<StatusMessage> getOrCreateMsg = () -> statusCache
-                .computeIfAbsent(server.getId(), serverId -> new StatusMessage(serverId))
-                .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline);
-        var viae = new CompletableFuture[]{
-                CompletableFuture.supplyAsync(() -> {
+        return CompletableFuture.supplyAsync(() -> {
                     try (var query = new MCQuery(host, server.getQueryPort())) {
                         var stat = query.fullStat();
-                        if (stat != null)
-                            return getOrCreateMsg.get()
-                                    .withStatus(server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online)
-                                    .withPlayerCount(stat.getOnlinePlayers())
-                                    .withPlayerMax(stat.getMaxPlayers())
-                                    .withMotd(stat.getMOTD().replaceAll("§\\w", ""))
-                                    .withGameMode(stat.getGameMode())
-                                    .withPlayers(stat.getPlayerList())
-                                    .withWorldName(stat.getMapName());
+                        return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
+                                .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
+                                .withStatus(server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online)
+                                .withPlayerCount(stat.getOnlinePlayers())
+                                .withPlayerMax(stat.getMaxPlayers())
+                                .withMotd(stat.getMOTD().replaceAll("§\\w", ""))
+                                .withGameMode(stat.getGameMode())
+                                .withPlayers(stat.getPlayerList())
+                                .withWorldName(stat.getMapName());
                     }
-                    return null;
-                }),
-                CompletableFuture.supplyAsync(() -> {
-                    var stat = new MineStat(host, server.getPort(), 3);
-                    return getOrCreateMsg.get()
+                })
+                .exceptionally(t -> {
+                    log.trace("Unable to get server status using Query, using MineStat...", t);
+                    var stat = new MineStat(host, server.getPort());
+                    return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
+                            .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
                             .withStatus(stat.isServerUp() ? server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online : Server.Status.Offline)
                             .withPlayerCount(stat.getCurrentPlayers())
                             .withPlayerMax(stat.getMaximumPlayers())
                             .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), "").replaceAll("§\\w", ""))
                             .withGameMode(stat.getGameMode());
                 })
-        };
-        var result = new CompletableFuture<StatusMessage>();
-        UnaryOperator<StatusMessage> acceptor = msg -> statusCache.compute(server.getId(),
-                (k, v) -> Objects.requireNonNullElseGet(msg, getOrCreateMsg).combine(v));
-        Function<Throwable, @Nullable StatusMessage> logger = e -> {
-            log.error("Internal error during status check", e);
-            if (Arrays.stream(viae).allMatch(CompletableFuture::isDone))
-                return getOrCreateMsg.get();
-            return null;
-        };
-        Consumer<@Nullable StatusMessage> cacheAcceptor = msg -> {
-            if (msg != null) {
-                if (result.isDone())
-                    statusCache.compute(msg.serverId, (k, it) -> it == null ? msg : it.combine(msg));
-                else result.complete(msg);
-            }
-        };
-        for (var via : viae)
-            //noinspection unchecked
-            ((CompletableFuture<StatusMessage>) via)
-                    .thenApply(acceptor)
-                    .exceptionally(logger)
-                    .thenAccept(cacheAcceptor);
-        return result;
+                .orTimeout(5, TimeUnit.SECONDS)
+                .exceptionally(t -> {
+                    log.warn("Unable to get server status", t);
+                    return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
+                            .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline);
+                })
+                .thenApply(msg -> {
+                    statusCache.put(server.getId(), msg);
+                    return msg;
+                });
     }
 
     public boolean uploadProperties() {
@@ -201,7 +186,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
             log.error("Error uploading managed server.properties for server " + server, e);
             return false;
         }
-        log.info("Uploaded managed properties of server " + server);
+        log.debug("Uploaded managed properties of server " + server);
         return true;
     }
 
@@ -232,7 +217,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
             try (var scriptIn = runscript.getInputStream();
                  var scriptOut = uploadFile(prefix + RunScript)) {
                 scriptIn.transferTo(scriptOut);
-                log.info("Uploaded runscript to Server " + server);
+                log.debug("Uploaded runscript to Server " + server);
             }
 
             // upload unit info
@@ -247,7 +232,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 prop.put("host", con.getHost());
                 prop.put("backupDir", con.getBackupsDir() + '/' + server.getUnitName());
                 prop.store(dataOut, "MCSD Server Unit Information");
-                log.info("Uploaded runscript data to Server " + server);
+                log.debug("Uploaded runscript data to Server " + server);
             }
 
             return true;
@@ -349,7 +334,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 public void write(int b) {
                     if (b == '\n') {
                         if (c == 0)
-                            log.info("Backup for server %s just started".formatted(server));
+                            log.debug("Backup for server %s just started".formatted(server));
                         c++;
                     }
                 }
@@ -364,7 +349,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                             .filter(n -> checkSize(n, b))
                             .forEach(n -> {
                                 s <<= 1;
-                                log.info("Backup for server %s is %d percent done".formatted(server, 1));
+                                log.debug("Backup for server %s is %d percent done".formatted(server, 1));
                             });
                 }
 
