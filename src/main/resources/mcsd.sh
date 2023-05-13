@@ -3,7 +3,7 @@ unitFile="unit.properties"
 socketFile=".running"
 runScript="mcsd.sh"
 serverJar="server.jar"
-pidFile="/srv/mcsd.pid"
+pidFile="server.pid"
 
 # exit codes
 # 1 - runtime error
