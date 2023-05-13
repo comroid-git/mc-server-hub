@@ -134,7 +134,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
                         return null;
                     return v;
-                })))
+                }), "Status not cached or cache too old"))
                 .exceptionally(t -> {
                     log.trace("Unable to get server status from cache, using Query...", t);
                     try (var query = new MCQuery(host, server.getQueryPort())) {
