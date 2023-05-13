@@ -69,9 +69,10 @@ if [ -f "$unitFile" ]; then
   done < $unitFile
 fi
 
+scrLs=$(screen -ls "$unitName" | grep "$unitName")
+
 # status command todo: wip
 if [ "$1" == "status" ]; then
-  scrLs=$(screen -ls "$unitName")
   if [ -z "$scrLs" ]; then
     echo "Server $unitName is not runnning"
   else
@@ -80,7 +81,6 @@ if [ "$1" == "status" ]; then
 
 # start command
 elif [ "$1" == "start" ]; then
-  scrLs=$(screen -ls "$unitName")
   if [ -z "$scrLs" ]; then
     screen "-OdmSq$attach" "$unitName" "./$runScript" -h 300 run || if [ -z $quiet ]; then echo "Could not start screen session"; else :; fi
   else
