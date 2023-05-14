@@ -15,7 +15,7 @@ tasks.register('simplifyDist', Copy) {
     from bootWar.outputs.files.singleFile
     def target = file("$buildDir/dist")
     into target
-    rename { String filename -> return "mcsd-web.war" }
+    rename { String filename -> return "mc-server-hub.war" }
 }
 
 repositories {
