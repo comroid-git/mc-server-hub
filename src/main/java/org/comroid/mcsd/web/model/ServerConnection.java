@@ -132,7 +132,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     return v;
                 }), "Status cache outdated"))
                 .exceptionally(t -> {
-                    log.trace("Unable to get server status from cache, using Query...", t);
+                    log.debug("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
+                    log.trace("Exception was", t);
                     try (var query = new MCQuery(host, server.getQueryPort())) {
                         var stat = query.fullStat();
                         return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
@@ -148,7 +149,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     }
                 })
                 .exceptionally(t -> {
-                    log.trace("Unable to get server status using Query, using MineStat...", t);
+                    log.debug("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
+                    log.trace("Exception was", t);
                     var stat = new MineStat(host, server.getPort());
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
@@ -161,7 +163,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 })
                 .orTimeout(statusTimeout.toSeconds(), TimeUnit.SECONDS)
                 .exceptionally(t -> {
-                    log.warn("Unable to get server status", t);
+                    log.warn("Unable to get server status ["+t.getMessage()+"]");
+                    log.trace("Exception was", t);
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
                             .withSsh(ssh.isConnected() ? Server.Status.Online : Server.Status.Offline);
