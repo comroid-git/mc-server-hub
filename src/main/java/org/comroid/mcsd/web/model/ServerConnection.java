@@ -358,7 +358,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         synchronized (lock('$' + cmd)) {
             ChannelExec exec = null;
             try {
-                exec = (ChannelExec) session.openChannel("exec");
+                exec = (ChannelExec) session.openChannel("shell");
                 exec.setCommand(cmd);
 
                 var prefix = "[" + shConnection() + " $ " + cmd + "] ";
