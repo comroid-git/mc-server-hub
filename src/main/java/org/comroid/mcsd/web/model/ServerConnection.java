@@ -354,7 +354,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     }
 
     @SuppressWarnings("resource")
-    public boolean sendSh(@Language("sh") String cmd, @Nullable DelegateStream.IOE ioe) {
+    public boolean sendSh(@Language("sh") String cmd, @Nullable DelegateStream.IOE redir) {
         synchronized (lock('$' + cmd)) {
             ChannelExec exec = null;
             try {
@@ -362,12 +362,14 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 exec.setCommand(cmd);
 
                 var prefix = "[" + shConnection() + " $ " + cmd + "] ";
-                if (ioe != null && Bitmask.isFlagSet(ioe.getCapabilities(), DelegateStream.Capability.Input))
-                    exec.setInputStream(ioe.input(), true);
-                if (ioe != null && Bitmask.isFlagSet(ioe.getCapabilities(), DelegateStream.Capability.Output))
-                    exec.setOutputStream(ioe.output());
-                if (ioe != null && Bitmask.isFlagSet(ioe.getCapabilities(), DelegateStream.Capability.Error))
-                    exec.setErrStream(ioe.error());
+                var ioe = new DelegateStream.IOE();
+
+                exec.setInputStream(ioe.input());
+                exec.setOutputStream(ioe.output());
+                exec.setExtOutputStream(ioe.error());
+                //ioe.redirect.add(DelegateStream.IOE.slf4j(log));
+                ioe.redirect.add(DelegateStream.IOE.SYSTEM);
+                ioe.redirect.add(redir);
 
                 exec.connect();
                 exec.start();
