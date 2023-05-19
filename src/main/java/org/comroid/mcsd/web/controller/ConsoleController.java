@@ -91,11 +91,13 @@ public class ConsoleController {
 
         @Override
         protected void handleStdOut(String txt) {
+            super.handleStdOut(txt);
             respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br);
         }
 
         @Override
         protected void handleStdErr(String txt) {
+            super.handleStdErr(txt);
             respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br);
         }
 
