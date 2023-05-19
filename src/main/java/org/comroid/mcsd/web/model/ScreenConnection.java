@@ -3,107 +3,72 @@ package org.comroid.mcsd.web.model;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSchException;
 import lombok.SneakyThrows;
-import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
+import org.comroid.api.Event;
 import org.comroid.mcsd.web.entity.Server;
-import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.util.Utils;
 import org.intellij.lang.annotations.Language;
-import org.jetbrains.annotations.Nullable;
 
-import java.io.Closeable;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringWriter;
+import java.io.*;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static org.comroid.mcsd.web.model.ServerConnection.*;
 
 @Slf4j
-public class AttachedConnection implements Closeable {
-    private final @Delegate(excludes = {Closeable.class}) ServerConnection $;
-    public final CompletableFuture<Void> connected = new CompletableFuture<>();
+public final class ScreenConnection implements Closeable {
+    private final ServerConnection connection;
     public final Server server;
     public final ChannelShell channel;
     public final DelegateStream.IOE ioe;
     public final Input input;
-    public final Output output, error;
+    public final Event.Bus<String> output = new Event.Bus<>();
+    public final Event.Bus<String> error = new Event.Bus<>();
 
-    private @Nullable Predicate<String> successMatcher;
-    private @Nullable CompletableFuture<String> future;
-    private @Nullable StringBuilder result;
+    public ScreenConnection(ServerConnection con) throws JSchException {
+        this.connection = con;
+        this.server = con.getServer();
+        this.channel = (ChannelShell) connection.getSession().openChannel("shell");
 
-    public AttachedConnection(Server server) throws JSchException {
-        this(server, null);
-    }
-
-    public AttachedConnection(Server server, @Nullable @Language("sh") String cmd) throws JSchException {
-        this.$ = server.getConnection();
-        this.server = server;
-        this.channel = (ChannelShell) getSsh().openChannel("shell");
-
-        channel.setInputStream(this.input = new Input());
-        channel.setOutputStream(this.output = new Output(false));
-        channel.setExtOutputStream(this.error = new Output(true));
-        this.ioe = new DelegateStream.IOE(input, output, error);
-
-        input(Objects.requireNonNullElseGet(cmd, server::cmdAttach));
+        this.ioe = new DelegateStream.IOE();
+        channel.setInputStream(ioe.input());
+        channel.setOutputStream(ioe.output());
+        channel.setExtOutputStream(ioe.error());
+        ioe.redirect.add(DelegateStream.IOE.slf4j(log));
+        ioe.redirect.add(new DelegateStream.IOE(this.input = new Input(), new Output(false), new Output(true), output, error));
+        //ioe.redirect.add(DelegateStream.IOE.SYSTEM);
 
         channel.connect();
-        connected.complete(null);
-        //channel.start();
-    }
+        channel.start();
 
-    @SneakyThrows
-    @SuppressWarnings("BusyWait")
-    public void waitForExitStatus() {
-        while (channel.getExitStatus() == -1)
-            Thread.sleep(50);
-    }
-
-    public synchronized String exec(String cmd, @Nullable @Language("RegExp") String successMatcher) {
-        this.successMatcher = successMatcher == null ? null : Pattern.compile(successMatcher).asMatchPredicate();
-        this.future = new CompletableFuture<>();
-        this.result = new StringBuilder();
-        future.thenRun(() -> {
-            this.successMatcher = null;
-            this.future = null;
-            this.result = null;
-        });
-        input(cmd + '\n');
-        return future.join();
+        input(con.getServer().cmdAttach());
     }
 
     @Override
     public void close() {
+        log.warn("ScreenConnection was closed");
         channel.disconnect();
         ioe.close();
     }
 
-    protected void handleStdOut(String txt) {
-        if (result == null) {
-            log.debug("[%s] %s".formatted(getCon().toString(), txt));
-            return;
-        }
-
-        assert successMatcher != null;
-        assert future != null;
-
-        result.append(txt);
-        if (successMatcher.test(txt))
-            future.complete(result.toString());
+    public void sendCmd(String cmd, final @Language("RegExp") String endPattern) {
+        if (connection.getRcon().isConnected())
+            connection.sendCmdRCon(cmd);
+        else if (endPattern != null) sendCmdScreen(cmd, endPattern).join();
+        else throw new RuntimeException("Cannot send command " + cmd + " because both RCon and Screen are offline");
     }
 
-    protected void handleStdErr(String txt) {
-        log.error("[%s] %s".formatted(toString(), txt));
+    public synchronized CompletableFuture<String> sendCmdScreen(String cmd, final @Language("RegExp") String endPattern) {
+        final var pattern = Pattern.compile(endPattern);
+        final var sb = new StringBuilder();
+        var appender = output.listen(x -> x.ifPresent(e -> sb.append(e.getData())));
+        var future = output.next(e -> pattern.matcher(e.getData()).matches()).whenComplete((e,t)->appender.close());
+        input(cmd);
+        return future.thenApply($->sb.toString());
     }
 
     public void input(String input) {
@@ -153,13 +118,12 @@ public class AttachedConnection implements Closeable {
     }
 
     private final class Output extends OutputStream {
-        private final Consumer<String> handler;
-        private boolean active;
+        private final boolean error;
         private StringWriter buf = new StringWriter();
+        private boolean active;
 
         public Output(boolean error) {
-            this.handler = (error ? AttachedConnection.this::handleStdErr : AttachedConnection.this::handleStdOut);
-            this.active = error;
+            this.error = this.active = error;
         }
 
         @Override
@@ -169,8 +133,6 @@ public class AttachedConnection implements Closeable {
 
         @Override
         public void flush() {
-            if (!connected.isDone())
-                connected.join();
             var str = Utils.removeAnsiEscapeSequences(buf.toString()).replaceAll("\r?\n", "");
             if (!active && str.startsWith(OutputMarker))
                 active = true;
@@ -178,10 +140,10 @@ public class AttachedConnection implements Closeable {
                 active = false;
             else if (active) {
                 for (String line : str.split("\r?\n"))
-                    handler.accept(line);
+                    (error ? ScreenConnection.this.error : ScreenConnection.this.output).publish(line);
                 if (Arrays.stream(new String[]{"no screen to be resumed", "command not found", "Invalid operation"})
                         .anyMatch(str::contains)) {
-                    AttachedConnection.this.close();
+                    ScreenConnection.this.close();
                     return;
                 }
             }

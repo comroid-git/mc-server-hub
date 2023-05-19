@@ -7,6 +7,7 @@ import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.web.dto.DBInfo;
 import org.comroid.mcsd.web.dto.OAuth2Info;
 import org.comroid.mcsd.web.entity.Server;
+import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -63,15 +64,16 @@ public class MinecraftServerHub {
     private synchronized void $cronManager() {
         StreamSupport.stream(servers.findAll().spliterator(), true)
                 .filter(Server::isManaged)
-                .forEach(Server::cron);
+                .map(Server::getConnection)
+                .forEach(ServerConnection::cron);
     }
 
     private synchronized void $cronBackup() {
         StreamSupport.stream(servers.findAll().spliterator(), true)
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
-                .filter(con -> !con.getBackupRunning().get())
-                .filter(Server::runBackupScreen)
+                .filter(srv -> !srv.getConnection().getBackupRunning().get())
+                .filter(srv -> srv.getConnection().runBackup())
                 .peek(srv -> log.info("Successfully created backup of " + srv))
                 .forEach(servers::bumpLastBackup);
     }
@@ -80,11 +82,13 @@ public class MinecraftServerHub {
         StreamSupport.stream(servers.findAll().spliterator(), true)
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastUpdate().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
-                .filter(Server::uploadRunScript)
-                .filter(Server::uploadProperties)
-                .filter(Server::stopServer)
-                .filter(Server::runUpdate)
-                .filter(Server::startServer)
+                .map(Server::getConnection)
+                .filter(ServerConnection::uploadRunScript)
+                .filter(ServerConnection::uploadProperties)
+                .filter(ServerConnection::stopServer)
+                .filter(ServerConnection::runUpdate)
+                .filter(ServerConnection::startServer)
+                .map(ServerConnection::getServer)
                 .peek(srv -> log.info("Successfully updated " + srv))
                 .forEach(servers::bumpLastUpdate);
     }

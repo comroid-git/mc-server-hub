@@ -56,7 +56,6 @@ public class Server {
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
 
     @JsonIgnore
-    @Delegate(excludes = ServerHolder.class)
     public ServerConnection getConnection() {
         return ServerConnection.getInstance(this);
     }

@@ -40,6 +40,7 @@ public class ApiController {
         users.findBySession(session).require(User.Perm.Admin);
         servers.findById(serverId)
                 .orElseThrow(() -> new EntityNotFoundException(Server.class, serverId))
+                .getConnection()
                 .cron();
     }
 }

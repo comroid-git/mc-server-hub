@@ -2,18 +2,22 @@ package org.comroid.mcsd.web.controller;
 
 import com.jcraft.jsch.JSchException;
 import jakarta.servlet.http.HttpSession;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.DelegateStream;
 import org.comroid.mcsd.web.config.WebSocketConfig;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.entity.User;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
-import org.comroid.mcsd.web.model.AttachedConnection;
+import org.comroid.mcsd.web.model.ScreenConnection;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -22,6 +26,10 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +53,7 @@ public class ConsoleController {
         server.requireUserAccess(user, Server.Permission.Console);
         WebInterfaceConnection connection = new WebInterfaceConnection(server, user);
         connections.put(user.getId(), connection);
-        respond.convertAndSendToUser(user.getName(), "/console/handshake", connection.status().join().withUserId(user.getId()));
+        respond.convertAndSendToUser(user.getName(), "/console/handshake", connection.con.status().join().withUserId(user.getId()));
     }
 
     @MessageMapping("/console/input")
@@ -55,18 +63,18 @@ public class ConsoleController {
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
             throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        res.input(input.substring(1, input.length() - 1));
+        res.con.getScreen().input(input.substring(1, input.length() - 1));
     }
 
     @SendToUser("/console/backup")
     @MessageMapping("/console/backup")
-    public Object backup(@Header("simpSessionAttributes") Map<String, Object> sessionAttributes, @Payload ServerConnection.BackupMethod method) {
+    public Object backup(@Header("simpSessionAttributes") Map<String, Object> sessionAttributes) {
         var session = (HttpSession) sessionAttributes.get(WebSocketConfig.HTTP_SESSION_KEY);
         var user = userRepo.findBySession(session);
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
             throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        return res.runBackup(method);
+        return res.con.runBackup();
     }
 
     @MessageMapping("/console/disconnect")
@@ -79,32 +87,33 @@ public class ConsoleController {
     }
 
     @Getter
-    @ToString
-    private class WebInterfaceConnection extends AttachedConnection {
-        public final User user;
+    @AllArgsConstructor
+    private class WebInterfaceConnection implements Closeable {
+        private final Server server;
+        private final User user;
+        private final WebInterfaceIO ioe;
+        private final ServerConnection con;
 
-        public WebInterfaceConnection(Server server, User user) throws JSchException {
-            super(server);
-
+        public WebInterfaceConnection(Server server, User user) {
+            this.server = server;
             this.user = user;
-        }
-
-        @Override
-        protected void handleStdOut(String txt) {
-            super.handleStdOut(txt);
-            respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br);
-        }
-
-        @Override
-        protected void handleStdErr(String txt) {
-            super.handleStdErr(txt);
-            respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br);
+            this.con = server.getConnection();
+            con.getScreen().ioe.redirect.add(ioe = new WebInterfaceIO(user));
         }
 
         @Override
         public void close() {
-            respond.convertAndSendToUser(user.getName(), "/console/disconnect", "");
-            super.close();
+            ioe.close();
+            con.getScreen().ioe.redirect.remove(ioe);
+        }
+    }
+
+    private class WebInterfaceIO extends DelegateStream.IOE {
+        public WebInterfaceIO(final User user) {
+            super(//new DelegateStream.Input(),
+                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)),
+                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)),
+                    () -> respond.convertAndSendToUser(user.getName(), "/console/disconnect", ""));
         }
     }
 }
