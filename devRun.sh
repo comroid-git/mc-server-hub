@@ -32,7 +32,7 @@ if [ "$variant" == "dev" ]; then
     debugArgs="-agentlib:jdwp=transport=dt_socket,server=n,address=dev.kaleidox.de:5005,suspend=y,onuncaught=y"
   else debugArgs="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"; fi
   $exec --no-daemon simplifyDist
-  java -Dorg.gradle.jvmargs="-Xdebug -XX:+HeapDumpOnOutOfMemoryError $debugArgs" -jar build/dist/mc-server-hub.war
+  java -Xdebug -XX:+HeapDumpOnOutOfMemoryError $debugArgs -jar build/dist/mc-server-hub.war
 else
   # switch to production variant
   sudo systemctl enable mcsd-web --now
