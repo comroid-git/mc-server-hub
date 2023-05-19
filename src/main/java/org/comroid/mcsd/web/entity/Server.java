@@ -101,7 +101,7 @@ public class Server {
     @Language("sh")
     public String wrapCmd(@Language("sh") String cmd, boolean quiet) {
         return "(cd '" + getDirectory() + "' && " +
-                "chmod 755 mcsd.sh && " +
+                //"chmod 755 mcsd.sh && " +
                 (quiet ? "" : "echo '" + ServerConnection.OutputMarker + "' && ") +
                 "(" + (cmd.contains(ServerConnection.RunScript) && quiet ? cmd + " -q" : cmd) + ")" +
                 (quiet ? "" : " || echo 'Command finished with non-zero exit code'>&2") +
