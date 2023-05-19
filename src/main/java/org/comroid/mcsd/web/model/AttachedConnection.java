@@ -25,8 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import static org.comroid.mcsd.web.model.ServerConnection.OutputMarker;
-import static org.comroid.mcsd.web.model.ServerConnection.br;
+import static org.comroid.mcsd.web.model.ServerConnection.*;
 
 @Slf4j
 public class AttachedConnection implements Closeable {
@@ -175,6 +174,8 @@ public class AttachedConnection implements Closeable {
             var str = Utils.removeAnsiEscapeSequences(buf.toString()).replaceAll("\r?\n", "");
             if (!active && str.startsWith(OutputMarker))
                 active = true;
+            else if (active && str.startsWith(EndMarker))
+                active = false;
             else if (active) {
                 for (String line : str.split("\r?\n"))
                     handler.accept(line);
