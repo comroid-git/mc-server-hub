@@ -366,7 +366,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
                 exec.setInputStream(ioe.input());
                 exec.setOutputStream(ioe.output());
-                exec.setExtOutputStream(ioe.error());
+                exec.setErrStream(ioe.error());
                 //ioe.redirect.add(DelegateStream.IOE.slf4j(log));
                 ioe.redirect.add(DelegateStream.IOE.SYSTEM);
                 ioe.redirect.add(redir);
