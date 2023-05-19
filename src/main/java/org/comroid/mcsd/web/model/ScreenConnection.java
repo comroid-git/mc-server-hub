@@ -38,9 +38,9 @@ public final class ScreenConnection implements Closeable {
         channel.setInputStream(ioe.input());
         channel.setOutputStream(ioe.output());
         channel.setExtOutputStream(ioe.error());
-        ioe.redirect.add(DelegateStream.IOE.slf4j(log));
+        //ioe.redirect.add(DelegateStream.IOE.slf4j(log));
+        ioe.redirect.add(DelegateStream.IOE.SYSTEM);
         ioe.redirect.add(new DelegateStream.IOE(this.input = new Input(), new Output(false), new Output(true), output, error));
-        //ioe.redirect.add(DelegateStream.IOE.SYSTEM);
 
         channel.connect();
         channel.start();
