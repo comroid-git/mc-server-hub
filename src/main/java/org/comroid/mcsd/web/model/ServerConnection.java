@@ -362,10 +362,12 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 exec.setCommand(cmd);
 
                 var prefix = "[" + shConnection() + " $ " + cmd + "] ";
-                exec.setOutputStream(ioe != null ? ioe.output() : new DelegateStream.Output(log, Level.INFO).withPrefix(prefix));
-                exec.setErrStream(ioe != null ? ioe.error() : new DelegateStream.Output(log, Level.ERROR).withPrefix(prefix));
                 if (ioe != null && Bitmask.isFlagSet(ioe.getCapabilities(), DelegateStream.Capability.Input))
                     exec.setInputStream(ioe.input(), true);
+                if (ioe != null && Bitmask.isFlagSet(ioe.getCapabilities(), DelegateStream.Capability.Output))
+                    exec.setOutputStream(ioe.output());
+                if (ioe != null && Bitmask.isFlagSet(ioe.getCapabilities(), DelegateStream.Capability.Error))
+                    exec.setErrStream(ioe.error());
 
                 exec.connect();
                 exec.start();
