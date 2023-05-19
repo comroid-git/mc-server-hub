@@ -30,9 +30,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.stream.StreamSupport;
 
 @Slf4j
+@ImportResource({"classpath:beans.xml"})
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
-//@ComponentScan(basePackages = {"org.comroid.mcsd.web.config","org.comroid.mcsd.web.repo","org.comroid.mcsd.web.controller"})
-@ImportResource("classpath:beans.xml")
 public class MinecraftServerHub {
     public static final Duration CRON_MANAGE_RATE = Duration.ofMinutes(10);
     public static final Duration CRON_QUEUE_RATE = Duration.ofHours(1);
