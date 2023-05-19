@@ -2,57 +2,51 @@ package org.comroid.mcsd.web.model;
 
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSchException;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.mcsd.web.entity.Server;
-import org.comroid.mcsd.web.util.Utils;
 import org.intellij.lang.annotations.Language;
+import org.slf4j.event.Level;
+import org.springframework.boot.logging.LogLevel;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.regex.Pattern;
 
-import static org.comroid.mcsd.web.model.ServerConnection.*;
-
 @Slf4j
-public final class ScreenConnection implements Closeable {
+public final class GameConnection implements Closeable {
     private final ServerConnection connection;
     public final Server server;
     public final ChannelShell channel;
-    public final DelegateStream.IOE ioe;
-    public final Input input;
+    public final Event.Bus<String> input = new Event.Bus<>();
     public final Event.Bus<String> output = new Event.Bus<>();
     public final Event.Bus<String> error = new Event.Bus<>();
 
-    public ScreenConnection(ServerConnection con) throws JSchException {
+    public GameConnection(ServerConnection con) throws JSchException {
         this.connection = con;
         this.server = con.getServer();
         this.channel = (ChannelShell) connection.getSession().openChannel("shell");
 
-        this.ioe = new DelegateStream.IOE();
-        channel.setInputStream(ioe.input());
-        channel.setOutputStream(ioe.output());
-        channel.setExtOutputStream(ioe.error());
-        //ioe.redirect.add(DelegateStream.IOE.slf4j(log));
-        ioe.redirect.add(DelegateStream.IOE.SYSTEM);
-        ioe.redirect.add(new DelegateStream.IOE(this.input = new Input(), new Output(false), new Output(true), output, error));
+        channel.setInputStream(new Input(input));
+        channel.setOutputStream(new DelegateStream.Output(output));
+        channel.setExtOutputStream(new DelegateStream.Output(error));
 
+        input.log(con.log(), Level.DEBUG);
+        output.log(con.log(), Level.INFO);
+        error.log(con.log(), Level.ERROR);
+
+        input.accept(server.cmdAttach());
         channel.connect();
         channel.start();
-
-        input(con.getServer().cmdAttach());
     }
 
     @Override
     public void close() {
         log.warn("ScreenConnection was closed");
         channel.disconnect();
-        ioe.close();
     }
 
     public void sendCmd(String cmd, final @Language("RegExp") String endPattern) {
@@ -65,43 +59,45 @@ public final class ScreenConnection implements Closeable {
     public synchronized CompletableFuture<String> sendCmdScreen(String cmd, final @Language("RegExp") String endPattern) {
         final var pattern = Pattern.compile(endPattern);
         final var sb = new StringBuilder();
-        var appender = output.listen(x -> x.ifPresent(e -> sb.append(e.getData())));
+        var appender = output.listen(e -> sb.append(e.getData()));
         var future = output.next(e -> pattern.matcher(e.getData()).matches()).whenComplete((e,t)->appender.close());
-        input(cmd);
+        input.accept(cmd);
         return future.thenApply($->sb.toString());
-    }
-
-    public void input(String input) {
-        synchronized (this.input.cmds) {
-            this.input.cmds.add(input);
-            this.input.cmds.notify();
-        }
     }
 
     private static final class Input extends InputStream {
         private final Queue<String> cmds = new PriorityBlockingQueue<>();
+        private boolean eof = true;
         private String cmd;
         private int r = 0;
-        private boolean endlSent = true;
+
+        public Input(Event.Bus<String> bus) {
+            bus.listen(e -> {
+                synchronized (cmds) {
+                    cmds.add(e.getData());
+                    cmds.notify();
+                }
+            });
+        }
 
         @Override
         public int read() {
             if (cmd == null) {
-                if (endlSent)
-                    endlSent = false;
-                else {
-                    endlSent = true;
-                    return -1;
-                }
-                synchronized (cmds) {
-                    while (cmds.size() == 0) {
-                        try {
-                            cmds.wait();
-                        } catch (InterruptedException e) {
-                            log.error("Could not wait for new input", e);
+                if (eof) {
+                    eof = false;
+                    synchronized (cmds) {
+                        while (cmds.size() == 0) {
+                            try {
+                                cmds.wait();
+                            } catch (InterruptedException e) {
+                                log.error("Could not wait for new input", e);
+                            }
                         }
+                        cmd = cmds.poll();
                     }
-                    cmd = cmds.poll();
+                } else {
+                    eof = true;
+                    return -1;
                 }
             }
 
@@ -110,13 +106,13 @@ public final class ScreenConnection implements Closeable {
                 c = cmd.charAt(r++);
             else {
                 cmd = null;
-                c = '\n';
                 r = 0;
+                return '\n';
             }
             return c;
         }
     }
-
+/*
     private final class Output extends OutputStream {
         private final boolean error;
         private StringWriter buf = new StringWriter();
@@ -150,4 +146,5 @@ public final class ScreenConnection implements Closeable {
             buf = new StringWriter();
         }
     }
+ */
 }

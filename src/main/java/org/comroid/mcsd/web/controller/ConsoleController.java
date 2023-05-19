@@ -4,20 +4,16 @@ import com.jcraft.jsch.JSchException;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.api.DelegateStream;
+import org.comroid.api.Event;
 import org.comroid.mcsd.web.config.WebSocketConfig;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.entity.User;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
-import org.comroid.mcsd.web.model.ScreenConnection;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.UserRepo;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -27,9 +23,6 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,7 +56,7 @@ public class ConsoleController {
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
             throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        res.con.getScreen().input(input.substring(1, input.length() - 1));
+        res.con.getGame().input.accept(input.substring(1, input.length() - 1));
     }
 
     @SendToUser("/console/backup")
@@ -91,29 +84,23 @@ public class ConsoleController {
     private class WebInterfaceConnection implements Closeable {
         private final Server server;
         private final User user;
-        private final WebInterfaceIO ioe;
         private final ServerConnection con;
+        private final Event.Listener<String> rspOut, rspErr;
 
         public WebInterfaceConnection(Server server, User user) {
             this.server = server;
             this.user = user;
-            this.con = server.getConnection();
-            con.getScreen().ioe.redirect.add(ioe = new WebInterfaceIO(user));
-        }
+            this.con = server.con();
+
+            this.rspOut = con.getGame().output.listen(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br));
+            this.rspErr = con.getGame().error.listen(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br));
+         }
 
         @Override
         public void close() {
-            ioe.close();
-            con.getScreen().ioe.redirect.remove(ioe);
-        }
-    }
-
-    private class WebInterfaceIO extends DelegateStream.IOE {
-        public WebInterfaceIO(final User user) {
-            super(//new DelegateStream.Input(),
-                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)),
-                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)),
-                    () -> respond.convertAndSendToUser(user.getName(), "/console/disconnect", ""));
+            rspOut.close();
+            rspErr.close();
+            respond.convertAndSendToUser(user.getName(), "/console/disconnect", "");
         }
     }
 }

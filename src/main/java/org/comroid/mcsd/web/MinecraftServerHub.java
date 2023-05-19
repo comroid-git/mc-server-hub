@@ -64,7 +64,7 @@ public class MinecraftServerHub {
     private synchronized void $cronManager() {
         StreamSupport.stream(servers.findAll().spliterator(), true)
                 .filter(Server::isManaged)
-                .map(Server::getConnection)
+                .map(Server::con)
                 .forEach(ServerConnection::cron);
     }
 
@@ -72,8 +72,8 @@ public class MinecraftServerHub {
         StreamSupport.stream(servers.findAll().spliterator(), true)
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
-                .filter(srv -> !srv.getConnection().getBackupRunning().get())
-                .filter(srv -> srv.getConnection().runBackup())
+                .filter(srv -> !srv.con().getBackupRunning().get())
+                .filter(srv -> srv.con().runBackup())
                 .peek(srv -> log.info("Successfully created backup of " + srv))
                 .forEach(servers::bumpLastBackup);
     }
@@ -82,7 +82,7 @@ public class MinecraftServerHub {
         StreamSupport.stream(servers.findAll().spliterator(), true)
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastUpdate().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
-                .map(Server::getConnection)
+                .map(Server::con)
                 .filter(ServerConnection::uploadRunScript)
                 .filter(ServerConnection::uploadProperties)
                 .filter(ServerConnection::stopServer)

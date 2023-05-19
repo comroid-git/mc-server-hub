@@ -2,21 +2,17 @@ package org.comroid.mcsd.web.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.graversen.minecraft.rcon.Defaults;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
-import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.web.model.ServerConnection;
-import org.comroid.mcsd.web.model.ServerHolder;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.intellij.lang.annotations.Language;
+import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -56,7 +52,7 @@ public class Server {
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
 
     @JsonIgnore
-    public ServerConnection getConnection() {
+    public ServerConnection con() {
         return ServerConnection.getInstance(this);
     }
 
@@ -101,7 +97,7 @@ public class Server {
     @Language("sh")
     public String wrapCmd(@Language("sh") String cmd, boolean quiet) {
         return "(cd '" + getDirectory() + "' && " +
-                //"chmod 755 mcsd.sh && " +
+                //"chmod 755 "+ServerConnection.RunScript+" && " +
                 (quiet ? "" : "echo '" + ServerConnection.OutputMarker + "' && ") +
                 "(" + (cmd.contains(ServerConnection.RunScript) && quiet ? cmd + " -q" : cmd) + ")" +
                 (quiet ? "" : " || echo 'Command finished with non-zero exit code'>&2") +
@@ -111,15 +107,15 @@ public class Server {
     }
 
     public String cmdStart() {
-        return wrapCmd("./mcsd.sh start " + getUnitName() + " " + getRamGB() + "G", false);
+        return wrapCmd("./"+ServerConnection.RunScript+" start " + getUnitName(), false);
     }
 
     public String cmdAttach() {
-        return wrapCmd("./mcsd.sh attach " + getUnitName() + " " + getRamGB() + "G", false);
+        return wrapCmd("./"+ServerConnection.RunScript+" attach " + getUnitName(), false);
     }
 
     public String cmdBackup() {
-        return wrapCmd("./mcsd.sh backup " + bean(ShRepo.class)
+        return wrapCmd("./"+ServerConnection.RunScript+" backup " + bean(ShRepo.class)
                 .findById(shConnection)
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + id))
                 .getBackupsDir() + '/' + getUnitName());
