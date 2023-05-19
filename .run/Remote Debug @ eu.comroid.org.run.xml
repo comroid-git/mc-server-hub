@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Remote Debug (slave)" type="Remote">
+  <configuration default="false" name="Remote Debug @ eu.comroid.org" type="Remote">
     <module name="mc-server-hub.main" />
     <option name="USE_SOCKET_TRANSPORT" value="true" />
     <option name="SERVER_MODE" value="false" />
@@ -11,8 +11,6 @@
       <option name="DEBUG_PORT" value="5005" />
       <option name="LOCAL" value="false" />
     </RunnerSettings>
-    <method v="2">
-      <option name="RunConfigurationTask" enabled="true" run_configuration_name="Sleep" run_configuration_type="ShConfigurationType" />
-    </method>
+    <method v="2" />
   </configuration>
 </component>
