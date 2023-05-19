@@ -2,7 +2,7 @@
 
 export DEBUG="true"
 
-export pidFile="/srv/mcsd.pid"
+export pidFile="unit.pid"
 echo $$ > $pidFile
 trap 'rm -f $pidFile' EXIT
 
