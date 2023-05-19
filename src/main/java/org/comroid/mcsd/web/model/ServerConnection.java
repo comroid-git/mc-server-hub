@@ -22,6 +22,7 @@ import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
 import org.comroid.mcsd.web.exception.EntityNotFoundException;
 import org.comroid.mcsd.web.exception.StatusCode;
+import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
@@ -324,49 +325,12 @@ public final class ServerConnection implements Closeable, ServerHolder {
     }
 
     private boolean doBackup() {
-        OutputStream bufProgress = null;
-        var bufSize = new StringWriter();
-        if (!sendSh(server.wrapCmd("./mcsd.sh backupSize", true), new DelegateStream.Output(bufSize), new DelegateStream.Output(bufSize)))
-            log.error("Unable to obtain backup size");
-        else {
-            final long size = Long.parseLong(bufSize.toString());
-            bufProgress = new OutputStream() {
-                private long c = 0;
-                private long s = 1;
-
-                @Override
-                public void write(int b) {
-                    if (b == '\n') {
-                        if (c == 0)
-                            log.debug("Backup for server %s just started".formatted(server));
-                        c++;
-                    }
-                }
-
-                @Override
-                public void flush() {
-                    if (size == 0)
-                        return;
-                    final int b = 8;
-                    IntStream.range(1, b)
-                            .filter(n -> s == (1L << n))
-                            .filter(n -> checkSize(n, b))
-                            .forEach(n -> {
-                                s <<= 1;
-                                log.debug("Backup for server %s is %d percent done".formatted(server, 1));
-                            });
-                }
-
-                @SuppressWarnings("SameParameterValue")
-                private boolean checkSize(int n, int b) {
-                    return (c / size) >= (n / b);
-                }
-            };
-        }
-        if (!sendSh(server.cmdBackup(), bufProgress)) {
+        if (!sendSh(server.cmdBackup())) {
             log.error("Backup for server %s failed".formatted(server));
             return false;
         }
+        server.setLastBackup(Instant.now());
+        bean(ServerRepo.class).save(server);
         log.info("Backup for server %s finished".formatted(server));
         return true;
     }
