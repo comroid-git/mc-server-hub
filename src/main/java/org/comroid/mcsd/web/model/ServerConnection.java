@@ -137,6 +137,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                         var stat = query.fullStat();
                         return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                                 .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
+                                .withSsh(ssh.isConnected() ? Server.Status.Online : Server.Status.Offline)
                                 .withStatus(server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online)
                                 .withPlayerCount(stat.getOnlinePlayers())
                                 .withPlayerMax(stat.getMaxPlayers())
@@ -151,6 +152,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     var stat = new MineStat(host, server.getPort());
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
+                            .withSsh(ssh.isConnected() ? Server.Status.Online : Server.Status.Offline)
                             .withStatus(stat.isServerUp() ? server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online : Server.Status.Offline)
                             .withPlayerCount(stat.getCurrentPlayers())
                             .withPlayerMax(stat.getMaximumPlayers())
@@ -161,7 +163,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 .exceptionally(t -> {
                     log.warn("Unable to get server status", t);
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
-                            .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline);
+                            .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
+                            .withSsh(ssh.isConnected() ? Server.Status.Online : Server.Status.Offline);
                 })
                 .thenApply(msg -> {
                     statusCache.put(server.getId(), msg);

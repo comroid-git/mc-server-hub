@@ -16,6 +16,7 @@ public class StatusMessage {
     public final @NonNull UUID serverId;
     public @With Server.Status status = Server.Status.Offline;
     public @With Server.Status rcon = Server.Status.Offline;
+    public @With Server.Status ssh = Server.Status.Offline;
     public @With int playerCount = 0;
     public @With int playerMax = 0;
     public @With String motd = "Server is unreachable";
