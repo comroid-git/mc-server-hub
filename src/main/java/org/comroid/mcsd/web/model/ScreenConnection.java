@@ -133,7 +133,7 @@ public final class ScreenConnection implements Closeable {
 
         @Override
         public void flush() {
-            var str = Utils.removeAnsiEscapeSequences(buf.toString()).replaceAll("\r?\n", "");
+            var str = Utils.removeAnsiEscapeSequences(buf.toString());
             if (!active && str.startsWith(OutputMarker))
                 active = true;
             else if (active && str.startsWith(EndMarker))
