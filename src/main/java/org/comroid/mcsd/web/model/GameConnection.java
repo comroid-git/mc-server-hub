@@ -43,7 +43,7 @@ public final class GameConnection implements Closeable {
                 new DelegateStream.Input(input),
                 new DelegateStream.Output(output),
                 new DelegateStream.Output(error));
-        io.apply(channel::setIn, channel::setOut, channel::setErr);
+        io.accept(channel::setIn, channel::setOut, channel::setErr);
 
         input.accept(server.cmdAttach());
         channel.open().verify(shTimeout);

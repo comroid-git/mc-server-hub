@@ -369,10 +369,11 @@ public final class ServerConnection implements Closeable, ServerHolder {
     @SneakyThrows
     public boolean sendSh(@Language("sh") String cmd) {
         synchronized (lock('$' + cmd)) {
-            try (var io = new DelegateStream.IO().log(server.con().log()).and();
+            var log = log("exec");
+            try (var io = new DelegateStream.IO().log(log).and();
                  var exec = session.createChannel(Channel.CHANNEL_EXEC);
                  var writer = new PrintWriter(exec.getInvertedIn())) {
-                io.apply(null, exec::setOut, exec::setErr);
+                io.accept(exec::setOut, exec::setErr);
 
                 writer.println(cmd);
 
@@ -381,8 +382,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
                 return true;
             } catch (Throwable t) {
-                log().debug("Could not send command '" + cmd + "' to " + server);
-                log().trace("Exception was", t);
+                log.debug("Could not send command '" + cmd + "' to " + server);
+                log.trace("Exception was", t);
                 return false;
             }
         }
