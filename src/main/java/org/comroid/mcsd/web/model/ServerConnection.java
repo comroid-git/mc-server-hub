@@ -99,18 +99,19 @@ public final class ServerConnection implements Closeable, ServerHolder {
     }
 
     @JsonIgnore
-    public Logger log() {
-        return LoggerFactory.getLogger(con.toString()+' '+server.getDirectory());
+    public Logger log(String protocol) {
+        return LoggerFactory.getLogger("%s://%s#%s".formatted(protocol, con.toString(), server.getUnitName()));
     }
 
     @Synchronized("rcon")
-    void tryRcon() {
+    boolean tryRcon() {
         try {
             if (!rcon.connectBlocking(statusTimeout))
                 log.warn("RCon handshake timed out for " + server);
         } catch (Exception e) {
             log.error("Unable to connect RCon to " + server, e);
         }
+        return rcon.isConnected();
     }
 
     public void cron() {
@@ -118,12 +119,12 @@ public final class ServerConnection implements Closeable, ServerHolder {
         var con = server.con();
 
         // upload runscript + data
-        if (!con.uploadRunScript())
-            log.warn("Unable to upload runscript to %s".formatted(server));
+        //if (!con.uploadRunScript())
+        //    log.warn("Unable to upload runscript to %s".formatted(server));
 
         // manage server.properties file
-        if (!con.uploadProperties())
-            log.warn("Unable to upload managed server properties to %s".formatted(server));
+        //if (!con.uploadProperties())
+        //    log.warn("Unable to upload managed server properties to %s".formatted(server));
 
         // is it offline?
         if (con.status().join().getStatus() == Server.Status.Offline) {
@@ -368,13 +369,10 @@ public final class ServerConnection implements Closeable, ServerHolder {
     @SneakyThrows
     public boolean sendSh(@Language("sh") String cmd) {
         synchronized (lock('$' + cmd)) {
-            try (var io = new DelegateStream.IO(6);
+            try (var io = new DelegateStream.IO().log(server.con().log()).and();
                  var exec = session.createChannel(Channel.CHANNEL_EXEC);
                  var writer = new PrintWriter(exec.getInvertedIn())) {
-                io.redirect.push(DelegateStream.IO.slf4j(log()));
-
-                exec.setOut(io.output());
-                exec.setErr(io.error());
+                io.apply(null, exec::setOut, exec::setErr);
 
                 writer.println(cmd);
 

@@ -2,6 +2,7 @@ package org.comroid.mcsd.web.model;
 
 import io.graversen.minecraft.rcon.RconCommandException;
 import io.graversen.minecraft.rcon.RconResponse;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.common.channel.Channel;
@@ -9,11 +10,11 @@ import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.mcsd.web.entity.Server;
 import org.intellij.lang.annotations.Language;
-import org.slf4j.event.Level;
 
 import java.io.*;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static org.comroid.mcsd.web.model.ServerConnection.shTimeout;
@@ -26,7 +27,6 @@ public final class GameConnection implements Closeable {
     public final Event.Bus<String> input;
     public final Event.Bus<String> output;
     public final Event.Bus<String> error;
-    private final PrintStream writer;
     public final DelegateStream.IO io;
 
     public GameConnection(ServerConnection con) throws IOException {
@@ -37,32 +37,28 @@ public final class GameConnection implements Closeable {
         this.input = new Event.Bus<>();
         this.output = new Event.Bus<>();
         this.error = new Event.Bus<>();
-        input.log(con.log(), Level.DEBUG);
-        output.log(con.log(), Level.INFO);
-        error.log(con.log(), Level.ERROR);
 
+        this.io = new DelegateStream.IO();
+        io.log(con.log("screen")).and().attach(
+                new DelegateStream.Input(input),
+                new DelegateStream.Output(output),
+                new DelegateStream.Output(error));
+        io.apply(channel::setIn, channel::setOut, channel::setErr);
+
+        input.accept(server.cmdAttach());
         channel.open().verify(shTimeout);
-        this.writer = new PrintStream(channel.getInvertedIn());
-        writer.println(server.cmdAttach());
-
-        var appender = input.listen(e -> e.consume(writer::println));
-        this.io = new DelegateStream.IO(6, input,output,error,appender);
-        io.redirect.push(DelegateStream.IO.slf4j(connection.log()));
-        io.redirect.push(new DelegateStream.IO(new DelegateStream.Output(output), new DelegateStream.Output(error)));
-
-        channel.setOut(io.output());
-        channel.setErr(io.error());
     }
 
     @Override
-    public void close() throws IOException {
+    @SneakyThrows
+    public void close() {
         log.warn("ScreenConnection was closed");
         channel.close();
         io.close();
     }
 
     public void sendCmd(String cmd, final @Language("RegExp") String endPattern) {
-        if (connection.getRcon().isConnected())
+        if (connection.tryRcon())
             connection.game.sendCmdRCon(cmd, connection);
         else if (endPattern != null) sendCmdScreen(cmd, endPattern).join();
         else throw new RuntimeException("Cannot send command " + cmd + " because both RCon and Screen are offline");
@@ -71,8 +67,9 @@ public final class GameConnection implements Closeable {
     public synchronized CompletableFuture<String> sendCmdScreen(String cmd, final @Language("RegExp") String endPattern) {
         final var pattern = Pattern.compile(endPattern);
         final var sb = new StringBuilder();
-        var appender = output.listen(e -> sb.append(e.getData()));
-        var future = output.next(e -> pattern.matcher(e.getData()).matches()).whenComplete((e,t)->appender.close());
+        final Predicate<Event<String>> predicate = e -> pattern.matcher(e.getData()).matches();
+        var appender = output.listen(predicate, e -> sb.append(e.getData()));
+        var future = output.next(predicate).whenComplete((e,t)->appender.close());
         input.accept(cmd);
         return future.thenApply($->sb.toString());
     }

@@ -3,9 +3,9 @@ package org.comroid.mcsd.web.controller;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
-import org.comroid.api.Event;
 import org.comroid.mcsd.web.config.WebSocketConfig;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
@@ -92,15 +92,17 @@ public class ConsoleController {
             this.user = user;
             this.con = server.con();
             this.io = new DelegateStream.IO(
+                    null,
                     new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)),
-                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)),
-                    () -> respond.convertAndSendToUser(user.getName(), "/console/disconnect", ""));
-            con.getGame().io.redirect.push(io);
-         }
+                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)));
+            con.getGame().io.attach(io);
+            log.debug("Webinterface IO Configuration:\n"+con.getGame().io.getAlternateName());
+        }
 
         @Override
+        @SneakyThrows
         public void close() {
-            con.getGame().io.redirect.remove(io);
+            respond.convertAndSendToUser(user.getName(), "/console/disconnect", "");
             io.close();
         }
     }
