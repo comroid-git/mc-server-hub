@@ -5,22 +5,21 @@ import io.graversen.minecraft.rcon.RconResponse;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.client.channel.ClientChannel;
-import org.apache.sshd.client.channel.ClientChannelEvent;
-import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.PtyChannelConfiguration;
-import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.mcsd.web.entity.Server;
+import org.comroid.mcsd.web.util.Utils;
 import org.intellij.lang.annotations.Language;
 
 import java.io.*;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
-import static org.comroid.mcsd.web.model.ServerConnection.shTimeout;
+import static org.comroid.mcsd.web.model.ServerConnection.*;
 
 @Slf4j
 public final class GameConnection implements Closeable {
@@ -31,6 +30,7 @@ public final class GameConnection implements Closeable {
     public final Event.Bus<String> output;
     public final Event.Bus<String> error;
     public final DelegateStream.IO io;
+    private boolean outputActive;
 
     public GameConnection(ServerConnection con) throws IOException {
         this.connection = con;
@@ -41,11 +41,21 @@ public final class GameConnection implements Closeable {
         this.output = new Event.Bus<>();
         this.error = new Event.Bus<>();
 
-        this.io = new DelegateStream.IO();
-        io.redirectToSystem().and().redirect(
+        this.io = new DelegateStream.IO()
+                .redirectToSystem()
+                .and().redirect(
                 new DelegateStream.Input(input),
-                new DelegateStream.Output(output),
-                new DelegateStream.Output(error));
+                new DelegateStream.Output(output)
+                        .filter(str -> {
+                            if (!str.startsWith(OutputEndMarker))
+                                return true;
+                            return outputActive = false;
+                        })
+                        .filter(str -> outputActive || (outputActive=str.startsWith(OutputBeginMarker)))
+                        .filter(Predicate.not(String::isEmpty))
+                        .map(Utils::removeAnsiEscapeSequences)
+                        .flatMap(str -> Stream.of(str.split("\b|\r|\n|(\r?\n)"))),
+                new DelegateStream.Output(error).filter($->outputActive));
         io.accept(channel::setIn, channel::setOut, channel::setErr);
         log.info("GameConnection IO Configuration:\n"+io.getAlternateName());
 
