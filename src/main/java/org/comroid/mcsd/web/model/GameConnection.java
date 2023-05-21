@@ -10,9 +10,6 @@ import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.mcsd.web.entity.Server;
 import org.intellij.lang.annotations.Language;
-import org.slf4j.Logger;
-import org.slf4j.event.Level;
-import org.springframework.boot.logging.LogLevel;
 
 import java.io.*;
 import java.util.Optional;
@@ -42,7 +39,7 @@ public final class GameConnection implements Closeable {
         this.error = new Event.Bus<>();
 
         this.io = new DelegateStream.IO();
-        io.log(log).and().attach(
+        io.log(log).and().redirect(
                 new DelegateStream.Input(input),
                 new DelegateStream.Output(output),
                 new DelegateStream.Output(error));
