@@ -49,7 +49,7 @@ public final class GameConnection implements Closeable {
                 .and().log(mini);
                 //.and().system();
         io.accept(channel::setInputStream, channel::setOutputStream, channel::setExtOutputStream);
-        mini.debug("GameConnection IO Configuration:\n"+io.getAlternateName());
+        mini.info("GameConnection IO Configuration:\n"+io.getAlternateName());
 
         channel.connect();
         channel.start();
