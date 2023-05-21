@@ -3,6 +3,9 @@ package org.comroid.mcsd.web.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
+import com.jcraft.jsch.*;
+import io.graversen.minecraft.rcon.RconCommandException;
+import io.graversen.minecraft.rcon.RconResponse;
 import io.graversen.minecraft.rcon.service.ConnectOptions;
 import io.graversen.minecraft.rcon.service.IMinecraftRconService;
 import io.graversen.minecraft.rcon.service.MinecraftRconService;
@@ -12,12 +15,6 @@ import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
-import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.channel.ClientChannelEvent;
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.sftp.client.SftpClient;
-import org.apache.sshd.sftp.client.impl.DefaultSftpClientFactory;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.ThrowingFunction;
 import org.comroid.mcsd.web.dto.StatusMessage;
@@ -58,32 +55,24 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private static final Map<String, Object> locks = new ConcurrentHashMap<>();
     private static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     private static final Duration statusTimeout = Duration.ofSeconds(10);
-    static final Duration shTimeout = Duration.ofMinutes(2);
     private static final Resource runscript = bean(ResourceLoader.class).getResource("classpath:/"+ServerConnection.RunScript);
     private final ShConnection con;
     @JsonIgnore
     private final Server server;
+    private final Session session;
     @JsonIgnore
-    private final ClientSession session;
-    @JsonIgnore
-    private final SftpClient sftp;
-    @JsonIgnore
-    final GameConnection game;
+    private final GameConnection game;
     private final IMinecraftRconService rcon;
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
 
-    private ServerConnection(Server server) throws IOException {
+    private ServerConnection(Server server) throws JSchException {
         this.server = server;
         this.con = shConnection();
-        this.session = bean(SshClient.class)
-                .connect(con.getUsername(), con.getHost(), con.getPort())
-                .verify(shTimeout)
-                .getSession();
+        this.session = bean(JSch.class).getSession(con.getUsername(), con.getHost(), con.getPort());
 
-        session.addPasswordIdentity(con.getPassword());
-        session.auth().verify(shTimeout);
-
-        this.sftp = new DefaultSftpClientFactory().createSftpClient(session);
+        session.setPassword(con.getPassword());
+        session.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
+        session.connect();
 
         if (!uploadRunScript() | !uploadProperties())
             throw new RuntimeException("Could not connect to "+server+"; unable to upload runscript");
@@ -159,7 +148,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                         var stat = query.fullStat();
                         return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                                 .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
-                                .withSsh(game.channel.isOpen() ? Server.Status.Online : Server.Status.Offline)
+                                .withSsh(game.channel.isConnected() ? Server.Status.Online : Server.Status.Offline)
                                 .withStatus(server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online)
                                 .withPlayerCount(stat.getOnlinePlayers())
                                 .withPlayerMax(stat.getMaxPlayers())
@@ -175,7 +164,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     var stat = new MineStat(host, server.getPort());
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
-                            .withSsh(game.channel.isOpen() ? Server.Status.Online : Server.Status.Offline)
+                            .withSsh(game.channel.isConnected() ? Server.Status.Online : Server.Status.Offline)
                             .withStatus(stat.isServerUp() ? server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online : Server.Status.Offline)
                             .withPlayerCount(stat.getCurrentPlayers())
                             .withPlayerMax(stat.getMaximumPlayers())
@@ -188,7 +177,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     log.trace("Exception was", t);
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
-                            .withSsh(game.channel.isOpen() ? Server.Status.Online : Server.Status.Offline);
+                            .withSsh(game.channel.isConnected() ? Server.Status.Online : Server.Status.Offline);
                 })
                 .thenApply(msg -> {
                     statusCache.put(server.getId(), msg);
@@ -272,40 +261,20 @@ public final class ServerConnection implements Closeable, ServerHolder {
             log.warn("A backup on server %s is already running".formatted(server));
             return false;
         }
+        log.debug("Starting backup on "+server);
 
-        if (rcon.isConnected()) {
-            try {
-                var sOff = game.sendCmdRCon("save-off", this);
-                var sAll = game.sendCmdRCon("save-all", this);
-                if (sOff.isEmpty() || sAll.isEmpty()) {
-                    log.error("Could not run backup on server %s because save-off and save-all failed".formatted(server));
-                    return false;
-                }
-                if (!doBackup()) {
-                    log.error("Could not run backup on server %s using RCon".formatted(server));
-                    return false;
-                }
-            } finally {
-                var sOn = game.sendCmdRCon("save-on", this);
-                if (sOn.isEmpty())
-                    log.error("Could not enable autosave after backup for " + server);
+        try {
+            game.sendCmd("save-off", "^.*(Automatic saving is now disabled).*$");
+            game.sendCmd("save-all", "^.*(Saved the game).*$");
+            if (!doBackup()) {
+                log.error("Could not run backup on server %s using RCon".formatted(server));
+                return false;
             }
-            backupRunning.set(false);
-            return true;
-        } else {
-            try {
-                game.sendCmd("save-off", "^.*(Automatic saving is now disabled).*$");
-                game.sendCmd("save-all", "^.*(Saved the game).*$");
-                if (!doBackup()) {
-                    log.error("Could not run backup on server %s using screen".formatted(server));
-                    return false;
-                }
-            } finally {
-                game.sendCmd("save-on", "^.*(Automatic saving is now enabled).*$");
-            }
-            backupRunning.set(false);
-            return true;
+        } finally {
+            game.sendCmd("save-on", "^.*(Automatic saving is now enabled).*$");
         }
+        backupRunning.set(false);
+        return true;
     }
 
     private boolean startBackup() {
@@ -352,53 +321,71 @@ public final class ServerConnection implements Closeable, ServerHolder {
         }
     }
 
-    @SneakyThrows
-    public OutputStream uploadFile(final String path) {
+    public DelegateStream.Output uploadFile(final String path) throws Exception {
         synchronized (lock(':' + path)) {
-            return sftp.write(path);
+            var sftp = (ChannelSftp) session.openChannel("sftp");
+            sftp.connect();
+            return new DelegateStream.Output(sftp.put(path));
         }
     }
 
-    @SneakyThrows
-    public InputStream downloadFile(final String path) {
+    public DelegateStream.Input downloadFile(final String path) throws Exception {
         synchronized (lock(':' + path)) {
-            return sftp.read(path);
+            var sftp = (ChannelSftp) session.openChannel("sftp");
+            sftp.connect();
+            return new DelegateStream.Input(sftp.get(path)).setDelegate(sftp::disconnect);
         }
     }
 
-    @SneakyThrows
     public boolean sendSh(@Language("sh") String cmd) {
         synchronized (lock('$' + cmd)) {
+            ChannelExec channel = null;
             var log = log("exec");
-            try (var io = new DelegateStream.IO().log(log).and();
-                 var exec = session.createChannel(Channel.CHANNEL_EXEC);
-                 var writer = new PrintWriter(exec.getInvertedIn())) {
-                io.accept(exec::setOut, exec::setErr);
+            try (var io = new DelegateStream.IO().log(log).and()) {
+                channel = (ChannelExec) session.openChannel("exec");
+                channel.setCommand(cmd);
 
-                writer.println(cmd);
+                io.accept(channel::setInputStream, channel::setOutputStream, channel::setExtOutputStream);
 
-                exec.open().verify(shTimeout);
-                exec.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), shTimeout);
+                channel.connect();
+                channel.start();
+
+                while (channel.getExitStatus() == -1)
+                    //noinspection BusyWait
+                    Thread.sleep(10);
 
                 return true;
             } catch (Throwable t) {
                 log.debug("Could not send command '" + cmd + "' to " + server);
                 log.trace("Exception was", t);
                 return false;
+            } finally {
+                if (channel != null)
+                    channel.disconnect();
             }
         }
     }
 
+    public Optional<RconResponse> sendCmdRCon(final String cmd) {
+        if (rcon == null)
+            return Optional.empty();
+        tryRcon();
+        return rcon.minecraftRcon().map(rc -> {
+            try {
+                return rc.sendSync(() -> cmd);
+            } catch (RconCommandException e) {
+                log.warn("Internal error occurred when sending command %s to server %s".formatted(cmd, server), e);
+                return null;
+            }
+        });
+    }
+
     @Override
-    public void close() throws IOException {
+    public void close() {
+        if (session != null)
+            session.disconnect();
         if (rcon != null)
             rcon.disconnect();
-        if (game != null)
-            game.close();
-        if (sftp != null)
-            sftp.close();
-        if (session != null)
-            session.close();
     }
 
     @Override
@@ -413,6 +400,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
     }
 
     private Object lock(String route) {
-        return locks.computeIfAbsent(shConnection().getHost() + route, $ -> new Object());
+        return locks.computeIfAbsent(session.getHost() + route, $ -> new Object());
     }
 }

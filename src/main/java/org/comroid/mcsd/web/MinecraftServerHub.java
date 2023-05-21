@@ -3,10 +3,6 @@ package org.comroid.mcsd.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.jdbc.Driver;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.sshd.client.ClientBuilder;
-import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.web.dto.DBInfo;
 import org.comroid.mcsd.web.dto.OAuth2Info;
@@ -48,51 +44,6 @@ public class MinecraftServerHub {
 
     public static void main(String[] args) {
         SpringApplication.run(MinecraftServerHub.class, args);
-    }
-
-    @Bean(name = "configDir")
-    @Order(Ordered.HIGHEST_PRECEDENCE)
-    @ConditionalOnExpression(value = "environment.containsProperty('DEBUG')")
-    public FileHandle configDir_Debug() {
-        log.info("Using debug configuration directory");
-        return new FileHandle("/srv/mcsd-dev/", true);
-    }
-
-    @Bean
-    @Order
-    @ConditionalOnMissingBean(name = "configDir")
-    public FileHandle configDir() {
-        log.info("Using production configuration directory");
-        return new FileHandle("/srv/mcsd/", true);
-    }
-
-    @Bean
-    public DBInfo dataSourceInfo(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
-        return objectMapper.readValue(configDir.createSubFile("db.json"), DBInfo.class);
-    }
-
-    @Bean
-    public OAuth2Info oAuthInfo(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
-        return objectMapper.readValue(configDir.createSubFile("oauth2.json"), OAuth2Info.class);
-    }
-
-    @Bean
-    public DataSource dataSource(@Autowired DBInfo dbInfo) {
-        return DataSourceBuilder.create()
-                .driverClassName(Driver.class.getCanonicalName())
-                .url(dbInfo.getUrl())
-                .username(dbInfo.getUsername())
-                .password(dbInfo.getPassword())
-                .build();
-    }
-
-    @Bean
-    public SshClient ssh() {
-        SshClient client = ClientBuilder.builder()
-                .serverKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE) // todo This is bad and unsafe
-                .build();
-        client.start();
-        return client;
     }
 
     @Bean
@@ -141,5 +92,42 @@ public class MinecraftServerHub {
                 .peek(srv -> log.info("Successfully updated " + srv))
                 .forEach(servers::bumpLastUpdate);
     }
+
+    @Bean(name = "configDir")
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ConditionalOnExpression(value = "environment.containsProperty('DEBUG')")
+    public FileHandle configDir_Debug() {
+        log.info("Using debug configuration directory");
+        return new FileHandle("/srv/mcsd-dev/", true);
+    }
+
+    @Bean
+    @Order
+    @ConditionalOnMissingBean(name = "configDir")
+    public FileHandle configDir() {
+        log.info("Using production configuration directory");
+        return new FileHandle("/srv/mcsd/", true);
+    }
+
+    @Bean
+    public DBInfo dataSourceInfo(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
+        return objectMapper.readValue(configDir.createSubFile("db.json"), DBInfo.class);
+    }
+
+    @Bean
+    public OAuth2Info oAuthInfo(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
+        return objectMapper.readValue(configDir.createSubFile("oauth2.json"), OAuth2Info.class);
+    }
+
+    @Bean
+    public DataSource dataSource(@Autowired DBInfo dbInfo) {
+        return DataSourceBuilder.create()
+                .driverClassName(Driver.class.getCanonicalName())
+                .url(dbInfo.getUrl())
+                .username(dbInfo.getUsername())
+                .password(dbInfo.getPassword())
+                .build();
+    }
+
 }
 

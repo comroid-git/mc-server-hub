@@ -17,7 +17,6 @@ spring:
   datasource:
     hikari:
       auto-commit: true
-      max-lifetime: 360_000
   # mvc config
   web:
     resources:
