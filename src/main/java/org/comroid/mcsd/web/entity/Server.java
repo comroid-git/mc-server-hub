@@ -90,11 +90,11 @@ public class Server {
 
     @Language("sh")
     public String wrapCmd(@Language("sh") String cmd) {
-        return "((cd '" + getDirectory() + "' && " +
+        return "(cd '" + getDirectory() + "' && " +
                 //"chmod 755 "+ServerConnection.RunScript+" && " +
                 "echo '" + ServerConnection.OutputMarker + "' && " +
-                "(" + cmd + "))" +
-                //" || echo 'Command finished with non-zero exit code'>&2" +
+                "(" + cmd + ")" +
+                " || echo 'Command finished with non-zero exit code'>&2" +
                 ") && " +
                 "echo '" + ServerConnection.EndMarker + "' && " +
                 "exit";

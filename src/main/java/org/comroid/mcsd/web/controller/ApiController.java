@@ -1,6 +1,5 @@
 package org.comroid.mcsd.web.controller;
 
-import com.jcraft.jsch.JSch;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.mcsd.web.entity.Server;
@@ -27,8 +26,6 @@ public class ApiController {
     private ServerRepo servers;
     @Autowired
     private ShRepo shRepo;
-    @Autowired
-    private JSch jSch;
 
     @GetMapping("/findUserByName/{name}")
     public User findUserByName(@PathVariable String name) {
