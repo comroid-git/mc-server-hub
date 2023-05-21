@@ -333,7 +333,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         synchronized (lock(':' + path)) {
             var sftp = (ChannelSftp) session.openChannel("sftp");
             sftp.connect();
-            return new DelegateStream.Input(sftp.get(path)).setDelegate(sftp::disconnect);
+            return new DelegateStream.Input(sftp.get(path));
         }
     }
 
@@ -341,7 +341,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         synchronized (lock('$' + cmd)) {
             ChannelExec channel = null;
             var log = log("exec");
-            try (var io = new DelegateStream.IO().log(log).and()) {
+            try (var io = new DelegateStream.IO().log(log)) {
                 channel = (ChannelExec) session.openChannel("exec");
                 channel.setCommand(cmd);
 
