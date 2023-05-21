@@ -2,6 +2,7 @@ package org.comroid.mcsd.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.jdbc.Driver;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.info.Log;
 import org.comroid.api.io.FileHandle;
@@ -11,6 +12,7 @@ import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.model.GameConnection;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ServerRepo;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -49,55 +51,69 @@ public class MinecraftServerHub {
         SpringApplication.run(MinecraftServerHub.class, args);
     }
 
-    @Bean
+    @Bean @Lazy(false)
     public ScheduledFuture<?> cronWatchdog(@Autowired TaskScheduler scheduler) {
         return scheduler.scheduleAtFixedRate(this::$cronWatchdog, CRON_WATCHDOG_RATE);
     }
 
-    @Bean
+    @Bean @Lazy(false)
     public ScheduledFuture<?> cronManager(@Autowired TaskScheduler scheduler) {
         return scheduler.scheduleAtFixedRate(this::$cronManager, CRON_MANAGE_RATE);
     }
 
-    @Bean
+    @Bean @Lazy(false)
     public ScheduledFuture<?> cronBackup(@Autowired TaskScheduler scheduler) {
         return scheduler.scheduleAtFixedRate(this::$cronBackup, CRON_QUEUE_RATE);
     }
 
-    @Bean
+    //@Bean
     public ScheduledFuture<?> cronUpdate(@Autowired TaskScheduler scheduler) {
         return scheduler.scheduleAtFixedRate(this::$cronUpdate, CRON_QUEUE_RATE);
     }
 
-    private synchronized void $cronWatchdog() {
-        StreamSupport.stream(servers.findAll().spliterator(), true)
+    private static final Logger cronLog = Log.get("cron");
+    private static final boolean parallelCron = false;
+
+    @Synchronized
+    private void $cronWatchdog() {
+        cronLog.debug("Running Watchdog");
+        StreamSupport.stream(servers.findAll().spliterator(), parallelCron)
                 .filter(Server::isManaged)
                 .map(Server::con)
                 .map(ServerConnection::getGame)
                 .filter(con -> !con.channel.isConnected())
-                .peek(con -> Log.get("Watchdog").warn("Connection to " + con.server.con() + " is dead; restarting!"))
+                .peek(con -> cronLog.warn("Connection to " + con.server.con() + " is dead; restarting!"))
                 .forEach(GameConnection::reconnect);
+        cronLog.debug("Watchdog finished");
     }
 
-    private synchronized void $cronManager() {
-        StreamSupport.stream(servers.findAll().spliterator(), true)
+    @Synchronized
+    private void $cronManager() {
+        cronLog.debug("Running Manager");
+        StreamSupport.stream(servers.findAll().spliterator(), parallelCron)
                 .filter(Server::isManaged)
                 .map(Server::con)
                 .forEach(ServerConnection::cron);
+        cronLog.debug("Manager finished");
     }
 
-    private synchronized void $cronBackup() {
-        StreamSupport.stream(servers.findAll().spliterator(), true)
+    @Synchronized
+    private void $cronBackup() {
+        cronLog.debug("Running Backup Queue");
+        StreamSupport.stream(servers.findAll().spliterator(), parallelCron)
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .filter(srv -> !srv.con().getBackupRunning().get())
                 .filter(srv -> srv.con().runBackup())
-                .peek(srv -> log.info("Successfully created backup of " + srv))
+                .peek(srv -> cronLog.info("Successfully created backup of " + srv))
                 .forEach(servers::bumpLastBackup);
+        cronLog.debug("Backup Queue finished");
     }
 
-    private synchronized void $cronUpdate() {
-        StreamSupport.stream(servers.findAll().spliterator(), true)
+    @Synchronized
+    private void $cronUpdate() {
+        cronLog.debug("Running Update Queue");
+        StreamSupport.stream(servers.findAll().spliterator(), parallelCron)
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastUpdate().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(Server::con)
@@ -107,8 +123,9 @@ public class MinecraftServerHub {
                 .filter(ServerConnection::runUpdate)
                 .filter(ServerConnection::startServer)
                 .map(ServerConnection::getServer)
-                .peek(srv -> log.info("Successfully updated " + srv))
+                .peek(srv -> cronLog.info("Successfully updated " + srv))
                 .forEach(servers::bumpLastUpdate);
+        cronLog.debug("Update Queue finished");
     }
 
     @Bean(name = "configDir")

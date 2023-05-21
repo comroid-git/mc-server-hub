@@ -24,4 +24,5 @@ spring:
 logging:
   level:
     root: info
+    cron: debug
     org.comroid: debug

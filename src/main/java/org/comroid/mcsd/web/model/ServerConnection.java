@@ -13,10 +13,10 @@ import io.graversen.minecraft.rcon.service.RconDetails;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
-import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.ThrowingFunction;
+import org.comroid.api.info.Log;
 import org.comroid.mcsd.web.dto.StatusMessage;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
@@ -25,7 +25,6 @@ import org.comroid.mcsd.web.repo.ServerRepo;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.intellij.lang.annotations.Language;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
@@ -41,7 +40,6 @@ import java.util.stream.StreamSupport;
 
 import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 
-@Slf4j
 @Getter
 public final class ServerConnection implements Closeable, ServerHolder {
     @Language("html")
@@ -57,11 +55,13 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private static final Duration statusTimeout = Duration.ofSeconds(10);
     private static final Resource runscript = bean(ResourceLoader.class).getResource("classpath:/"+ServerConnection.RunScript);
     private final ShConnection con;
-    @JsonIgnore
+    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
+    private final Logger log;
+    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
     private final Server server;
     private final Session session;
     private final ChannelSftp sftp;
-    @JsonIgnore
+    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
     private final GameConnection game;
     private final IMinecraftRconService rcon;
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
@@ -69,6 +69,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private ServerConnection(Server server) throws JSchException {
         this.server = server;
         this.con = shConnection();
+        this.log = Log.get(con.toString());
 
         this.session = bean(JSch.class).getSession(con.getUsername(), con.getHost(), con.getPort());
         session.setPassword(con.getPassword());
@@ -89,11 +90,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
     public static ServerConnection getInstance(final Server srv) {
         return cache.computeIfAbsent(srv.getId(), ThrowingFunction.rethrowing($ -> new ServerConnection(srv)));
-    }
-
-    @JsonIgnore
-    public Logger log(String protocol) {
-        return LoggerFactory.getLogger("%s://%s#%s".formatted(protocol, con.toString(), server.getUnitName()));
     }
 
     @Synchronized("rcon")
@@ -260,7 +256,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         }
     }
 
-    public synchronized boolean runBackup() {
+    public boolean runBackup() {
         if (!startBackup()) {
             log.warn("A backup on server %s is already running".formatted(server));
             return false;
@@ -301,7 +297,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
             log.warn("Could not upload runscript when trying to update " + server);
         if (!uploadProperties())
             log.warn("Could not upload properties when trying to update " + server);
-        if (sendSh(server.wrapCmd("./"+ServerConnection.RunScript+" update"))) {
+        if (sendSh(server.cmdUpdate())) {
             return true;
         }
         log.error("Could not update " + server);
@@ -314,7 +310,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     }
 
     public boolean stopServer() {
-        if (!sendSh(server.wrapCmd("./"+ServerConnection.RunScript+" disable", false)))
+        if (!sendSh(server.cmdDisable()))
             log.warn("Could not disable server restarts when trying to stop " + server);
         try {
             game.sendCmd("stop", "^.*" + ServerConnection.EndMarker + ".*$");
@@ -340,7 +336,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
     public boolean sendSh(@Language("sh") String cmd) {
         synchronized (lock('$' + cmd)) {
             ChannelExec channel = null;
-            var log = log("exec");
             try (var io = new DelegateStream.IO().log(log)) {
                 channel = (ChannelExec) session.openChannel("exec");
                 channel.setCommand(cmd);

@@ -98,7 +98,7 @@ public class ConsoleController {
                     new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)),
                     new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)));
 
-            con.log("web").info("Webinterface IO Configuration:\n"+io.getAlternateName());
+            con.getLog().info("Webinterface IO Configuration:\n"+io.getAlternateName());
          }
 
         @Override

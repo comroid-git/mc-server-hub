@@ -41,7 +41,7 @@ public final class GameConnection implements Closeable {
         this.error = new Event.Bus<>();
 
         this.io = new DelegateStream.IO();
-        var mini = con.log("screen");
+        var mini = con.getLog();
         io.attach(
                 new DelegateStream.Input(input),
                 new DelegateStream.Output(output),
