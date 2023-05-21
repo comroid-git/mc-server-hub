@@ -5,6 +5,7 @@ import io.graversen.minecraft.rcon.RconResponse;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.common.channel.Channel;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
@@ -39,7 +40,7 @@ public final class GameConnection implements Closeable {
         this.error = new Event.Bus<>();
 
         this.io = new DelegateStream.IO();
-        io.log(log).and().redirect(
+        io.redirectToSystem().and().redirect(
                 new DelegateStream.Input(input),
                 new DelegateStream.Output(output),
                 new DelegateStream.Output(error));

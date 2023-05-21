@@ -47,8 +47,8 @@ import static org.comroid.mcsd.web.util.ApplicationContextProvider.bean;
 public final class ServerConnection implements Closeable, ServerHolder {
     @Language("html")
     public static final String br = "<br/>";
-    public static final String OutputMarker = "################ Output Began ################";
-    public static final String EndMarker = "################ Output Ended ################";
+    public static final String OutputBeginMarker = "~~>";
+    public static final String OutputEndMarker = "<~>";
     public static final String RunScript = "mcsd.sh";
     public static final String UnitFile = "unit.properties";
     private static final Map<UUID, ServerConnection> cache = new ConcurrentHashMap<>();
@@ -341,7 +341,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         if (!sendSh(server.cmdDisable()))
             log.warn("Could not disable server restarts when trying to stop " + server);
         try {
-            game.sendCmd("stop", "^.*" + ServerConnection.EndMarker + ".*$");
+            game.sendCmd("stop", "^.*" + ServerConnection.OutputEndMarker + ".*$");
             return true;
         } catch (Throwable e) {
             log.error("Could not stop " + server, e);

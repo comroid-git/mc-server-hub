@@ -91,8 +91,7 @@ public class ConsoleController {
             this.server = server;
             this.user = user;
             this.con = server.con();
-            this.io = new DelegateStream.IO(
-                    null,
+            this.io = server.con().getGame().io.redirect(
                     new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)),
                     new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)));
             con.getLog().info("Webinterface IO Configuration:\n"+io.getAlternateName());
