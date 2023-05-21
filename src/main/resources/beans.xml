@@ -15,5 +15,4 @@
         <property name="prefix" value="/"/>
         <property name="suffix" value=".jsp"/>
     </bean>
-    <bean id="jSch" class="com.jcraft.jsch.JSch"/>
 </beans>

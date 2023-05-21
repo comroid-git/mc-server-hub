@@ -12,7 +12,6 @@ import org.comroid.mcsd.web.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ShRepo;
 import org.intellij.lang.annotations.Language;
-import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -91,27 +90,34 @@ public class Server {
 
     @Language("sh")
     public String wrapCmd(@Language("sh") String cmd) {
-        return wrapCmd(cmd, false);
-    }
-
-    @Language("sh")
-    public String wrapCmd(@Language("sh") String cmd, boolean quiet) {
+        return wrapDevNull(
+                "(cd '"+getDirectory()+"' &&\n" +
+                "echo '"+ServerConnection.OutputBeginMarker +"' &&\n" +
+                "("+cmd+") || echo 'command failed'>&2) &&\n" +
+                "echo '"+ServerConnection.OutputEndMarker +"' &&\n" +
+                "exit");
+        /*
         return "(cd '" + getDirectory() + "' && " +
                 //"chmod 755 "+ServerConnection.RunScript+" && " +
-                (quiet ? "" : "echo '" + ServerConnection.OutputMarker + "' && ") +
-                "(" + (cmd.contains(ServerConnection.RunScript) && quiet ? cmd + " -q" : cmd) + ")" +
-                (quiet ? "" : " || echo 'Command finished with non-zero exit code'>&2") +
+                "echo '" + ServerConnection.OutputMarker + "' && " +
+                "(" + cmd + ")" +
+                " || echo 'Command finished with non-zero exit code'>&2" +
                 ") && " +
-                (quiet ? "" : "echo '" + ServerConnection.EndMarker + "' && ") +
+                "echo '" + ServerConnection.EndMarker + "' && " +
                 "exit";
+         */
+    }
+    @Language("sh")
+    private String wrapDevNull(@Language("sh") String cmd) {
+        return "export TERM='xterm' && echo \""+cmd+"\" | script /dev/null";
     }
 
     public String cmdStart() {
-        return wrapCmd("./"+ServerConnection.RunScript+" start " + getUnitName(), false);
+        return wrapCmd("./"+ServerConnection.RunScript+" start ");
     }
 
     public String cmdAttach() {
-        return wrapCmd("./"+ServerConnection.RunScript+" attach " + getUnitName(), false);
+        return wrapCmd("./"+ServerConnection.RunScript+" attach ");
     }
 
     public String cmdBackup() {
@@ -119,6 +125,14 @@ public class Server {
                 .findById(shConnection)
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + id))
                 .getBackupsDir() + '/' + getUnitName());
+    }
+
+    public String cmdUpdate() {
+        return wrapCmd("./"+ServerConnection.RunScript+" update");
+    }
+
+    public String cmdDisable() {
+        return wrapCmd("./"+ServerConnection.RunScript+" disable");
     }
 
     @Override

@@ -1,11 +1,11 @@
 package org.comroid.mcsd.web.controller;
 
-import com.jcraft.jsch.JSchException;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.api.Event;
+import org.comroid.api.DelegateStream;
 import org.comroid.mcsd.web.config.WebSocketConfig;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
@@ -39,7 +39,7 @@ public class ConsoleController {
     private ServerRepo serverRepo;
 
     @MessageMapping("/console/connect")
-    public void connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) throws JSchException {
+    public void connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
         var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
         var user = userRepo.findBySession(session);
         var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
@@ -85,22 +85,23 @@ public class ConsoleController {
         private final Server server;
         private final User user;
         private final ServerConnection con;
-        private final Event.Listener<String> rspOut, rspErr;
+        private final DelegateStream.IO io;
 
         public WebInterfaceConnection(Server server, User user) {
             this.server = server;
             this.user = user;
             this.con = server.con();
-
-            this.rspOut = con.getGame().output.listen(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br));
-            this.rspErr = con.getGame().error.listen(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br));
-         }
+            this.io = server.con().getGame().io.redirect(
+                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)),
+                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)));
+            con.getLog().info("Webinterface IO Configuration:\n"+io.getAlternateName());
+        }
 
         @Override
+        @SneakyThrows
         public void close() {
-            rspOut.close();
-            rspErr.close();
             respond.convertAndSendToUser(user.getName(), "/console/disconnect", "");
+            io.close();
         }
     }
 }

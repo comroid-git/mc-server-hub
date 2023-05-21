@@ -1,57 +1,74 @@
 package org.comroid.mcsd.web.model;
 
-import com.jcraft.jsch.ChannelShell;
-import com.jcraft.jsch.JSchException;
+import io.graversen.minecraft.rcon.RconCommandException;
+import io.graversen.minecraft.rcon.RconResponse;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.PtyChannelConfiguration;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.mcsd.web.entity.Server;
 import org.intellij.lang.annotations.Language;
-import org.slf4j.event.Level;
-import org.springframework.boot.logging.LogLevel;
 
 import java.io.*;
-import java.util.Queue;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
+
+import static org.comroid.mcsd.web.model.ServerConnection.shTimeout;
 
 @Slf4j
 public final class GameConnection implements Closeable {
     private final ServerConnection connection;
     public final Server server;
-    public final ChannelShell channel;
-    public final Event.Bus<String> input = new Event.Bus<>();
-    public final Event.Bus<String> output = new Event.Bus<>();
-    public final Event.Bus<String> error = new Event.Bus<>();
+    public final ClientChannel channel;
+    public final Event.Bus<String> input;
+    public final Event.Bus<String> output;
+    public final Event.Bus<String> error;
+    public final DelegateStream.IO io;
 
-    public GameConnection(ServerConnection con) throws JSchException {
+    public GameConnection(ServerConnection con) throws IOException {
         this.connection = con;
         this.server = con.getServer();
-        this.channel = (ChannelShell) connection.getSession().openChannel("shell");
+        this.channel = connection.getSession().createExecChannel(server.cmdAttach());
 
-        channel.setInputStream(new Input(input));
-        channel.setOutputStream(new DelegateStream.Output(output));
-        channel.setExtOutputStream(new DelegateStream.Output(error));
+        this.input = new Event.Bus<>();
+        this.output = new Event.Bus<>();
+        this.error = new Event.Bus<>();
 
-        input.log(con.log(), Level.DEBUG);
-        output.log(con.log(), Level.INFO);
-        error.log(con.log(), Level.ERROR);
+        this.io = new DelegateStream.IO();
+        io.redirectToSystem().and().redirect(
+                new DelegateStream.Input(input),
+                new DelegateStream.Output(output),
+                new DelegateStream.Output(error));
+        io.accept(channel::setIn, channel::setOut, channel::setErr);
+        log.info("GameConnection IO Configuration:\n"+io.getAlternateName());
 
-        input.accept(server.cmdAttach());
-        channel.connect();
-        channel.start();
+        reconnect();
+    }
+
+    @SneakyThrows
+    public synchronized void reconnect() {
+        channel.open().verify(shTimeout);
+        //input.accept(server.cmdAttach());
     }
 
     @Override
+    @SneakyThrows
     public void close() {
         log.warn("ScreenConnection was closed");
-        channel.disconnect();
+        channel.close();
+        io.close();
     }
 
     public void sendCmd(String cmd, final @Language("RegExp") String endPattern) {
-        if (connection.getRcon().isConnected())
-            connection.sendCmdRCon(cmd);
+        if (connection.tryRcon())
+            connection.getGame().sendCmdRCon(cmd, connection);
         else if (endPattern != null) sendCmdScreen(cmd, endPattern).join();
         else throw new RuntimeException("Cannot send command " + cmd + " because both RCon and Screen are offline");
     }
@@ -59,92 +76,24 @@ public final class GameConnection implements Closeable {
     public synchronized CompletableFuture<String> sendCmdScreen(String cmd, final @Language("RegExp") String endPattern) {
         final var pattern = Pattern.compile(endPattern);
         final var sb = new StringBuilder();
-        var appender = output.listen(e -> sb.append(e.getData()));
-        var future = output.next(e -> pattern.matcher(e.getData()).matches()).whenComplete((e,t)->appender.close());
+        final Predicate<Event<String>> predicate = e -> pattern.matcher(e.getData()).matches();
+        var appender = output.listen(predicate, e -> sb.append(e.getData()));
+        var future = output.next(predicate).whenComplete((e,t)->appender.close());
         input.accept(cmd);
         return future.thenApply($->sb.toString());
     }
 
-    private static final class Input extends InputStream {
-        private final Queue<String> cmds = new PriorityBlockingQueue<>();
-        private boolean eof = true;
-        private String cmd;
-        private int r = 0;
-
-        public Input(Event.Bus<String> bus) {
-            bus.listen(e -> {
-                synchronized (cmds) {
-                    cmds.add(e.getData());
-                    cmds.notify();
-                }
-            });
-        }
-
-        @Override
-        public int read() {
-            if (cmd == null) {
-                if (eof) {
-                    eof = false;
-                    synchronized (cmds) {
-                        while (cmds.size() == 0) {
-                            try {
-                                cmds.wait();
-                            } catch (InterruptedException e) {
-                                log.error("Could not wait for new input", e);
-                            }
-                        }
-                        cmd = cmds.poll();
-                    }
-                } else {
-                    eof = true;
-                    return -1;
-                }
+    public Optional<RconResponse> sendCmdRCon(final String cmd, ServerConnection connection) {
+        if (connection.getRcon() == null)
+            return Optional.empty();
+        connection.tryRcon();
+        return connection.getRcon().minecraftRcon().map(rc -> {
+            try {
+                return rc.sendSync(() -> cmd);
+            } catch (RconCommandException e) {
+                log.warn("Internal error occurred when sending command %s to server %s".formatted(cmd, connection.getServer()), e);
+                return null;
             }
-
-            int c;
-            if (r < cmd.length())
-                c = cmd.charAt(r++);
-            else {
-                cmd = null;
-                r = 0;
-                return '\n';
-            }
-            return c;
-        }
+        });
     }
-/*
-    private final class Output extends OutputStream {
-        private final boolean error;
-        private StringWriter buf = new StringWriter();
-        private boolean active;
-
-        public Output(boolean error) {
-            this.error = this.active = error;
-        }
-
-        @Override
-        public void write(int b) {
-            buf.write(b);
-        }
-
-        @Override
-        public void flush() {
-            var str = Utils.removeAnsiEscapeSequences(buf.toString());
-            if (!active && str.contains(OutputMarker))
-                active = true;
-            else if (active && str.contains(EndMarker))
-                active = false;
-            else if (active) {
-                for (String line : str.split("\r?\n"))
-                    (error ? ScreenConnection.this.error : ScreenConnection.this.output).publish(line);
-                if (Arrays.stream(new String[]{"no screen to be resumed", "command not found", "Invalid operation"})
-                        .anyMatch(str::contains)) {
-                    ScreenConnection.this.close();
-                    return;
-                }
-            }
-            buf = new StringWriter();
-        }
-    }
- */
 }
