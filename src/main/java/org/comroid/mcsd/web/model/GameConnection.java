@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.PtyChannelConfiguration;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.mcsd.web.entity.Server;
@@ -33,7 +35,7 @@ public final class GameConnection implements Closeable {
     public GameConnection(ServerConnection con) throws IOException {
         this.connection = con;
         this.server = con.getServer();
-        this.channel = connection.getSession().createChannel(Channel.CHANNEL_SHELL);
+        this.channel = connection.getSession().createExecChannel(server.cmdAttach());
 
         this.input = new Event.Bus<>();
         this.output = new Event.Bus<>();
@@ -53,7 +55,7 @@ public final class GameConnection implements Closeable {
     @SneakyThrows
     public synchronized void reconnect() {
         channel.open().verify(shTimeout);
-        input.accept(server.cmdAttach());
+        //input.accept(server.cmdAttach());
     }
 
     @Override

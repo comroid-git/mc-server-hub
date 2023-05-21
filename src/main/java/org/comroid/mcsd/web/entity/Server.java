@@ -90,6 +90,13 @@ public class Server {
 
     @Language("sh")
     public String wrapCmd(@Language("sh") String cmd) {
+        return wrapDevNull(
+                "(cd '"+getDirectory()+"' &&\n" +
+                "echo '"+ServerConnection.OutputBeginMarker +"' &&\n" +
+                "("+cmd+") || echo 'command failed'>&2) &&\n" +
+                "echo '"+ServerConnection.OutputEndMarker +"' &&\n" +
+                "exit");
+        /*
         return "(cd '" + getDirectory() + "' && " +
                 //"chmod 755 "+ServerConnection.RunScript+" && " +
                 "echo '" + ServerConnection.OutputMarker + "' && " +
@@ -98,6 +105,11 @@ public class Server {
                 ") && " +
                 "echo '" + ServerConnection.EndMarker + "' && " +
                 "exit";
+         */
+    }
+    @Language("sh")
+    private String wrapDevNull(@Language("sh") String cmd) {
+        return "export TERM='xterm' && echo \""+cmd+"\" | script /dev/null";
     }
 
     public String cmdStart() {
