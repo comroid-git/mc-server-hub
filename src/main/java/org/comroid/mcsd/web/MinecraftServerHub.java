@@ -3,10 +3,12 @@ package org.comroid.mcsd.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.jdbc.Driver;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.info.Log;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.web.dto.DBInfo;
 import org.comroid.mcsd.web.dto.OAuth2Info;
 import org.comroid.mcsd.web.entity.Server;
+import org.comroid.mcsd.web.model.GameConnection;
 import org.comroid.mcsd.web.model.ServerConnection;
 import org.comroid.mcsd.web.repo.ServerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,7 @@ import java.util.stream.StreamSupport;
 @ImportResource({"classpath:beans.xml"})
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 public class MinecraftServerHub {
+    public static final Duration CRON_WATCHDOG_RATE = Duration.ofSeconds(10);
     public static final Duration CRON_MANAGE_RATE = Duration.ofMinutes(10);
     public static final Duration CRON_QUEUE_RATE = Duration.ofHours(1);
     private final Object cronLock = new Object();
@@ -44,6 +47,11 @@ public class MinecraftServerHub {
 
     public static void main(String[] args) {
         SpringApplication.run(MinecraftServerHub.class, args);
+    }
+
+    @Bean
+    public ScheduledFuture<?> cronWatchdog(@Autowired TaskScheduler scheduler) {
+        return scheduler.scheduleAtFixedRate(this::$cronWatchdog, CRON_WATCHDOG_RATE);
     }
 
     @Bean
@@ -59,6 +67,16 @@ public class MinecraftServerHub {
     @Bean
     public ScheduledFuture<?> cronUpdate(@Autowired TaskScheduler scheduler) {
         return scheduler.scheduleAtFixedRate(this::$cronUpdate, CRON_QUEUE_RATE);
+    }
+
+    private synchronized void $cronWatchdog() {
+        StreamSupport.stream(servers.findAll().spliterator(), true)
+                .filter(Server::isManaged)
+                .map(Server::con)
+                .map(ServerConnection::getGame)
+                .filter(con -> !con.channel.isConnected())
+                .peek(con -> Log.get("Watchdog").warn("Connection to " + con.server.con() + " is dead; restarting!"))
+                .forEach(GameConnection::reconnect);
     }
 
     private synchronized void $cronManager() {

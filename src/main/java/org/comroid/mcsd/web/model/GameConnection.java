@@ -51,6 +51,11 @@ public final class GameConnection implements Closeable {
         io.accept(channel::setInputStream, channel::setOutputStream, channel::setExtOutputStream);
         mini.info("GameConnection IO Configuration:\n"+io.getAlternateName());
 
+        reconnect();
+    }
+
+    @SneakyThrows
+    public synchronized void reconnect() {
         channel.connect();
         channel.start();
         input.accept(server.cmdAttach());
