@@ -99,7 +99,7 @@ public class ConsoleController {
                     new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)))
                     .and();
 
-            log.debug("Webinterface IO Configuration:\n"+con.getGame().io.getAlternateName());
+            log.debug("Webinterface IO Configuration:\n"+io.getAlternateName());
          }
 
         @Override

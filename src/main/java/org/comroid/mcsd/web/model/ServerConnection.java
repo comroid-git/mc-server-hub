@@ -60,6 +60,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     @JsonIgnore
     private final Server server;
     private final Session session;
+    private final ChannelSftp sftp;
     @JsonIgnore
     private final GameConnection game;
     private final IMinecraftRconService rcon;
@@ -68,11 +69,14 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private ServerConnection(Server server) throws JSchException {
         this.server = server;
         this.con = shConnection();
-        this.session = bean(JSch.class).getSession(con.getUsername(), con.getHost(), con.getPort());
 
+        this.session = bean(JSch.class).getSession(con.getUsername(), con.getHost(), con.getPort());
         session.setPassword(con.getPassword());
         session.setConfig("StrictHostKeyChecking", "no"); // todo This is bad and unsafe
         session.connect();
+
+        this.sftp = (ChannelSftp) session.openChannel("sftp");
+        sftp.connect();
 
         if (!uploadRunScript() | !uploadProperties())
             throw new RuntimeException("Could not connect to "+server+"; unable to upload runscript");
@@ -323,16 +327,12 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
     public DelegateStream.Output uploadFile(final String path) throws Exception {
         synchronized (lock(':' + path)) {
-            var sftp = (ChannelSftp) session.openChannel("sftp");
-            sftp.connect();
             return new DelegateStream.Output(sftp.put(path));
         }
     }
 
     public DelegateStream.Input downloadFile(final String path) throws Exception {
         synchronized (lock(':' + path)) {
-            var sftp = (ChannelSftp) session.openChannel("sftp");
-            sftp.connect();
             return new DelegateStream.Input(sftp.get(path));
         }
     }
