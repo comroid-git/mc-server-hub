@@ -1,7 +1,5 @@
 rootProject.name = 'mc-server-hub'
 
-include(':ioe-redir')
-
 var dirApi = file('../api/')
 if (dirApi.exists()) {
     include(':api')
