@@ -85,7 +85,7 @@ function sendMessage() {
 }
 
 function sendInput(input) {
-    stompClient.send('/console/input', {}, JSON.stringify(input));
+    stompClient.send('/console/input', {}, JSON.stringify(" "+input)); //hackeroo with the space pad
 }
 
 function restartServer() {

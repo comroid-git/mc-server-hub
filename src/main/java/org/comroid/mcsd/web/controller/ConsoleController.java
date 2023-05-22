@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.Container;
 import org.comroid.api.DelegateStream;
+import org.comroid.api.Event;
 import org.comroid.mcsd.web.config.WebSocketConfig;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.entity.ShConnection;
@@ -26,6 +28,7 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 @Slf4j
 @Controller
@@ -56,7 +59,7 @@ public class ConsoleController {
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
             throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        res.con.getGame().input.accept(input.substring(1, input.length() - 1));
+        res.con.getGame().screen.publish(DelegateStream.IO.EventKey_Input, input.substring(1, input.length() - 1));
     }
 
     @SendToUser("/console/backup")
@@ -81,27 +84,30 @@ public class ConsoleController {
 
     @Getter
     @AllArgsConstructor
-    private class WebInterfaceConnection implements Closeable {
+    private class WebInterfaceConnection extends Container.Base {
         private final Server server;
         private final User user;
         private final ServerConnection con;
-        private final DelegateStream.IO io;
+        private final Event.Listener<String> listenOutput, listenError;
 
         public WebInterfaceConnection(Server server, User user) {
             this.server = server;
             this.user = user;
             this.con = server.con();
-            this.io = server.con().getGame().io.redirect(
-                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)),
-                    new DelegateStream.Output(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)));
-            con.getLog().info("Webinterface IO Configuration:\n"+io.getAlternateName());
+
+            this.listenOutput = server.con().getGame().screen.listen(DelegateStream.IO.EventKey_Output, e -> e.consume(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)));
+            this.listenError = server.con().getGame().screen.listen(DelegateStream.IO.EventKey_Error, e -> e.consume(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)));
         }
 
         @Override
         @SneakyThrows
-        public void close() {
+        public void closeSelf() {
             respond.convertAndSendToUser(user.getName(), "/console/disconnect", "");
-            io.close();
+        }
+
+        @Override
+        protected Stream<AutoCloseable> moreMembers() {
+            return Stream.of(listenOutput, listenError);
         }
     }
 }

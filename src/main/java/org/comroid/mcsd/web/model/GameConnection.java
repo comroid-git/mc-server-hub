@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
+import org.comroid.api.info.Log;
 import org.comroid.mcsd.web.entity.Server;
 import org.comroid.mcsd.web.util.Utils;
 import org.intellij.lang.annotations.Language;
@@ -25,9 +26,7 @@ public final class GameConnection implements Closeable {
     private final ServerConnection connection;
     public final Server server;
     public final ClientChannel channel;
-    public final Event.Bus<String> input;
-    public final Event.Bus<String> output;
-    public final Event.Bus<String> error;
+    public final Event.Bus<String> screen;
     public final DelegateStream.IO io;
     private boolean outputActive;
 
@@ -36,13 +35,10 @@ public final class GameConnection implements Closeable {
         this.server = con.getServer();
         this.channel = connection.getSession().createExecChannel(server.cmdAttach());
 
-        this.input = new Event.Bus<>();
-        this.output = new Event.Bus<>();
-        this.error = new Event.Bus<>();
-
+        this.screen = new Event.Bus<>();
         this.io = new DelegateStream.IO()
-                .rewireOutput(stream -> stream
-                        .flatMap(str -> Stream.of(str.split("\b|\r|\n|(\r?\n)"))
+                .rewireOE(stream -> stream
+                        .flatMap(str -> Stream.of(str.split("[\r\n]"))
                                 .filter(Predicate.not(String::isEmpty)))
                         .map(Utils::removeAnsiEscapeSequences)
                         .filter(Predicate.not(String::isEmpty))
@@ -52,12 +48,9 @@ public final class GameConnection implements Closeable {
                                 return true;
                             return outputActive = false;
                         }))
-                .redirectToSystem()
-                .redirect(
-                        new DelegateStream.Input(input),
-                        new DelegateStream.Output(output),
-                        new DelegateStream.Output(error))
-        ;
+                .redirectToSystem() //debug
+                .redirectToLogger(Log.get("screen"))
+                .redirectToEventBus(screen);
         io.accept(channel::setIn, channel::setOut, channel::setErr);
         log.info("GameConnection IO Configuration:\n" + io.getAlternateName());
 
@@ -89,9 +82,9 @@ public final class GameConnection implements Closeable {
         final var pattern = Pattern.compile(endPattern);
         final var sb = new StringBuilder();
         final Predicate<Event<String>> predicate = e -> pattern.matcher(e.getData()).matches();
-        var appender = output.listen(predicate, e -> sb.append(e.getData()));
-        var future = output.next(predicate).whenComplete((e,t)->appender.close());
-        input.accept(cmd);
+        var appender = screen.listen(predicate, e -> sb.append(e.getData()));
+        var future = screen.next(predicate).whenComplete((e,t)->appender.close());
+        screen.accept(cmd);
         return future.thenApply($->sb.toString());
     }
 

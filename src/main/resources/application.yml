@@ -26,4 +26,5 @@ logging:
   level:
     root: info
     cron: debug
+    screen: warn
     org.comroid: debug

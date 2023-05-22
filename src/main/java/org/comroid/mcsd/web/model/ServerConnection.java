@@ -366,10 +366,10 @@ public final class ServerConnection implements Closeable, ServerHolder {
     @SneakyThrows
     public boolean sendSh(@Language("sh") String cmd) {
         synchronized (lock('$' + cmd)) {
-            try (var io = new DelegateStream.IO().log(log);
+            try (var io = new DelegateStream.IO().redirectToLogger(log);
                  var exec = session.createChannel(Channel.CHANNEL_EXEC);
                  var writer = new PrintWriter(exec.getInvertedIn())) {
-                io.accept(exec::setOut, exec::setErr);
+                io.accept(null, exec::setOut, exec::setErr);
 
                 writer.println(cmd);
 
