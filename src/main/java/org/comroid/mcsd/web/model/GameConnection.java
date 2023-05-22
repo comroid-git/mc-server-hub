@@ -14,7 +14,6 @@ import org.intellij.lang.annotations.Language;
 import java.io.*;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -42,22 +41,25 @@ public final class GameConnection implements Closeable {
         this.error = new Event.Bus<>();
 
         this.io = new DelegateStream.IO()
-                .redirectToSystem()
-                .and().redirect(
-                new DelegateStream.Input(input),
-                new DelegateStream.Output(output)
+                .rewire(null, stream -> stream
+                        .flatMap(str -> Stream.of(str.split("\b|\r|\n|(\r?\n)"))
+                                .filter(Predicate.not(String::isEmpty)))
+                        .map(Utils::removeAnsiEscapeSequences)
+                        .filter(Predicate.not(String::isEmpty))
+                        .filter(str -> outputActive || (outputActive = str.startsWith(OutputBeginMarker)))
                         .filter(str -> {
                             if (!str.startsWith(OutputEndMarker))
                                 return true;
                             return outputActive = false;
-                        })
-                        .filter(str -> outputActive || (outputActive=str.startsWith(OutputBeginMarker)))
-                        .filter(Predicate.not(String::isEmpty))
-                        .map(Utils::removeAnsiEscapeSequences)
-                        .flatMap(str -> Stream.of(str.split("\b|\r|\n|(\r?\n)"))),
-                new DelegateStream.Output(error).filter($->outputActive));
+                        }), null)
+                .redirectToSystem()
+                .redirect(
+                        new DelegateStream.Input(input),
+                        new DelegateStream.Output(output),
+                        new DelegateStream.Output(error))
+        ;
         io.accept(channel::setIn, channel::setOut, channel::setErr);
-        log.info("GameConnection IO Configuration:\n"+io.getAlternateName());
+        log.info("GameConnection IO Configuration:\n" + io.getAlternateName());
 
         reconnect();
     }
