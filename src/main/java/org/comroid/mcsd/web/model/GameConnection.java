@@ -41,7 +41,7 @@ public final class GameConnection implements Closeable {
         this.error = new Event.Bus<>();
 
         this.io = new DelegateStream.IO()
-                .rewire(null, stream -> stream
+                .rewireOutput(stream -> stream
                         .flatMap(str -> Stream.of(str.split("\b|\r|\n|(\r?\n)"))
                                 .filter(Predicate.not(String::isEmpty)))
                         .map(Utils::removeAnsiEscapeSequences)
@@ -51,7 +51,7 @@ public final class GameConnection implements Closeable {
                             if (!str.startsWith(OutputEndMarker))
                                 return true;
                             return outputActive = false;
-                        }), null)
+                        }))
                 .redirectToSystem()
                 .redirect(
                         new DelegateStream.Input(input),
