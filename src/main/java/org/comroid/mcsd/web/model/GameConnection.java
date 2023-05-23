@@ -39,7 +39,7 @@ public final class GameConnection implements Closeable {
         this.io = new DelegateStream.IO()
                 .rewireOE(stream -> stream
                         .flatMap(str -> Stream.of(str.split("[\r\n]"))
-                                .filter(Predicate.not(String::isEmpty)))
+                                .filter(line -> line.length() > 2))
                         .map(Utils::removeAnsiEscapeSequences)
                         .filter(Predicate.not(String::isEmpty))
                         .filter(str -> outputActive || (outputActive = str.startsWith(OutputBeginMarker)))
