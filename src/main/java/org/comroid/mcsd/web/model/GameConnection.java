@@ -48,8 +48,8 @@ public final class GameConnection implements Closeable {
                                 return true;
                             return outputActive = false;
                         }))
-                .redirectToSystem() //debug
-                //.redirectToLogger(Log.get("screen"))
+                //.redirectToSystem() //debug
+                .redirectToLogger(Log.get("screen"))
                 .redirectToEventBus(screen);
         io.accept(channel::setIn, channel::setOut, channel::setErr);
         log.info("GameConnection IO Configuration:\n" + io.getAlternateName());
