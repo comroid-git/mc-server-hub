@@ -95,8 +95,9 @@ public class ConsoleController {
             this.user = user;
             this.con = server.con();
 
-            this.listenOutput = server.con().getGame().screen.listen(DelegateStream.IO.EventKey_Output, e -> e.consume(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)));
-            this.listenError = server.con().getGame().screen.listen(DelegateStream.IO.EventKey_Error, e -> e.consume(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)));
+            var bus = server.con().getGame().screen;
+            this.listenOutput = bus.listen(DelegateStream.IO.EventKey_Output, e -> e.consume(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt + ServerConnection.br)));
+            this.listenError = bus.listen(DelegateStream.IO.EventKey_Error, e -> e.consume(txt -> respond.convertAndSendToUser(user.getName(), "/console/error", txt + ServerConnection.br)));
         }
 
         @Override
