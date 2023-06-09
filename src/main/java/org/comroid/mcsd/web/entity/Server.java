@@ -109,8 +109,8 @@ public class Server {
     }
     @Language("sh")
     private String wrapDevNull(@Language("sh") String cmd) {
-        //return "export TERM='xterm' && script -q /dev/null < <(echo \""+cmd+"\"; cat)";
-        return "export TERM='xterm' && echo \""+cmd+"\" | script /dev/null";
+        return "export TERM='xterm' && script -q /dev/null < <(echo \""+cmd+"\"; cat)";
+        //return "export TERM='xterm' && echo \""+cmd+"\" | script /dev/null";
     }
 
     public String cmdStart() {
