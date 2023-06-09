@@ -41,6 +41,8 @@ public final class GameConnection implements Closeable {
                         .flatMap(str -> Stream.of(str.split("[\r\n]"))
                                 .filter(line -> line.length() > 2))
                         .map(Utils::removeAnsiEscapeSequences)
+                        .map(str -> str.replace("<", "&lt;")
+                                .replace(">", "&gt;"))
                         .filter(Predicate.not(String::isEmpty))
                         .filter(str -> outputActive || (outputActive = str.startsWith(OutputBeginMarker)))
                         .filter(str -> {
