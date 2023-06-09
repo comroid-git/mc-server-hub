@@ -28,17 +28,16 @@ public class SecurityConfig {
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(@Autowired OAuth2Info info) {
-        return new InMemoryClientRegistrationRepository(ClientRegistration.withRegistrationId("jb-hub")
+        return new InMemoryClientRegistrationRepository(ClientRegistration.withRegistrationId(info.getName())
                 .clientId(info.getClientId())
                 .clientSecret(info.getSecret())
                 .scope(info.getScope())
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri(info.getUrlBase() + "/login/oauth2/code/{registrationId}")
-                .authorizationUri(info.getHubUrl() + "/api/rest/oauth2/auth")
-                .tokenUri(info.getHubUrl() + "/api/rest/oauth2/token")
-                .userInfoUri(info.getHubUrl() + "/api/rest/users/me")
-                .userNameAttributeName("login")
+                .redirectUri(info.getRedirectUrl())
+                .authorizationUri(info.getAuthorizationUrl())
+                .tokenUri(info.getTokenUrl())
+                .userInfoUri(info.getUserInfoUrl())
+                .userNameAttributeName(info.getUserNameAttributeName())
                 .build());
     }
-
 }
