@@ -32,6 +32,7 @@ public class Server {
     private UUID shConnection;
     private String name;
     private String mcVersion = "1.19.4";
+    private String host;
     private int port = 25565;
     private String directory = "~/minecraft";
     private Mode mode = Mode.Paper;

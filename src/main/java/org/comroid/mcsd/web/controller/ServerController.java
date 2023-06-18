@@ -98,6 +98,18 @@ public class ServerController {
                 .complete();
     }
 
+    @GetMapping("/widget/{id}")
+    public String widget(HttpSession session, Model model, @PathVariable UUID id) {
+        var user = users.findBySession(session);
+        var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
+        result.requireUserAccess(user, Server.Permission.Status);
+        return new WebPagePreparator(model, "server/widget", session)
+                .setAttribute("server", result)
+                .setAttribute("scripts", List.of("/widget.js"))
+                .setAttribute("load", "loadWidget()")
+                .complete();
+    }
+
     @ResponseBody
     @GetMapping("/status/{id}")
     public StatusMessage status(HttpSession session, @PathVariable UUID id) {
