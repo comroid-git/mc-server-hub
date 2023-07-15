@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'org.comroid'
-version = '0.0.2-SNAPSHOT'
+version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
@@ -19,10 +19,14 @@ tasks.register('simplifyDist', Copy) {
 }
 
 sourceSets {
-    main.java.srcDirs       = files(project.projectDir.toString() + "/src/api/main/java")
-    main.resources.srcDirs  = files(project.projectDir.toString() + "/src/api/main/resources")
-    test.java.srcDirs       = files(project.projectDir.toString() + "/src/api/test/java")
-    test.resources.srcDirs  = files(project.projectDir.toString() + "/src/api/test/java")
+    main.java.srcDirs       = files(parent.projectDir.toString() + "/src/webui/main/java")
+    main.resources.srcDirs  = files(parent.projectDir.toString() + "/src/webui/main/resources")
+    test.java.srcDirs       = files(parent.projectDir.toString() + "/src/webui/test/java")
+    test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/webui/test/java")
+}
+
+war {
+    webAppDirectory = file(parent.projectDir.toString() + "/src/webui/main/webapp")
 }
 
 repositories {
@@ -33,6 +37,8 @@ repositories {
 }
 
 dependencies {
+    implementation parent
+
     if (findProject(':api') != null)
         implementation project(':api')
     else implementation 'org.comroid:api:+'

@@ -1,0 +1,16 @@
+spring:
+  # database config
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL57Dialect
+    show-sql: false
+    hibernate.ddl-auto: update
+  datasource:
+    hikari:
+      auto-commit: true
+      max-lifetime: 360_000
+logging:
+  level:
+    root: info
+    cron: debug
+    screen: warn
+    org.comroid: debug

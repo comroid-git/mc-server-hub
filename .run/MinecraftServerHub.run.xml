@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="MinecraftServerHub" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <module name="mc-server-hub.main" />
+    <module name="mcsd.agent.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="org.comroid.mcsd.web.MinecraftServerHub" />
     <method v="2">
       <option name="Make" enabled="true" />
