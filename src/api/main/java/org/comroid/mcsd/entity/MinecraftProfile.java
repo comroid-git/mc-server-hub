@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.UUID;
@@ -16,8 +17,13 @@ public class MinecraftProfile {
     private String id;
     private String name;
     private long discordId;
+    private @Nullable String verification;
     @ElementCollection
     private Map<UUID, String> serverLogins;
+
+    public boolean isVerified() {
+        return verification == null;
+    }
 
     public UUID getUUID() {
         var sb = new StringBuilder(id);

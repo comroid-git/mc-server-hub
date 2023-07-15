@@ -8,6 +8,7 @@ import org.comroid.mcsd.util.ApplicationContextProvider;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageDecoration;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -79,45 +80,39 @@ public class DiscordConnection implements SlashCommandCreateListener {
     @Override
     public void onSlashCommandCreate(SlashCommandCreateEvent event) {
         final var interaction = event.getSlashCommandInteraction();
-        switch (interaction.getCommandName()) {
-            case "stats":
-                interaction.respondLater().thenCombine(server.status(), (resp, stat) -> resp.addEmbed(new EmbedBuilder()
-                                        .setTitle("Status of %s".formatted(server.getServer()))
-                                        .setDescription("%d / %d players are online%s".formatted(stat.playerCount, stat.playerMax,
-                                                Optional.ofNullable(stat.players)
-                                                        .map(players -> ":\n-\t" + String.join("\n-\t", players))
-                                                        .orElse("")
-                                        ))
-                                        .setThumbnail(server.getServer().getThumbnailURL())
-                                        .setFooter(stat.motd)
-                                        .setAuthor(switch (stat.status) {
-                                            case Offline -> "❌";
-                                            case Maintenance -> "�";
-                                            case Online -> "✅";
-                                            default -> "⁉";
-                                        } + stat.status.getName())
-                                        .setUrl(server.getServer().getDashboardURL()))
-                                .update())
-                        .thenCompose(Function.identity())
-                        .exceptionally(ExceptionLogger.get());
-                return;
-            case "execute":
-                final var command = interaction.getOptionByName("command")
-                        .flatMap(SlashCommandInteractionOption::getStringValue)
-                        .orElseThrow();
-                interaction.respondLater().thenCompose(resp -> {
+        interaction.respondLater().thenCompose(resp -> {
+            switch (interaction.getCommandName()) {
+                case "stats":
+                    return server.status().thenCompose(stat -> resp.addEmbed(new EmbedBuilder()
+                                    .setTitle("Status of %s".formatted(server.getServer()))
+                                    .setDescription("%d / %d players are online%s".formatted(stat.playerCount, stat.playerMax,
+                                            Optional.ofNullable(stat.players)
+                                                    .map(players -> ":\n-\t" + String.join("\n-\t", players))
+                                                    .orElse("")
+                                    ))
+                                    .setThumbnail(server.getServer().getThumbnailURL())
+                                    .setFooter(stat.motd)
+                                    .setAuthor(switch (stat.status) {
+                                        case Offline -> "❌";
+                                        case Maintenance -> "�";
+                                        case Online -> "✅";
+                                        default -> "⁉";
+                                    } + stat.status.getName())
+                                    .setUrl(server.getServer().getDashboardURL()))
+                            .update());
+                case "execute":
+                    final var command = interaction.getOptionByName("command")
+                            .flatMap(SlashCommandInteractionOption::getStringValue)
+                            .orElseThrow();
                     var response = server.getGame().sendCmd(command, "\n");
                     return resp.addEmbed(new EmbedBuilder()
                                     .setDescription(MessageDecoration.CODE_LONG.applyToText(response)))
                             .setFlags(MessageFlag.EPHEMERAL)
                             .update();
-                }).exceptionally(ExceptionLogger.get());
-                return;
-            case "account":
-                final var subcommand = interaction.getOptionByIndex(0).orElseThrow();
-                final var profileRepo = bean(MinecraftProfileRepo.class);
-                final var userId = interaction.getUser().getId();
-                interaction.respondLater().thenCompose(resp -> {
+                case "account":
+                    final var subcommand = interaction.getOptionByIndex(0).orElseThrow();
+                    final var profileRepo = bean(MinecraftProfileRepo.class);
+                    final var userId = interaction.getUser().getId();
                     MinecraftProfile profile = null;
                     switch (subcommand.getName()) {
                         case "register":
@@ -135,13 +130,12 @@ public class DiscordConnection implements SlashCommandCreateListener {
                     }
                     assert profile != null;
                     return resp.addEmbed(new EmbedBuilder()
-                                    .setThumbnail(profile.getIsoBodyURL())
-                                    .setAuthor(profile.getName(), profile.getNameMcURL(), profile.getHeadURL())
-                                    .setDescription("Has %d logins".formatted(profile.getServerLogins().size()))
-                            ).update();
-                }).exceptionally(ExceptionLogger.get());
-                return;
-        }
-        throw new AssertionError("Unknown command " + interaction.getFullCommandName());
+                            .setThumbnail(profile.getIsoBodyURL())
+                            .setAuthor(profile.getName(), profile.getNameMcURL(), profile.getHeadURL())
+                            .setDescription("Has %d logins".formatted(profile.getServerLogins().size()))
+                    ).update();
+            }
+            throw new AssertionError("Unrecognized command " + interaction.getFullCommandName());
+        }).exceptionally(ExceptionLogger.get());
     }
 }
