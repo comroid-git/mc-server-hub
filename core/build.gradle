@@ -19,14 +19,10 @@ tasks.register('simplifyDist', Copy) {
 }
 
 sourceSets {
-    main.java.srcDirs       = files(parent.projectDir.toString() + "/src/webui/main/java")
-    main.resources.srcDirs  = files(parent.projectDir.toString() + "/src/webui/main/resources")
-    test.java.srcDirs       = files(parent.projectDir.toString() + "/src/webui/test/java")
-    test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/webui/test/java")
-}
-
-war {
-    webAppDirectory = file(parent.projectDir.toString() + "/src/webui/main/webapp")
+    main.java.srcDirs       = files(project.projectDir.toString() + "/src/core/main/java")
+    main.resources.srcDirs  = files(project.projectDir.toString() + "/src/core/main/resources")
+    test.java.srcDirs       = files(project.projectDir.toString() + "/src/core/test/java")
+    test.resources.srcDirs  = files(project.projectDir.toString() + "/src/core/test/java")
 }
 
 repositories {
@@ -37,11 +33,10 @@ repositories {
 }
 
 dependencies {
-    implementation parent
-
     if (findProject(':japi') != null)
         implementation project(':japi')
     else implementation 'org.comroid:api:+'
+    implementation project(':mcsd:api')
 
     // db
     implementation 'com.mysql:mysql-connector-j'
@@ -71,15 +66,11 @@ dependencies {
 
     // minecraft
     implementation 'io.github.fragland:MineStat:3.+'
-    //implementation 'com.github.jaqobb:namemc-api:master-SNAPSHOT'
     implementation 'io.github.MrGraversen:minecraft-rcon:0.+'
+    //implementation "dev.jaqobb:namemcapi:2.+" // not actually available ...
 
-    // webjars
-    implementation 'org.webjars:webjars-locator-core'
-    implementation 'org.webjars:sockjs-client:1.+'
-    implementation 'org.webjars:stomp-websocket:2.+'
-    implementation 'org.webjars:bootstrap:3.+'
-    implementation 'org.webjars:jquery:3.+'
+    // discord
+    implementation 'org.javacord:javacord:3.+'
 
     // utility
     developmentOnly 'org.springframework.boot:spring-boot-starter-actuator'

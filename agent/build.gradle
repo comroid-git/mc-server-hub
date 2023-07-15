@@ -34,8 +34,8 @@ repositories {
 dependencies {
     implementation parent
 
-    if (findProject(':api') != null)
-        implementation project(':api')
+    if (findProject(':japi') != null)
+        implementation project(':japi')
     else implementation 'org.comroid:api:+'
 
     // db

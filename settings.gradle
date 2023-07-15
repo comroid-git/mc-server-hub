@@ -19,6 +19,9 @@ plugins {
 
 rootProject.name = 'mcsd'
 
+include('api')
+
+include('core')
 include('webui')
 include('agent')
 
@@ -26,8 +29,8 @@ include('spigot')
 include('forge')
 include('fabric')
 
-var dirApi = file('../api/')
+var dirApi = file('../japi/')
 if (dirApi.exists()) {
-    include(':api')
-    project(':api').projectDir = dirApi
+    include(':japi')
+    project(':japi').projectDir = dirApi
 }

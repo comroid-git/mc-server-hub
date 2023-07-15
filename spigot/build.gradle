@@ -26,6 +26,9 @@ repositories {
 
 dependencies {
     compileOnly "io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT"
+
+    // mcsd api
+    implementation project(':mcsd:api') // todo: include as shadowjar
 }
 
 def targetJavaVersion = 17

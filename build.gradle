@@ -1,84 +1,25 @@
-plugins {
-    id 'war'
-    id 'java'
-    id 'org.springframework.boot' version '3.0.+'
-    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
-}
+apply plugin: 'java'
 
 group = 'org.comroid'
-version = '0.0.2-SNAPSHOT'
+version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
-tasks.register('simplifyDist', Copy) {
-    dependsOn 'bootWar'
-    from bootWar.outputs.files.singleFile
-    def target = file("$buildDir/dist")
-    into target
-    rename { String filename -> return "mc-server-hub.war" }
-}
+subprojects {
+    repositories {
+        maven { url 'https://maven.comroid.org' }
+        mavenLocal()
+        jcenter()
+        maven { url 'https://jitpack.io' }
+    }
 
-sourceSets {
-    main.java.srcDirs       = files(project.projectDir.toString() + "/src/api/main/java")
-    main.resources.srcDirs  = files(project.projectDir.toString() + "/src/api/main/resources")
-    test.java.srcDirs       = files(project.projectDir.toString() + "/src/api/test/java")
-    test.resources.srcDirs  = files(project.projectDir.toString() + "/src/api/test/java")
-}
+    dependencies {
+        if (findProject(':japi') != null)
+            implementation project(':japi')
+        else implementation 'org.comroid:api:+'
 
-repositories {
-    maven { url 'https://maven.comroid.org' }
-    mavenLocal()
-    jcenter()
-    maven { url 'https://jitpack.io' }
-}
-
-dependencies {
-    if (findProject(':api') != null)
-        implementation project(':api')
-    else implementation 'org.comroid:api:+'
-
-    // db
-    implementation 'com.mysql:mysql-connector-j'
-
-    // data
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-
-    // web
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
-    implementation 'org.springframework:spring-messaging:6.0.0'
-
-    // jstl
-    compileOnly 'jstl:jstl:1.2'
-    implementation 'org.glassfish.web:jakarta.servlet.jsp.jstl'
-    implementation 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api'
-    providedRuntime 'org.apache.tomcat.embed:tomcat-embed-jasper'
-    providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
-
-    // security
-    implementation 'org.springframework.session:spring-session-core'
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-
-    // ssh
-    implementation 'org.apache.sshd:sshd-core:2.+'
-    implementation 'org.apache.sshd:sshd-sftp:2.+'
-
-    // minecraft
-    implementation 'io.github.fragland:MineStat:3.+'
-    implementation 'io.github.MrGraversen:minecraft-rcon:0.+'
-    //implementation "dev.jaqobb:namemcapi:2.+" // not actually available ...
-
-    // discord
-    implementation 'org.javacord:javacord:3.+'
-
-    // utility
-    developmentOnly 'org.springframework.boot:spring-boot-starter-actuator'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    // test
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'io.projectreactor:reactor-test'
+        // utility
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+    }
 }
