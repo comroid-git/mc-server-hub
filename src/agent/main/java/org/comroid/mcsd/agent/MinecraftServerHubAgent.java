@@ -3,7 +3,7 @@ package org.comroid.mcsd.agent;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.info.Log;
-import org.comroid.mcsd.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.ServerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

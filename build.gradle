@@ -1,5 +1,5 @@
 allprojects {
-    group = 'org.comroid'
+    group = 'org.comroid.mcsd'
     version = '0.1.0-SNAPSHOT'
 }
 
@@ -17,12 +17,15 @@ subprojects {
     }
 
     dependencies {
+        if (!project.name.endsWith('api'))
+            implementation project(':api')
+
         if (findProject(':japi') != null)
             implementation project(':japi')
-        else implementation 'org.comroid:api:+'
+        else implementation 'org.comroid:japi:+'
 
         // utility
-        compileOnly 'org.projectlombok:lombok'
-        annotationProcessor 'org.projectlombok:lombok'
+        compileOnly 'org.projectlombok:lombok:+'
+        annotationProcessor 'org.projectlombok:lombok:+'
     }
 }

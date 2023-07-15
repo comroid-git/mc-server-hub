@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-group = 'org.comroid'
+group = 'org.comroid.mcsd'
 version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
@@ -22,13 +22,10 @@ repositories {
 }
 
 dependencies {
-    // api
-    if (findProject(':japi') != null)
-        api project(':japi')
-    else api 'org.comroid:api:+'
-    api 'org.comroid:restless:+'
+    // json
+    api 'com.fasterxml.jackson.core:jackson-databind:2.+'
 
     // utility
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'org.projectlombok:lombok:+'
+    annotationProcessor 'org.projectlombok:lombok:+'
 }

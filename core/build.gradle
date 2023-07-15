@@ -5,7 +5,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
 }
 
-group = 'org.comroid'
+group = 'org.comroid.mcsd'
 version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
@@ -33,11 +33,6 @@ repositories {
 }
 
 dependencies {
-    if (findProject(':japi') != null)
-        implementation project(':japi')
-    else implementation 'org.comroid:api:+'
-    implementation project(':api')
-
     // db
     implementation 'com.mysql:mysql-connector-j'
 
