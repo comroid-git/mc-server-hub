@@ -32,7 +32,7 @@ repositories {
 }
 
 dependencies {
-    implementation parent
+    implementation project(':core')
 
     if (findProject(':japi') != null)
         implementation project(':japi')
