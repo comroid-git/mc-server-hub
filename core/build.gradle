@@ -19,10 +19,10 @@ tasks.register('simplifyDist', Copy) {
 }
 
 sourceSets {
-    main.java.srcDirs       = files(project.projectDir.toString() + "/src/core/main/java")
-    main.resources.srcDirs  = files(project.projectDir.toString() + "/src/core/main/resources")
-    test.java.srcDirs       = files(project.projectDir.toString() + "/src/core/test/java")
-    test.resources.srcDirs  = files(project.projectDir.toString() + "/src/core/test/java")
+    main.java.srcDirs       = files(parent.projectDir.toString() + "/src/core/main/java")
+    main.resources.srcDirs  = files(parent.projectDir.toString() + "/src/core/main/resources")
+    test.java.srcDirs       = files(parent.projectDir.toString() + "/src/core/test/java")
+    test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/core/test/java")
 }
 
 repositories {
@@ -36,7 +36,7 @@ dependencies {
     if (findProject(':japi') != null)
         implementation project(':japi')
     else implementation 'org.comroid:api:+'
-    implementation project(':mcsd:api')
+    implementation project(':api')
 
     // db
     implementation 'com.mysql:mysql-connector-j'

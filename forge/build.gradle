@@ -153,7 +153,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
     // mcsd api
-    implementation project(':mcsd:api') // todo: include as jarjar
+    implementation project(':api') // todo: include as jarjar
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

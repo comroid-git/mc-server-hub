@@ -8,10 +8,10 @@ sourceCompatibility = '17'
 targetCompatibility = '17'
 
 sourceSets {
-    main.java.srcDirs       = files(project.projectDir.toString() + "/src/api/main/java")
-    main.resources.srcDirs  = files(project.projectDir.toString() + "/src/api/main/resources")
-    test.java.srcDirs       = files(project.projectDir.toString() + "/src/api/test/java")
-    test.resources.srcDirs  = files(project.projectDir.toString() + "/src/api/test/java")
+    main.java.srcDirs       = files(parent.projectDir.toString() + "/src/api/main/java")
+    main.resources.srcDirs  = files(parent.projectDir.toString() + "/src/api/main/resources")
+    test.java.srcDirs       = files(parent.projectDir.toString() + "/src/api/test/java")
+    test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/api/test/java")
 }
 
 repositories {
@@ -24,9 +24,9 @@ repositories {
 dependencies {
     // api
     if (findProject(':japi') != null)
-        implementation project(':japi')
-    else implementation 'org.comroid:api:+'
-    implementation 'org.comroid:restless:+'
+        api project(':japi')
+    else api 'org.comroid:api:+'
+    api 'org.comroid:restless:+'
 
     // utility
     compileOnly 'org.projectlombok:lombok'
