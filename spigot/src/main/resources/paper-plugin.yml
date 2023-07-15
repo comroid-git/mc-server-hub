@@ -1,0 +1,6 @@
+name: MCSD_Spigot
+version: '${version}'
+main: org.comroid.mcsd.spigot.MCSD_Spigot
+api-version: '1.18'
+load: STARTUP
+website: https://github.com/comroid-git/mc-server-hub
