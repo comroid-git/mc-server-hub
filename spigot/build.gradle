@@ -22,6 +22,14 @@ repositories {
         name = "sonatype"
         url = "https://oss.sonatype.org/content/groups/public/"
     }
+    maven {
+        name = "spigotmc-repo"
+        url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+    }
+    maven {
+        name = "sonatype"
+        url = "https://oss.sonatype.org/content/groups/public/"
+    }
 }
 
 dependencies {
@@ -29,6 +37,7 @@ dependencies {
 
     // mcsd api
     implementation project(':api') // todo: include as shadowjar
+    compileOnly "org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT"
 }
 
 def targetJavaVersion = 17

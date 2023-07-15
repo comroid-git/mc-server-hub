@@ -1,4 +1,4 @@
-name: MCSD_Spigot
+name: MCSD-Spigot
 version: '${version}'
 main: org.comroid.mcsd.spigot.MCSD_Spigot
 api-version: '1.18'
