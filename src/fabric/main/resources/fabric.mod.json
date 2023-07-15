@@ -3,24 +3,22 @@
 	"id": "mcsd-fabric-integration",
 	"version": "${version}",
 	"name": "MCSD Fabric Integration",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "MCSD Fabric Integration Mod",
 	"authors": [
-		"Me!"
+		"Kaleidox"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/comroid-git/mc-server-hub",
+		"sources": "https://github.com/comroid-git/mc-server-hub"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/mcsd-fabric-integration/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"org.comroid.ExampleMod"
+			"org.comroid.mcsd.fabric.MCSD_Fabric"
 		],
-		"client": [
-			"org.comroid.ExampleModClient"
-		]
+		"client": []
 	},
 	"mixins": [
 		"mcsd-fabric-integration.mixins.json",
