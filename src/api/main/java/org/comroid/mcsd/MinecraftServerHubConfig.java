@@ -73,14 +73,5 @@ public class MinecraftServerHubConfig {
                 .password(dbInfo.getPassword())
                 .build();
     }
-
-    @Bean
-    public SshClient ssh() {
-        SshClient client = ClientBuilder.builder()
-                .serverKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE) // todo This is bad and unsafe
-                .build();
-        client.start();
-        return client;
-    }
 }
 

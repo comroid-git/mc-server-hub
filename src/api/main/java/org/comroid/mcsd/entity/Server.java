@@ -13,6 +13,7 @@ import org.comroid.mcsd.model.ServerConnection;
 import org.comroid.mcsd.repo.ShRepo;
 import org.comroid.mcsd.util.ApplicationContextProvider;
 import org.intellij.lang.annotations.Language;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -29,6 +30,7 @@ public class Server {
     private UUID id = UUID.randomUUID();
     private UUID owner;
     private UUID shConnection;
+    private @Nullable UUID discordConnection;
     private String name;
     private String mcVersion = "1.19.4";
     private String host;
@@ -139,6 +141,22 @@ public class Server {
     @Override
     public String toString() {
         return "Server " + name;
+    }
+
+    public String getDashboardURL() {
+        return "https://mc.comroid.org/server/" + id;
+    }
+
+    public String getAddress() {
+        return host + ":" + port;
+    }
+
+    public String getThumbnailURL() {
+        return "https://mc-api.net/v3/server/favicon/" + getAddress();
+    }
+
+    public String getStatusURL() {
+        return "https://mc-api.net/v3/server/ping/" + getAddress();
     }
 
     public enum Status implements IntegerAttribute {

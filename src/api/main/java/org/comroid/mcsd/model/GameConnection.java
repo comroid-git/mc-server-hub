@@ -73,11 +73,10 @@ public final class GameConnection implements Closeable {
         io.close();
     }
 
-    public void sendCmd(String cmd, final @Language("RegExp") String endPattern) {
-        if (connection.tryRcon())
-            connection.getGame().sendCmdRCon(cmd, connection);
-        else if (endPattern != null) sendCmdScreen(cmd, endPattern).join();
-        else throw new RuntimeException("Cannot send command " + cmd + " because both RCon and Screen are offline");
+    public String sendCmd(final String cmd, final @Language("RegExp") String endPattern) {
+        return connection.getGame().sendCmdRCon(cmd, connection)
+                .map(RconResponse::getResponseString)
+                .orElseGet(() -> sendCmdScreen(cmd, endPattern).join());
     }
 
     public synchronized CompletableFuture<String> sendCmdScreen(String cmd, final @Language("RegExp") String endPattern) {
@@ -86,7 +85,7 @@ public final class GameConnection implements Closeable {
         final Predicate<Event<String>> predicate = e -> pattern.matcher(e.getData()).matches();
         var appender = screen.listen(predicate, e -> sb.append(e.getData()));
         var future = screen.next(predicate).whenComplete((e,t)->appender.close());
-        screen.accept(cmd);
+        screen.publish(cmd);
         return future.thenApply($->sb.toString());
     }
 

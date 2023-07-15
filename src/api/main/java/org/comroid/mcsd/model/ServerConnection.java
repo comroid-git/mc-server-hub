@@ -23,14 +23,16 @@ import org.comroid.api.info.Log;
 import org.comroid.mcsd.dto.StatusMessage;
 import org.comroid.mcsd.entity.ShConnection;
 import org.comroid.mcsd.exception.EntityNotFoundException;
+import org.comroid.mcsd.repo.DiscordBotRepo;
 import org.comroid.mcsd.repo.ServerRepo;
 import org.comroid.mcsd.repo.ShRepo;
-import org.comroid.mcsd.util.ApplicationContextProvider;
 import org.comroid.mcsd.entity.Server;
 import org.intellij.lang.annotations.Language;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.*;
 import java.time.Duration;
@@ -41,6 +43,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.StreamSupport;
+
+import static org.comroid.mcsd.util.ApplicationContextProvider.bean;
 
 @Getter
 public final class ServerConnection implements Closeable, ServerHolder {
@@ -56,7 +60,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     private static final Duration statusTimeout = Duration.ofSeconds(10);
     static final Duration shTimeout = Duration.ofMinutes(2);
-    private static final Resource runscript = ApplicationContextProvider.bean(ResourceLoader.class).getResource("classpath:/"+ServerConnection.RunScript);
+    private static final Resource runscript = bean(ResourceLoader.class).getResource("classpath:/"+ServerConnection.RunScript);
     private final ShConnection con;
     @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
     private final Logger log;
@@ -68,7 +72,10 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private final ClientSession session;
     @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
     private final SftpClient sftp;
+    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
     private final IMinecraftRconService rcon;
+    @JsonIgnore @Getter(onMethod_ = @JsonIgnore) @Nullable
+    private final DiscordConnection discord;
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
 
     private ServerConnection(Server server) throws IOException {
@@ -76,7 +83,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         this.con = shConnection();
         this.log = Log.get(con.toString());
 
-        this.session = ApplicationContextProvider.bean(SshClient.class)
+        this.session = bean(SshClient.class)
                 .connect(con.getUsername(), con.getHost(), con.getPort())
                 .verify(shTimeout)
                 .getSession();
@@ -93,6 +100,10 @@ public final class ServerConnection implements Closeable, ServerHolder {
         this.rcon = new MinecraftRconService(
                 new RconDetails(con.getHost(), server.getRConPort(), server.getRConPassword()),
                 new ConnectOptions(Integer.MAX_VALUE, Duration.ofSeconds(3), Duration.ofMinutes(5)));
+        this.discord = Optional.ofNullable(server.getDiscordConnection())
+                .flatMap(id -> bean(DiscordBotRepo.class).findById(id))
+                .map(info -> new DiscordConnection(this, info))
+                .orElse(null);
     }
 
     public static ServerConnection getInstance(final Server srv) {
@@ -138,7 +149,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
         log.debug("Getting status of Server %s".formatted(server));
-        var host = StreamSupport.stream(ApplicationContextProvider.bean(ShRepo.class).findAll().spliterator(), false)
+        var host = StreamSupport.stream(bean(ShRepo.class).findAll().spliterator(), false)
                 .filter(con -> con.getId().equals(server.getShConnection()))
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server))
@@ -243,7 +254,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
             // upload unit info
             try (var dataOut = uploadFile(prefix + UnitFile)) {
-                var fields = ApplicationContextProvider.bean(ObjectMapper.class).valueToTree(server).fields();
+                var fields = bean(ObjectMapper.class).valueToTree(server).fields();
                 var prop = new Properties();
                 while (fields.hasNext()) {
                     var field = fields.next();
@@ -314,7 +325,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
             return false;
         }
         server.setLastBackup(Instant.now());
-        ApplicationContextProvider.bean(ServerRepo.class).save(server);
+        bean(ServerRepo.class).save(server);
         log.info("Backup for server %s finished".formatted(server));
         return true;
     }
@@ -402,7 +413,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     }
 
     private ShConnection shConnection() {
-        return ApplicationContextProvider.bean(ShRepo.class)
+        return bean(ShRepo.class)
                 .findById(server.getShConnection())
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server.getShConnection()));
     }
