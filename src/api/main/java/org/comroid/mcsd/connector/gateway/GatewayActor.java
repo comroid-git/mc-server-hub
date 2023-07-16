@@ -36,15 +36,13 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
 
         @SneakyThrows
         public ConnectionHandler(Socket socket) {
-            final var output = new DelegateStream.Output(socket.getOutputStream())
-                    //.compress()
-                    //.encrypt(getConnectionData().toCipher(Cipher.ENCRYPT_MODE))
-                    .toPrintStream();
+            final var io = new DelegateStream.IO(socket.getInputStream(), socket.getOutputStream(), null)
+                    .useCompression()
+                    .useEncryption(getConnectionData(uuid)::toCipher);
+            final var output = io.toPrintStream();
             addChildren(
                     // Rx
                     new DelegateStream.Input(socket.getInputStream())
-                            //.decompress()
-                            //.decrypt(getConnectionData().toCipher(Cipher.DECRYPT_MODE))
                             .setEndlMode(DelegateStream.EndlMode.OnNewLine)
                             .subscribe(str -> {
                                 var packet = parsePacket(str).setReceived(true);
@@ -61,7 +59,7 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
                                         .setTopic(e.getKey())
                                         .toSerializedString());
                             }),
-                    output);
+                    io, output);
         }
 
         @SneakyThrows
