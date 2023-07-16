@@ -1,9 +1,8 @@
 package org.comroid.mcsd.connector.gateway;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.*;
+import org.comroid.api.Container;
+import org.comroid.api.Event;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.connector.HubConnector;
 import org.springframework.stereotype.Component;
@@ -12,12 +11,18 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 @Data
 @Component
 @NoArgsConstructor(force = true)
 @EqualsAndHashCode(callSuper = true)
 public class GatewayServer extends GatewayActor implements Runnable {
+    private final Map<UUID, Connection> connections = new ConcurrentHashMap<>();
     private final ServerSocket server;
 
     @Override
@@ -30,6 +35,7 @@ public class GatewayServer extends GatewayActor implements Runnable {
             } catch (UnknownHostException e) {
                 address = InetAddress.getLoopbackAddress();
             }
+
         var server = new ServerSocket(HubConnector.Port);
         server.bind(new InetSocketAddress(address, HubConnector.Port));
     }
@@ -37,7 +43,40 @@ public class GatewayServer extends GatewayActor implements Runnable {
     @Override
     @SneakyThrows
     public void run() {
-        while (server.isBound())
-            handle(server.accept());
+        while (server.isBound()) {
+            var handler = handle(server.accept());
+            var connection = new Connection(handler);
+            handler.addChildren(connection);
+            register(connection);
+        }
+    }
+
+    @Override
+    public GatewayConnectionData getConnectionData(UUID handlerId) {
+        return connections.values().stream()
+                .filter(con -> Objects.equals(con.handler.id, handlerId))
+                .findAny()
+                .map(Connection::getConnectionData)
+                .orElseThrow();
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    private class Connection extends Container.Base {
+        private final ConnectionHandler handler;
+        private GatewayConnectionData connectionData;
+
+        @Override
+        public Stream<Object> streamOwnChildren() {
+            return Stream.of(handler);
+        }
+
+        @Event.Subscriber
+        public void connect(Event<GatewayPacket> event) {
+            connectionData = event.getData().parse(GatewayConnectionData.class);
+            connections.put(connectionData.id, this);
+
+            publish("handshake", data(handler.id));
+        }
     }
 }

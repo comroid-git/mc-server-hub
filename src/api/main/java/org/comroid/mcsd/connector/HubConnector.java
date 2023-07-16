@@ -1,30 +1,29 @@
 package org.comroid.mcsd.connector;
 
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldDefaults;
 import org.comroid.api.Container;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.connector.gateway.GatewayClient;
+import org.comroid.mcsd.connector.gateway.GatewayConnectionData;
 import org.comroid.mcsd.connector.gateway.GatewayPacket;
-import org.comroid.util.Debug;
-
-import java.util.UUID;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public final class HubConnector extends Container.Base implements GatewayPacket.Creator {
-    public static final String DefaultBaseUrl = "http"+(Debug.isDebug() ? "://localhost:42064" : "s://mc.comroid.org")+"/connector";
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public final class HubConnector extends Container.Base implements GatewayPacket.Utils {
     public static final int Port = 42065;
-    private final GatewayClient gateway = new GatewayClient(this);
-    private final UUID uuid = UUID.randomUUID();
-    private final String hubBaseUrl;
-    private final Role role;
+    GatewayClient gateway = new GatewayClient(this);
+    GatewayConnectionData connectionData;
+    String hubBaseUrl;
 
-    public HubConnector(String hubBaseUrl, Role role, String token) {
+    @Builder
+    public HubConnector(String hubBaseUrl, GatewayConnectionData connectionData) {
         this.hubBaseUrl = hubBaseUrl;
-        this.role = role;
-
-        gateway.publish("connect", connect());
+        this.connectionData = connectionData;
     }
 
     @Override
@@ -32,5 +31,5 @@ public final class HubConnector extends Container.Base implements GatewayPacket.
         gateway.close();
     }
 
-    public enum Role implements IntegerAttribute { Agent, Spigot, Forge, Fabric }
+    public enum Role implements IntegerAttribute { Agent, Server }
 }

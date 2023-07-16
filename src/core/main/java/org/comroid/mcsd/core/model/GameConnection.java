@@ -8,7 +8,7 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.info.Log;
-import org.comroid.mcsd.core.util.Utils;
+import org.comroid.mcsd.api.util.Utils;
 import org.comroid.mcsd.core.entity.Server;
 import org.intellij.lang.annotations.Language;
 
