@@ -31,6 +31,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+@Log
 @Data
 @Component
 @Lazy(false)
@@ -79,7 +80,6 @@ public class GatewayServer extends GatewayActor implements Runnable {
                 .orElseThrow();
     }
 
-    @Log
     @Data
     @EqualsAndHashCode(callSuper = true)
     private class Connection extends Container.Base {

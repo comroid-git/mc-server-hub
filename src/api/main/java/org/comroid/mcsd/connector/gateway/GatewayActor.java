@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.Value;
+import lombok.extern.java.Log;
 import org.comroid.api.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,6 +17,7 @@ import java.util.function.Predicate;
 
 import static org.comroid.mcsd.connector.gateway.GatewayPacket.serialize;
 
+@Log
 @Data
 @EqualsAndHashCode(callSuper = true)
 public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements Startable {
