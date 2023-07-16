@@ -3,8 +3,7 @@ package org.comroid.mcsd.core.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.graversen.minecraft.rcon.Defaults;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
@@ -23,31 +22,32 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Data
 @Slf4j
+@Getter
 @Entity
+@RequiredArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class Server extends AbstractEntity {
-    private UUID owner;
-    private UUID shConnection;
-    private @Nullable UUID discordConnection;
-    private String name;
-    private String mcVersion = "1.19.4";
-    private String host;
-    private int port = 25565;
-    private String directory = "~/minecraft";
-    private Mode mode = Mode.Paper;
-    private byte ramGB = 4;
-    private boolean managed = false;
-    private boolean maintenance = false;
-    private int maxPlayers = 20;
-    private int queryPort = 25565;
-    private int rConPort = Defaults.RCON_PORT;
-    private String rConPassword = UUID.randomUUID().toString();
-    private Duration backupPeriod = Duration.ofHours(12);
-    private Duration updatePeriod = Duration.ofDays(7);
-    private Instant lastBackup = Instant.ofEpochMilli(0);
-    private Instant lastUpdate = Instant.ofEpochMilli(0);
+    private @Setter UUID owner;
+    private @Setter UUID shConnection;
+    private @Setter @Nullable UUID discordConnection;
+    private @Setter String name;
+    private @Setter String mcVersion = "1.19.4";
+    private @Setter String host;
+    private @Setter int port = 25565;
+    private @Setter String directory = "~/minecraft";
+    private @Setter Mode mode = Mode.Paper;
+    private @Setter byte ramGB = 4;
+    private @Setter boolean managed = false;
+    private @Setter boolean maintenance = false;
+    private @Setter int maxPlayers = 20;
+    private @Setter int queryPort = 25565;
+    private @Setter int rConPort = Defaults.RCON_PORT;
+    private @Setter String rConPassword = UUID.randomUUID().toString();
+    private @Setter Duration backupPeriod = Duration.ofHours(12);
+    private @Setter Duration updatePeriod = Duration.ofDays(7);
+    private @Setter Instant lastBackup = Instant.ofEpochMilli(0);
+    private @Setter Instant lastUpdate = Instant.ofEpochMilli(0);
     @JsonIgnore
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
