@@ -63,17 +63,17 @@ public final class ServerConnection implements Closeable, ServerHolder {
     static final Duration shTimeout = Duration.ofMinutes(2);
     private static final Resource runscript = bean(ResourceLoader.class).getResource("classpath:/"+ServerConnection.RunScript);
     private final ShConnection con;
-    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
+    @JsonIgnore @Getter
     private final Server server;
-    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
+    @JsonIgnore @Getter
     private final GameConnection game;
-    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
+    @JsonIgnore @Getter
     private final ClientSession session;
-    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
+    @JsonIgnore @Getter
     private final SftpClient sftp;
-    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
+    @JsonIgnore @Getter
     private final IMinecraftRconService rcon;
-    @JsonIgnore @Getter(onMethod_ = @JsonIgnore) @Nullable
+    @JsonIgnore @Getter @Nullable
     private final DiscordConnection discord;
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
 
@@ -322,8 +322,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
             log.log(Level.SEVERE, "Backup for server %s failed".formatted(server));
             return false;
         }
-        server.setLastBackup(Instant.now());
-        bean(ServerRepo.class).save(server);
+        bean(ServerRepo.class).bumpLastBackup(server);
         log.info("Backup for server %s finished".formatted(server));
         return true;
     }

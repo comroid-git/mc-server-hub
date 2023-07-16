@@ -16,11 +16,11 @@ import java.util.UUID;
 public class StatusMessage {
     public final Instant timestamp = Instant.now();
     public final @NotNull UUID targetId;
-    public @With Status status = Status.Offline;
-    public @With @Nullable Status rcon = Status.Offline;
-    public @With @Nullable Status ssh = Status.Offline;
-    public @With int playerCount = 0;
-    public @With int playerMax = 0;
+    public @With @lombok.Builder.Default Status status = Status.Offline;
+    public @With @lombok.Builder.Default @Nullable Status rcon = Status.Offline;
+    public @With @lombok.Builder.Default @Nullable Status ssh = Status.Offline;
+    public @With @lombok.Builder.Default int playerCount = 0;
+    public @With @lombok.Builder.Default int playerMax = 0;
     public @With @Nullable String motd;
     public @With @Nullable List<String> players;
     public @With @Nullable String gameMode;

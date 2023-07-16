@@ -11,14 +11,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.crypto.Cipher;
-import javax.persistence.Converter;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.UUID;
 
 @Data
 @Builder
-@RequiredArgsConstructor
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PROTECTED)
 public final class GatewayConnectionInfo {
     public static final int TokenLength = 64;
@@ -28,13 +27,7 @@ public final class GatewayConnectionInfo {
     @NotNull UUID target;
     @NotNull UUID agent;
     @lombok.Builder.Default
-    @NotNull String token = regenerateToken();
-
-    public String regenerateToken() {
-        var randomBytes = new byte[TokenLength];
-        new SecureRandom().nextBytes(randomBytes);
-        return token = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-    }
+    @NotNull String token = generateToken();
 
     @Convert
     public Cipher toCipher(@MagicConstant(valuesFromClass = Cipher.class) int mode) {
@@ -43,6 +36,12 @@ public final class GatewayConnectionInfo {
                 EncryptionUtil.Transformation.RSA_ECB_OAEPWithSHA_256AndMGF1Padding,
                 mode,
                 getToken());
+    }
+
+    public static String generateToken() {
+        var randomBytes = new byte[TokenLength];
+        new SecureRandom().nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
 
     @Value

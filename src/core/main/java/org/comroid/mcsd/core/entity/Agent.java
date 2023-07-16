@@ -23,6 +23,10 @@ public class Agent extends AbstractEntity {
     @PostLoad
     public void migrate() {
         if (connectionInfo == null)
-            connectionInfo = new GatewayConnectionInfo(role, target, getId());
+            connectionInfo = GatewayConnectionInfo.builder()
+                    .role(role)
+                    .target(target)
+                    .agent(getId())
+                    .build();
     }
 }
