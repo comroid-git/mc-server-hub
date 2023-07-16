@@ -20,9 +20,10 @@ subprojects {
         if (!project.name.endsWith('api'))
             implementation project(':api')
 
-        if (findProject(':japi') != null)
-            implementation project(':japi')
-        else implementation 'org.comroid:japi:+'
+        if (project.name != 'japi')
+            if (findProject(':japi') != null)
+                implementation project(':japi')
+            else implementation 'org.comroid:japi:+'
 
         // utility
         compileOnly 'org.projectlombok:lombok:+'

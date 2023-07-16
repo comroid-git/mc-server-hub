@@ -2,6 +2,7 @@ package org.comroid.mcsd.api.dto;
 
 import lombok.*;
 import org.comroid.mcsd.api.model.Status;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @Builder(toBuilder = true)
 public class StatusMessage {
     public final Instant timestamp = Instant.now();
-    public final @NonNull UUID targetId;
+    public final @NotNull UUID targetId;
     public @With Status status = Status.Offline;
     public @With @Nullable Status rcon = Status.Offline;
     public @With @Nullable Status ssh = Status.Offline;
