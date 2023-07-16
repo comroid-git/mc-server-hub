@@ -3,10 +3,7 @@ package org.comroid.mcsd.connector.gateway;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
-import org.comroid.api.Container;
-import org.comroid.api.DelegateStream;
-import org.comroid.api.Event;
-import org.comroid.api.Startable;
+import org.comroid.api.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.Socket;
@@ -48,13 +45,19 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
                             .setEndlMode(DelegateStream.EndlMode.OnNewLine)
                             .subscribe(str -> {
                                 var packet = parsePacket(str).setReceived(true);
-                                publish(packet.getTopic(), packet);
+                                publish(packet.getTopic(), packet, (long)packet.opCode.getAsInt());
                             }).activate(executor),
                     // Tx
-                    listen(e -> !e.getData().isReceived(),
-                            e -> output.println(e.getData()
-                                    .setTopic(e.getKey())
-                                    .toSerializedString())),
+                    listen(e -> !Objects.requireNonNull(e.getData()).isReceived(),
+                            e -> {
+                                var packet = e.getData();
+                                assert packet != null;
+                                if (packet.opCode == null && e.getFlag() != null)
+                                    packet.setOpCode(IntegerAttribute.valueOf((int)(long)e.getFlag(), GatewayPacket.OpCode.class).assertion());
+                                output.println(packet
+                                        .setTopic(e.getKey())
+                                        .toSerializedString());
+                            }),
                     output);
         }
 
@@ -63,25 +66,26 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
             return GatewayPacket.mapper.readValue(str, GatewayPacket.class);
         }
 
-        public Predicate<Event<GatewayPacket>> with(final @Nullable String key, final GatewayPacket.Type type) {
+        @Deprecated
+        public Predicate<Event<GatewayPacket>> with(final @Nullable String key, final GatewayPacket.OpCode type) {
             return ((Predicate<Event<GatewayPacket>>) (e -> Objects.equals(e.getKey(), key)))
-                    .and(e -> e.getData().type == type);
+                    .and(e -> Objects.requireNonNull(e.getData()).opCode == type);
         }
 
         GatewayPacket.Builder packet() {
             return GatewayPacket.builder().connectionId(getUuid());
         }
 
-        GatewayPacket.Builder empty(GatewayPacket.Type type) {
-            return packet().type(type);
+        GatewayPacket.Builder op(GatewayPacket.OpCode type) {
+            return packet().opCode(type);
         }
 
         GatewayPacket.Builder connect(GatewayConnectionData connectionData) {
-            return empty(GatewayPacket.Type.Connect).data(serialize(connectionData));
+            return op(GatewayPacket.OpCode.Connect).data(serialize(connectionData));
         }
 
         GatewayPacket.Builder data(Object data) {
-            return empty(GatewayPacket.Type.Data).data(serialize(data));
+            return op(GatewayPacket.OpCode.Data).data(serialize(data));
         }
     }
 }

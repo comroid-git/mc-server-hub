@@ -14,7 +14,7 @@ import org.comroid.mcsd.connector.gateway.GatewayPacket;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public final class HubConnector extends Container.Base implements GatewayPacket.Utils {
+public final class HubConnector extends Container.Base {
     public static final int Port = 42065;
     GatewayClient gateway = new GatewayClient(this);
     GatewayConnectionData connectionData;

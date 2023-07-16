@@ -54,7 +54,7 @@ public class GatewayServer extends GatewayActor implements Runnable {
     @Override
     public GatewayConnectionData getConnectionData(UUID handlerId) {
         return connections.values().stream()
-                .filter(con -> Objects.equals(con.handler.id, handlerId))
+                .filter(con -> Objects.equals(con.handler.uuid, handlerId))
                 .findAny()
                 .map(Connection::getConnectionData)
                 .orElseThrow();
@@ -73,10 +73,10 @@ public class GatewayServer extends GatewayActor implements Runnable {
 
         @Event.Subscriber
         public void connect(Event<GatewayPacket> event) {
-            connectionData = event.getData().parse(GatewayConnectionData.class);
+            connectionData = Objects.requireNonNull(event.getData()).parse(GatewayConnectionData.class);
             connections.put(connectionData.id, this);
 
-            publish("handshake", data(handler.id));
+            publish("handshake", handler.data(handler.uuid).build());
         }
     }
 }

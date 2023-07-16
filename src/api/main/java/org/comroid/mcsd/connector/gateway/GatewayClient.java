@@ -10,6 +10,7 @@ import org.comroid.mcsd.connector.HubConnector;
 
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.Objects;
 import java.util.UUID;
 
 @Log
@@ -33,14 +34,14 @@ public class GatewayClient extends GatewayActor {
         handler = handle(socket);
         addChildren(socket);
 
-        next(handler.with("close", GatewayPacket.Type.Close)).thenRun(this::close);
+        next(handler.with("close", GatewayPacket.OpCode.Close)).thenRun(this::close);
 
         publish("connect", handler.connect(connector.getConnectionData()).build());
     }
 
     @Override
     public void closeSelf() {
-        publish("close", handler.empty(GatewayPacket.Type.Close).build());
+        publish("close", handler.op(GatewayPacket.OpCode.Close).build());
         super.closeSelf();
     }
 
@@ -51,7 +52,7 @@ public class GatewayClient extends GatewayActor {
 
     @Event.Subscriber
     public void heartbeat(Event<GatewayPacket> event) {
-        if (!event.getData().isHeartbeatValid())
+        if (!Objects.requireNonNull(event.getData()).isHeartbeatValid())
             close();
         publish("heartbeat", handler.data(handler.uuid).build());
     }

@@ -19,13 +19,13 @@ public class GatewayPacket implements StringSerializable {
     static final ObjectMapper mapper = new ObjectMapper();
     @lombok.Builder.Default Instant timestamp = Instant.now();
     UUID connectionId;
-    Type type;
+    OpCode opCode;
     @Nullable String topic;
     @Nullable String data;
     @lombok.Builder.Default boolean received = false;
 
     public boolean isHeartbeatValid() {
-        return type == Type.Heartbeat && timestamp.plus(HeartbeatTimeout).isAfter(Instant.now());
+        return opCode == OpCode.Heartbeat && timestamp.plus(HeartbeatTimeout).isAfter(Instant.now());
     }
 
     @SneakyThrows
@@ -44,11 +44,9 @@ public class GatewayPacket implements StringSerializable {
         return mapper.writeValueAsString(data);
     }
 
-    @Deprecated
-    public enum Type implements IntegerAttribute {
+    public enum OpCode implements IntegerAttribute {
         Heartbeat,
         Close,
-
         Connect,
         Data
     }
