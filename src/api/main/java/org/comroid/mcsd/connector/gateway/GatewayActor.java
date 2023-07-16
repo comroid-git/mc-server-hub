@@ -37,8 +37,9 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
         @SneakyThrows
         public ConnectionHandler(Socket socket) {
             final var io = new DelegateStream.IO(socket.getInputStream(), socket.getOutputStream(), null)
-                    .useCompression()
-                    .useEncryption(getConnectionData(uuid)::toCipher);
+                    //.useCompression()
+                    //.useEncryption(getConnectionData(uuid)::toCipher)
+            ;
             final var output = io.toPrintStream();
             addChildren(
                     // Rx
