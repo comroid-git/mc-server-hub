@@ -4,12 +4,14 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.comroid.annotations.Convert;
 import org.comroid.mcsd.connector.HubConnector;
+import org.comroid.mcsd.util.JacksonObjectConverter;
 import org.comroid.util.EncryptionUtil;
 import org.intellij.lang.annotations.MagicConstant;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.crypto.Cipher;
+import javax.persistence.Converter;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.UUID;
@@ -40,5 +42,14 @@ public final class GatewayConnectionInfo {
                 EncryptionUtil.Transformation.RSA_ECB_OAEPWithSHA_256AndMGF1Padding,
                 mode,
                 getToken());
+    }
+
+    @Value
+    @javax.persistence.Converter
+    @EqualsAndHashCode(callSuper = true)
+    public static class Converter extends JacksonObjectConverter<GatewayConnectionInfo> {
+        public Converter() {
+            super(GatewayConnectionInfo.class);
+        }
     }
 }

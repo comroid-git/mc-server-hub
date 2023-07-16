@@ -82,6 +82,7 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
         }
 
         public GatewayPacket.Builder connect(GatewayConnectionInfo connectionData) {
+            connectionData.token = "<token removed>";
             return op(GatewayPacket.OpCode.Connect).data(serialize(connectionData));
         }
 
