@@ -20,7 +20,7 @@ public final class HubConnector extends Container.Base {
     GatewayConnectionData connectionData;
     String hubBaseUrl;
 
-    @Builder
+    @lombok.Builder
     public HubConnector(String hubBaseUrl, GatewayConnectionData connectionData) {
         this.hubBaseUrl = hubBaseUrl;
         this.connectionData = connectionData;

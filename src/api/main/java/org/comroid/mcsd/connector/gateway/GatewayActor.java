@@ -3,6 +3,7 @@ package org.comroid.mcsd.connector.gateway;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
+import lombok.Value;
 import org.comroid.api.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,8 +29,10 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
         return handler;
     }
 
-    protected final class ConnectionHandler extends Container.Base {
-        final UUID uuid = UUID.randomUUID();
+    @Value
+    @EqualsAndHashCode(callSuper = true)
+    protected class ConnectionHandler extends Container.Base {
+        UUID uuid = UUID.randomUUID();
 
         @SneakyThrows
         public ConnectionHandler(Socket socket) {
@@ -45,14 +48,14 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
                             .setEndlMode(DelegateStream.EndlMode.OnNewLine)
                             .subscribe(str -> {
                                 var packet = parsePacket(str).setReceived(true);
-                                publish(packet.getTopic(), packet, (long)packet.opCode.getAsInt());
+                                publish(packet.getTopic(), packet, (long)packet.getOpCode().getAsInt());
                             }).activate(executor),
                     // Tx
                     listen().setPredicate(e -> !Objects.requireNonNull(e.getData()).isReceived())
                             .subscribe(e -> {
                                 var packet = e.getData();
                                 assert packet != null;
-                                if (packet.opCode == null && e.getFlag() != null)
+                                if (packet.getOpCode() == null && e.getFlag() != null)
                                     packet.setOpCode(IntegerAttribute.valueOf((int)(long)e.getFlag(), GatewayPacket.OpCode.class).assertion());
                                 output.println(packet
                                         .setTopic(e.getKey())
@@ -69,7 +72,7 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
         @Deprecated
         public Predicate<Event<GatewayPacket>> with(final @Nullable String key, final GatewayPacket.OpCode type) {
             return ((Predicate<Event<GatewayPacket>>) (e -> Objects.equals(e.getKey(), key)))
-                    .and(e -> Objects.requireNonNull(e.getData()).opCode == type);
+                    .and(e -> Objects.requireNonNull(e.getData()).getOpCode() == type);
         }
 
         GatewayPacket.Builder packet() {

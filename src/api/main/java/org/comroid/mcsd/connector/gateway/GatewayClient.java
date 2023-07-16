@@ -53,6 +53,6 @@ public class GatewayClient extends GatewayActor {
     public void heartbeat(Event<GatewayPacket> event) {
         if (!Objects.requireNonNull(event.getData()).isHeartbeatValid())
             close();
-        publish("heartbeat", handler.data(handler.uuid).build());
+        publish("heartbeat", handler.data(handler).build());
     }
 }
