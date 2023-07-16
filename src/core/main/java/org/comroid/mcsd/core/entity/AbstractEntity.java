@@ -15,5 +15,5 @@ import java.util.UUID;
 public abstract class AbstractEntity {
     @Id
     @Convert(converter = MinecraftProfile.UuidConverter.class)
-    private UUID id = UUID.randomUUID();
+    private final UUID id = UUID.randomUUID();
 }

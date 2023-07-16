@@ -14,14 +14,15 @@ import java.util.UUID;
 @Data
 @Entity
 @EqualsAndHashCode(callSuper = true)
-public class ServerAgent extends AbstractEntity {
+public class Agent extends AbstractEntity {
     UUID target;
     HubConnector.Role role;
     @Convert(converter = JacksonObjectConverter.class)
     GatewayConnectionInfo connectionInfo;
 
     @PostLoad
-    public void init() {
-        connectionInfo = new GatewayConnectionInfo(role, target);
+    public void migrate() {
+        if (connectionInfo == null)
+            connectionInfo = new GatewayConnectionInfo(role, target, getId());
     }
 }

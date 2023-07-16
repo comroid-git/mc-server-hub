@@ -5,10 +5,17 @@ import lombok.*;
 import lombok.extern.java.Log;
 import org.comroid.api.Container;
 import org.comroid.api.Event;
+import org.comroid.api.N;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.mcsd.api.dto.StatusMessage;
+import org.comroid.mcsd.core.entity.Agent;
+import org.comroid.mcsd.core.exception.EntityNotFoundException;
+import org.comroid.mcsd.core.exception.StatusCode;
+import org.comroid.mcsd.core.repo.AgentRepo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
@@ -19,6 +26,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Data
@@ -29,6 +39,8 @@ import java.util.stream.Stream;
 public class GatewayServer extends GatewayActor implements Runnable {
     private final Map<UUID, Connection> connections = new ConcurrentHashMap<>();
     private final ServerSocket server;
+    @Autowired
+    private AgentRepo agentRepo;
 
     @Override
     @SneakyThrows
@@ -81,10 +93,31 @@ public class GatewayServer extends GatewayActor implements Runnable {
 
         @Event.Subscriber
         public void connect(GatewayPacket packet) {
-            connectionData = Objects.requireNonNull(packet).parse(GatewayConnectionInfo.class);
-            connections.put(connectionData.id, this);
+            try {
+                connectionData = Objects.requireNonNull(packet).parse(GatewayConnectionInfo.class);
+                var found = agentRepo.findById(connectionData.id).orElse(null);
 
-            publish("handshake", handler.data(handler.getUuid()).build());
+                // validate connection
+                if (found == null)
+                    throw new EntityNotFoundException(Agent.class, connectionData.id);
+                final var other = found.getConnectionInfo();
+                final var criteria = Map.<Function<GatewayConnectionInfo,Object>,Supplier<Throwable>>of(
+                        GatewayConnectionInfo::getToken, ()->new StatusCode(HttpStatus.UNAUTHORIZED, "Token mismatch"),
+                        GatewayConnectionInfo::getRole, ()->new StatusCode(HttpStatus.CONFLICT, "Role mismatch"),
+                        GatewayConnectionInfo::getTarget, ()->new StatusCode(HttpStatus.CONFLICT, "Target mismatch")
+                );
+                final Predicate<Function<GatewayConnectionInfo, Object>> check
+                        = attr -> Objects.equals(attr.apply(connectionData), attr.apply(other));
+                for (var entry : criteria.entrySet())
+                    if (!check.test(entry.getKey()))
+                        throw entry.getValue().get();
+
+                connections.put(connectionData.id, this);
+                publish("handshake", handler.data(handler.getUuid()).build());
+            } catch (Throwable t) {
+                t.printStackTrace();
+                close();
+            }
         }
 
         @Event.Subscriber

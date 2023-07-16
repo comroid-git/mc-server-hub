@@ -26,6 +26,7 @@ public final class GatewayConnectionInfo {
     @Nullable String hubBaseUrl;
     @NotNull HubConnector.Role role;
     @NotNull UUID target;
+    @NotNull UUID agent;
     @lombok.Builder.Default
     @NotNull String token = regenerateToken();
 
