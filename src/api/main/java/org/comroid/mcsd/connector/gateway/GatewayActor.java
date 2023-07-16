@@ -42,7 +42,7 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
             final var output = io.toPrintStream();
             addChildren(
                     // Rx
-                    new DelegateStream.Input(socket.getInputStream())
+                    io.input().convert(DelegateStream.Input.class)
                             .setEndlMode(DelegateStream.EndlMode.OnNewLine)
                             .subscribe(str -> {
                                 var packet = parsePacket(str).setReceived(true);

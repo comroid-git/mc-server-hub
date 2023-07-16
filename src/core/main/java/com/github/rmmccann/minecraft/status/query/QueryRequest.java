@@ -1,9 +1,12 @@
 package com.github.rmmccann.minecraft.status.query;
 
+import lombok.Data;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+@Data
 public class QueryRequest {
     static byte[] MAGIC = {(byte) 0xFE, (byte) 0xFD};
     byte type;
