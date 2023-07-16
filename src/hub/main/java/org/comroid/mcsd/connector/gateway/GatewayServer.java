@@ -8,6 +8,7 @@ import org.comroid.api.Event;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.mcsd.api.dto.StatusMessage;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
@@ -22,6 +23,7 @@ import java.util.stream.Stream;
 
 @Data
 @Component
+@Lazy(false)
 @NoArgsConstructor(force = true)
 @EqualsAndHashCode(callSuper = true)
 public class GatewayServer extends GatewayActor implements Runnable {
@@ -57,7 +59,7 @@ public class GatewayServer extends GatewayActor implements Runnable {
     }
 
     @Override
-    public GatewayConnectionData getConnectionData(UUID handlerId) {
+    public GatewayConnectionInfo getConnectionData(UUID handlerId) {
         return connections.values().stream()
                 .filter(con -> Objects.equals(con.handler.getUuid(), handlerId))
                 .findAny()
@@ -70,7 +72,7 @@ public class GatewayServer extends GatewayActor implements Runnable {
     @EqualsAndHashCode(callSuper = true)
     private class Connection extends Container.Base {
         private final ConnectionHandler handler;
-        private GatewayConnectionData connectionData;
+        private GatewayConnectionInfo connectionData;
 
         @Override
         public Stream<Object> streamOwnChildren() {
@@ -79,7 +81,7 @@ public class GatewayServer extends GatewayActor implements Runnable {
 
         @Event.Subscriber
         public void connect(GatewayPacket packet) {
-            connectionData = Objects.requireNonNull(packet).parse(GatewayConnectionData.class);
+            connectionData = Objects.requireNonNull(packet).parse(GatewayConnectionInfo.class);
             connections.put(connectionData.id, this);
 
             publish("handshake", handler.data(handler.getUuid()).build());

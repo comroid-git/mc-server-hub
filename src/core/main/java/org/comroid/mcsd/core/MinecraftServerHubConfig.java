@@ -21,15 +21,16 @@ import org.springframework.core.annotation.Order;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.logging.Logger;
 
 @Slf4j
 @Configuration
 @ImportResource({"classpath:beans.xml"})
 public class MinecraftServerHubConfig {
-    public static final Duration CRON_WATCHDOG_RATE = Duration.ofSeconds(10);
-    public static final Duration CRON_MANAGE_RATE = Duration.ofMinutes(10);
-    public static final Duration CRON_QUEUE_RATE = Duration.ofHours(1);
-    private final Object cronLock = new Object();
+    public static final Duration CronRate_Watchdog = Duration.ofSeconds(10);
+    public static final Duration CronRate_Manager = Duration.ofMinutes(5);
+    public static final Duration CronRate_Queue = Duration.ofHours(1);
+    public static final Logger cronLog = Logger.getLogger("cron");
 
     @Lazy
     @Autowired

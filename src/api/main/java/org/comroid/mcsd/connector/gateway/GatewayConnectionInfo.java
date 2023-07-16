@@ -1,29 +1,37 @@
 package org.comroid.mcsd.connector.gateway;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.comroid.annotations.Convert;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.util.EncryptionUtil;
 import org.intellij.lang.annotations.MagicConstant;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.crypto.Cipher;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.UUID;
 
 @Data
 @Builder
-@AllArgsConstructor
+@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PROTECTED)
-public final class GatewayConnectionData {
+public final class GatewayConnectionInfo {
+    public static final int TokenLength = 64;
     final UUID id = UUID.randomUUID();
-    HubConnector.Role role;
-    UUID target;
-    @JsonIgnore
-    String token;
+    @Nullable String hubBaseUrl;
+    @NotNull HubConnector.Role role;
+    @NotNull UUID target;
+    @lombok.Builder.Default
+    @NotNull String token = regenerateToken();
+
+    public String regenerateToken() {
+        var randomBytes = new byte[TokenLength];
+        new SecureRandom().nextBytes(randomBytes);
+        return token = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+    }
 
     @Convert
     public Cipher toCipher(@MagicConstant(valuesFromClass = Cipher.class) int mode) {

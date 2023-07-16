@@ -7,11 +7,9 @@ import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.mcsd.connector.gateway.GatewayClient;
-import org.comroid.mcsd.connector.gateway.GatewayConnectionData;
+import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
 import org.comroid.mcsd.connector.gateway.GatewayPacket;
 
-import java.util.Objects;
-import java.util.UUID;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -44,13 +42,8 @@ public final class MCSD_Spigot extends JavaPlugin {
         Logger.getGlobal().addHandler(consoleHandler);
 
         // connect to hub
-        var conInfo = config.getConfigurationSection("mcsd.hub");
-        assert conInfo != null;
-        var connectionData = new GatewayConnectionData(
-                valueOf(conInfo.getInt("role"), HubConnector.Role.class).assertion(),
-                UUID.fromString(Objects.requireNonNull(conInfo.getString("serverId"))),
-                conInfo.getString("token"));
-        this.connector = new HubConnector("https://mc.comroid.org", connectionData);
+        var connectionData = config.getObject("mcsd.agent", GatewayConnectionInfo.class);
+        this.connector = new HubConnector(connectionData);
         this.gateway = connector.getGateway();
         gateway.register(this);
     }
@@ -67,9 +60,10 @@ public final class MCSD_Spigot extends JavaPlugin {
     }
 
     private void initConfigDefaults(FileConfiguration config) {
-        config.addDefault("mcsd.hub.role", "1");
-        config.addDefault("mcsd.hub.serverId", "<mcsd server id>");
-        config.addDefault("mcsd.hub.token", "<mcsd server token>");
+        config.addDefault("mcsd.agent.role", "1");
+        config.addDefault("mcsd.agent.serverId", "<mcsd server id>");
+        config.addDefault("mcsd.agent.token", "<mcsd server token>");
+        config.addDefault("mcsd.agent.hubBaseUrl", "<mcsd hub base url>");
 
         saveDefaultConfig();
     }

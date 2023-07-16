@@ -1,12 +1,10 @@
 package org.comroid.mcsd.core.entity;
 
-import jakarta.persistence.Basic;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
+import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -26,13 +24,6 @@ public class MinecraftProfile extends AbstractEntity {
         return verification == null;
     }
 
-    @Basic
-    public UUID getId() {
-        var sb = new StringBuilder();
-        sb.insert(8, "-").insert(13, "-").insert(18, "-").insert(23, "-");
-        return UUID.fromString(sb.toString());
-    }
-
     @SneakyThrows
     public String getNameMcURL() {
         return "https://namemc.com/profile/" + getId();
@@ -46,5 +37,24 @@ public class MinecraftProfile extends AbstractEntity {
     @SneakyThrows
     public String getIsoBodyURL() {
         return "https://mc-heads.net/body/" + getId();
+    }
+
+    @Value
+    @Converter
+    public static class UuidConverter implements AttributeConverter<UUID, String> {
+        @Override
+        public String convertToDatabaseColumn(UUID id) {
+            return id.toString();
+        }
+
+        @Override
+        public UUID convertToEntityAttribute(String str) {
+            if (!str.contains("-")) {
+                var sb = new StringBuilder(str);
+                sb.insert(8, "-").insert(13, "-").insert(18, "-").insert(23, "-");
+                str = sb.toString();
+            }
+            return UUID.fromString(str);
+        }
     }
 }

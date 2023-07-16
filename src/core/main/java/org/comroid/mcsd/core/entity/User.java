@@ -1,5 +1,6 @@
 package org.comroid.mcsd.core.entity;
 
+import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Entity
 @EqualsAndHashCode(callSuper = true)
 public class User extends AbstractEntity {
+    @Basic
     private String name;
     private boolean guest;
     private int permissions;

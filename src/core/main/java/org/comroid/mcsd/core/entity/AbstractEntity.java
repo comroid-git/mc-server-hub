@@ -1,6 +1,7 @@
 package org.comroid.mcsd.core.entity;
 
 
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
@@ -13,5 +14,6 @@ import java.util.UUID;
 @Entity
 public abstract class AbstractEntity {
     @Id
+    @Convert(converter = MinecraftProfile.UuidConverter.class)
     private UUID id = UUID.randomUUID();
 }

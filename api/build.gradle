@@ -25,6 +25,9 @@ dependencies {
     // json
     api 'com.fasterxml.jackson.core:jackson-databind:2.+'
 
+    // jpa
+    implementation 'jakarta.persistence:jakarta.persistence-api:2.+'
+
     // utility
     compileOnly 'org.projectlombok:lombok:+'
     annotationProcessor 'org.projectlombok:lombok:+'

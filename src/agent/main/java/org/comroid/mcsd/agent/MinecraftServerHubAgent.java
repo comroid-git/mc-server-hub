@@ -1,8 +1,16 @@
 package org.comroid.mcsd.agent;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.errorprone.annotations.MustBeClosed;
+import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.api.info.Log;
+import org.comroid.api.io.FileHandle;
+import org.comroid.api.os.OS;
+import org.comroid.mcsd.connector.HubConnector;
+import org.comroid.mcsd.connector.gateway.GatewayClient;
+import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
+import org.comroid.mcsd.core.MinecraftServerHubConfig;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -14,48 +22,54 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.TaskScheduler;
 
 import java.time.Duration;
-import java.util.concurrent.ScheduledFuture;
+import java.util.Map;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import static org.comroid.mcsd.core.MinecraftServerHubConfig.cronLog;
 
 @Slf4j
 @ImportResource({"classpath:beans.xml"})
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class, scanBasePackages = "org.comroid.mcsd")
 public class MinecraftServerHubAgent {
-    public static final Duration CRON_WATCHDOG_RATE = Duration.ofSeconds(10);
-    public static final Duration CRON_MANAGE_RATE = Duration.ofMinutes(10);
-    public static final Duration CRON_QUEUE_RATE = Duration.ofHours(1);
-    private final Object cronLock = new Object();
-
     @Lazy
     @Autowired
     private ServerRepo servers;
 
     public static void main(String[] args) {
+        if (!OS.isUnix)
+            throw new RuntimeException("Only Unix operation systems are supported");
         SpringApplication.run(MinecraftServerHubAgent.class, args);
     }
 
+    @Bean
+    @SneakyThrows
+    public GatewayConnectionInfo gatewayConnectionInfo(@Autowired ObjectMapper mapper, @Autowired FileHandle configDir) {
+        return mapper.readValue(configDir.createSubFile("gateway.json"), GatewayConnectionInfo.class);
+    }
+    @Bean
+    public HubConnector connector(@Autowired GatewayConnectionInfo connectionData) {
+        return new HubConnector(connectionData);
+    }
+    @Bean
+    public GatewayClient gateway(@Autowired HubConnector connector) {
+        return connector.getGateway();
+    }
+
+    //region Cron
+    @Bean
+    public Map<Runnable, Duration> cronjobs() {
+        return Map.of(
+                this::$cronWatchdog, MinecraftServerHubConfig.CronRate_Watchdog,
+                this::$cronManager, MinecraftServerHubConfig.CronRate_Manager,
+                this::$cronBackup, MinecraftServerHubConfig.CronRate_Queue,
+                this::$cronUpdate, MinecraftServerHubConfig.CronRate_Queue
+        );
+    }
+
     @Bean @Lazy(false)
-    public ScheduledFuture<?> cronWatchdog(@Autowired TaskScheduler scheduler) {
-        return scheduler.scheduleAtFixedRate(this::$cronWatchdog, CRON_WATCHDOG_RATE);
+    public void startCronjobs(@Autowired TaskScheduler scheduler, @Autowired Map<Runnable, Duration> cronjobs) {
+        cronjobs.forEach(scheduler::scheduleAtFixedRate);
     }
-
-    public ScheduledFuture<?> cronManager(@Autowired TaskScheduler scheduler) {
-        return scheduler.scheduleAtFixedRate(this::$cronManager, CRON_MANAGE_RATE);
-    }
-
-    @Bean @Lazy(false)
-    public ScheduledFuture<?> cronBackup(@Autowired TaskScheduler scheduler) {
-        return scheduler.scheduleAtFixedRate(this::$cronBackup, CRON_QUEUE_RATE);
-    }
-
-    //@Bean
-    public ScheduledFuture<?> cronUpdate(@Autowired TaskScheduler scheduler) {
-        return scheduler.scheduleAtFixedRate(this::$cronUpdate, CRON_QUEUE_RATE);
-    }
-
-    private static final Logger cronLog = Log.get("cron");
-    private static final boolean parallelCron = false;
 
     @Synchronized
     private void $cronWatchdog() {
@@ -118,5 +132,6 @@ public class MinecraftServerHubAgent {
          */
         cronLog.log(Level.FINE, "Update Queue finished");
     }
+    //endregion
 }
 

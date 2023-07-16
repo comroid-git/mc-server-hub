@@ -22,15 +22,17 @@ public class GatewayClient extends GatewayActor {
     private ConnectionHandler handler;
 
     @Override
-    public GatewayConnectionData getConnectionData(UUID $) {
+    public GatewayConnectionInfo getConnectionData(UUID $) {
         return connector.getConnectionData();
     }
 
     @Override
     @SneakyThrows
     public void start() {
-        var socket = new Socket(connector.getHubBaseUrl(), HubConnector.Port);
-        socket.connect(InetSocketAddress.createUnresolved(connector.getHubBaseUrl(), HubConnector.Port));
+        var hubBaseUrl = connector.getConnectionData().getHubBaseUrl();
+        if (hubBaseUrl == null) hubBaseUrl = HubConnector.DefaultBaseUrl;
+        var socket = new Socket(hubBaseUrl, HubConnector.Port);
+        socket.connect(InetSocketAddress.createUnresolved(hubBaseUrl, HubConnector.Port));
         handler = handle(socket);
         addChildren(socket);
 
