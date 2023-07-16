@@ -48,8 +48,8 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
                                 publish(packet.getTopic(), packet, (long)packet.opCode.getAsInt());
                             }).activate(executor),
                     // Tx
-                    listen(e -> !Objects.requireNonNull(e.getData()).isReceived(),
-                            e -> {
+                    listen().setPredicate(e -> !Objects.requireNonNull(e.getData()).isReceived())
+                            .subscribe(e -> {
                                 var packet = e.getData();
                                 assert packet != null;
                                 if (packet.opCode == null && e.getFlag() != null)

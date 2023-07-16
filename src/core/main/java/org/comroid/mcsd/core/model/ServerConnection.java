@@ -10,6 +10,8 @@ import io.graversen.minecraft.rcon.service.RconDetails;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannelEvent;
@@ -19,7 +21,6 @@ import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.impl.DefaultSftpClientFactory;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.ThrowingFunction;
-import org.comroid.api.info.Log;
 import org.comroid.mcsd.core.dto.StatusMessage;
 import org.comroid.mcsd.core.entity.ShConnection;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
@@ -41,10 +42,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.stream.StreamSupport;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
+@Log
 @Getter
 public final class ServerConnection implements Closeable, ServerHolder {
     @Language("html")
@@ -62,8 +65,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private static final Resource runscript = bean(ResourceLoader.class).getResource("classpath:/"+ServerConnection.RunScript);
     private final ShConnection con;
     @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
-    private final Logger log;
-    @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
     private final Server server;
     @JsonIgnore @Getter(onMethod_ = @JsonIgnore)
     private final GameConnection game;
@@ -80,7 +81,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private ServerConnection(Server server) throws IOException {
         this.server = server;
         this.con = shConnection();
-        this.log = Log.get(con.toString());
 
         this.session = bean(SshClient.class)
                 .connect(con.getUsername(), con.getHost(), con.getPort())
@@ -113,9 +113,9 @@ public final class ServerConnection implements Closeable, ServerHolder {
     boolean tryRcon() {
         try {
             if (!rcon.connectBlocking(statusTimeout))
-                log.warn("RCon handshake timed out for " + server);
+                log.log(Level.WARNING, "RCon handshake timed out for " + server);
         } catch (Exception e) {
-            log.error("Unable to connect RCon to " + server, e);
+            log.log(Level.SEVERE, "Unable to connect RCon to " + server, e);
         }
         return rcon.isConnected();
     }
@@ -136,9 +136,9 @@ public final class ServerConnection implements Closeable, ServerHolder {
         if (con.status().join().getStatus() == Server.Status.Offline) {
             // then start server
             if (!con.sendSh(server.cmdStart()))
-                log.warn("Auto-Starting %s did not finish successfully".formatted(server));
+                log.log(Level.WARNING, "Auto-Starting %s did not finish successfully".formatted(server));
         } else {
-            log.debug("%s did not need to be started".formatted(server));
+            log.log(Level.FINE, "%s did not need to be started".formatted(server));
         }
 
         // validate RCON connection works
@@ -147,7 +147,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
-        log.debug("Getting status of Server %s".formatted(server));
+        log.log(Level.FINE, "Getting status of Server %s".formatted(server));
         var host = StreamSupport.stream(bean(ShRepo.class).findAll().spliterator(), false)
                 .filter(con -> con.getId().equals(server.getShConnection()))
                 .findFirst()
@@ -159,8 +159,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     return v;
                 }), "Status cache outdated"))
                 .exceptionally(t -> {
-                    log.debug("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
-                    log.trace("Exception was", t);
+                    log.log(Level.FINE, "Unable to get server status from cache ["+t.getMessage()+"], using Query...");
+                    log.log(Level.FINER, "Exception was", t);
                     try (var query = new MCQuery(host, server.getQueryPort())) {
                         var stat = query.fullStat();
                         return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
@@ -176,8 +176,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     }
                 })
                 .exceptionally(t -> {
-                    log.debug("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
-                    log.trace("Exception was", t);
+                    log.log(Level.FINE, "Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
+                    log.log(Level.FINER, "Exception was", t);
                     var stat = new MineStat(host, server.getPort());
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
@@ -190,8 +190,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 })
                 .orTimeout(statusTimeout.toSeconds(), TimeUnit.SECONDS)
                 .exceptionally(t -> {
-                    log.warn("Unable to get server status ["+t.getMessage()+"]");
-                    log.trace("Exception was", t);
+                    log.log(Level.WARNING, "Unable to get server status ["+t.getMessage()+"]");
+                    log.log(Level.FINE, "Exception was", t);
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
                             .withSsh(game.channel.isOpen() ? Server.Status.Online : Server.Status.Offline);
@@ -214,10 +214,10 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 prop.store(out, "Managed Server Properties by MCSD");
             }
         } catch (Exception e) {
-            log.error("Error uploading managed server.properties for server " + server, e);
+            log.log(Level.SEVERE, "Error uploading managed server.properties for server " + server, e);
             return false;
         }
-        log.debug("Uploaded managed properties of server " + server);
+        log.log(Level.FINE, "Uploaded managed properties of server " + server);
         return true;
     }
 
@@ -248,7 +248,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
             try (var scriptIn = runscript.getInputStream();
                  var scriptOut = uploadFile(prefix + RunScript)) {
                 scriptIn.transferTo(scriptOut);
-                log.debug("Uploaded runscript to Server " + server);
+                log.log(Level.FINE, "Uploaded runscript to Server " + server);
             }
 
             // upload unit info
@@ -263,19 +263,19 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 prop.put("host", con.getHost());
                 prop.put("backupDir", con.getBackupsDir() + '/' + server.getUnitName());
                 prop.store(dataOut, "MCSD Server Unit Information");
-                log.debug("Uploaded runscript data to Server " + server);
+                log.log(Level.FINE, "Uploaded runscript data to Server " + server);
             }
 
             return true;
         } catch (Exception e) {
-            log.error("Unable to upload runscript for Server " + server, e);
+            log.log(Level.SEVERE, "Unable to upload runscript for Server " + server, e);
             return false;
         }
     }
 
     public boolean runBackup() {
         if (!startBackup()) {
-            log.warn("A backup on server %s is already running".formatted(server));
+            log.log(Level.WARNING, "A backup on server %s is already running".formatted(server));
             return false;
         }
 
@@ -284,17 +284,17 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 var sOff = game.sendCmdRCon("save-off", this);
                 var sAll = game.sendCmdRCon("save-all", this);
                 if (sOff.isEmpty() || sAll.isEmpty()) {
-                    log.error("Could not run backup on server %s because save-off and save-all failed".formatted(server));
+                    log.log(Level.SEVERE, "Could not run backup on server %s because save-off and save-all failed".formatted(server));
                     return false;
                 }
                 if (!doBackup()) {
-                    log.error("Could not run backup on server %s using RCon".formatted(server));
+                    log.log(Level.SEVERE, "Could not run backup on server %s using RCon".formatted(server));
                     return false;
                 }
             } finally {
                 var sOn = game.sendCmdRCon("save-on", this);
                 if (sOn.isEmpty())
-                    log.error("Could not enable autosave after backup for " + server);
+                    log.log(Level.SEVERE, "Could not enable autosave after backup for " + server);
             }
             backupRunning.set(false);
             return true;
@@ -303,7 +303,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
                 game.sendCmd("save-off", "^.*(Automatic saving is now disabled).*$");
                 game.sendCmd("save-all", "^.*(Saved the game).*$");
                 if (!doBackup()) {
-                    log.error("Could not run backup on server %s using screen".formatted(server));
+                    log.log(Level.SEVERE, "Could not run backup on server %s using screen".formatted(server));
                     return false;
                 }
             } finally {
@@ -320,7 +320,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
     private boolean doBackup() {
         if (!sendSh(server.cmdBackup())) {
-            log.error("Backup for server %s failed".formatted(server));
+            log.log(Level.SEVERE, "Backup for server %s failed".formatted(server));
             return false;
         }
         server.setLastBackup(Instant.now());
@@ -331,13 +331,13 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
     public boolean runUpdate() {
         if (!uploadRunScript())
-            log.warn("Could not upload runscript when trying to update " + server);
+            log.log(Level.WARNING, "Could not upload runscript when trying to update " + server);
         if (!uploadProperties())
-            log.warn("Could not upload properties when trying to update " + server);
+            log.log(Level.WARNING, "Could not upload properties when trying to update " + server);
         if (sendSh(server.cmdUpdate())) {
             return true;
         }
-        log.error("Could not update " + server);
+        log.log(Level.SEVERE, "Could not update " + server);
         return false;
     }
 
@@ -348,12 +348,12 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
     public boolean stopServer() {
         if (!sendSh(server.cmdDisable()))
-            log.warn("Could not disable server restarts when trying to stop " + server);
+            log.log(Level.WARNING, "Could not disable server restarts when trying to stop " + server);
         try {
             game.sendCmd("stop", "^.*" + ServerConnection.OutputEndMarker + ".*$");
             return true;
         } catch (Throwable e) {
-            log.error("Could not stop " + server, e);
+            log.log(Level.SEVERE, "Could not stop " + server, e);
             return false;
         }
     }
@@ -387,8 +387,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
                 return true;
             } catch (Throwable t) {
-                log.debug("Could not send command '" + cmd + "' to " + server);
-                log.trace("Exception was", t);
+                log.log(Level.FINE, "Could not send command '" + cmd + "' to " + server);
+                log.log(Level.FINER, "Exception was", t);
                 return false;
             }
         }

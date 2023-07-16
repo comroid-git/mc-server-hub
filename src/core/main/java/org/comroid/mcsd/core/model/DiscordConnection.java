@@ -40,7 +40,7 @@ public class DiscordConnection implements SlashCommandCreateListener {
     }
 
     public Server getServer() {
-        return bot.getServerById(info.getServerId()).orElseThrow(() -> new NoSuchElementException(bot.getYourself().getName() + " cannot find Server with ID " + ServerId));
+        return bot.getServerById(info.getServerId()).orElseThrow(() -> new NoSuchElementException(bot.getYourself().getName() + " cannot find Server with ID " + info.getServerId()));
     }
 
     public Optional<ServerTextChannel> getPublicChannel() {
