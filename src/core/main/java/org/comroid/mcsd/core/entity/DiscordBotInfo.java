@@ -3,15 +3,15 @@ package org.comroid.mcsd.core.entity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 @Data
 @Entity
-public class DiscordBotInfo {
-    @Id
-    private UUID id = UUID.randomUUID();
+@EqualsAndHashCode(callSuper = true)
+public class DiscordBotInfo extends AbstractEntity {
     private String token;
     private long ServerId;
     private @Nullable Long PublicChannelId;

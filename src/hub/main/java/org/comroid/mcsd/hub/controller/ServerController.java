@@ -3,7 +3,7 @@ package org.comroid.mcsd.hub.controller;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.IntegerAttribute;
-import org.comroid.mcsd.core.dto.StatusMessage;
+import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;

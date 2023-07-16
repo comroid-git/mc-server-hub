@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.graversen.minecraft.rcon.Defaults;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
@@ -25,9 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 @Slf4j
 @Entity
-public class Server {
-    @Id
-    private UUID id = UUID.randomUUID();
+@EqualsAndHashCode(callSuper = true)
+public class Server extends AbstractEntity {
     private UUID owner;
     private UUID shConnection;
     private @Nullable UUID discordConnection;
@@ -126,7 +126,7 @@ public class Server {
     public String cmdBackup() {
         return wrapCmd("./"+ServerConnection.RunScript+" backup " + ApplicationContextProvider.bean(ShRepo.class)
                 .findById(shConnection)
-                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + id))
+                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + getId()))
                 .getBackupsDir() + '/' + getUnitName());
     }
 
@@ -144,7 +144,7 @@ public class Server {
     }
 
     public String getDashboardURL() {
-        return "https://mc.comroid.org/server/" + id;
+        return "https://mc.comroid.org/server/" + getId();
     }
 
     public String getAddress() {
@@ -157,10 +157,6 @@ public class Server {
 
     public String getStatusURL() {
         return "https://mc-api.net/v3/server/ping/" + getAddress();
-    }
-
-    public enum Status implements IntegerAttribute {
-        Unknown, Offline, Maintenance, Online
     }
 
     public enum Mode implements IntegerAttribute {

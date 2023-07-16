@@ -3,6 +3,7 @@ package org.comroid.mcsd.core.entity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.util.Bitmask;
 
@@ -10,9 +11,8 @@ import java.util.UUID;
 
 @Data
 @Entity
-public class ShConnection {
-    @Id
-    private UUID id = UUID.randomUUID();
+@EqualsAndHashCode(callSuper = true)
+public class ShConnection extends AbstractEntity {
     private UUID owner;
     private String host;
     private int port = 22;

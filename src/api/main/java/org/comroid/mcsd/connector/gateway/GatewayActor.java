@@ -31,7 +31,7 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
 
     @Value
     @EqualsAndHashCode(callSuper = true)
-    protected class ConnectionHandler extends Container.Base {
+    public class ConnectionHandler extends Container.Base {
         UUID uuid = UUID.randomUUID();
 
         @SneakyThrows
@@ -73,19 +73,19 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
                     .and(e -> Objects.requireNonNull(e.getData()).getOpCode() == type);
         }
 
-        GatewayPacket.Builder packet() {
+        public GatewayPacket.Builder packet() {
             return GatewayPacket.builder().connectionId(getUuid());
         }
 
-        GatewayPacket.Builder op(GatewayPacket.OpCode type) {
+        public GatewayPacket.Builder op(GatewayPacket.OpCode type) {
             return packet().opCode(type);
         }
 
-        GatewayPacket.Builder connect(GatewayConnectionData connectionData) {
+        public GatewayPacket.Builder connect(GatewayConnectionData connectionData) {
             return op(GatewayPacket.OpCode.Connect).data(serialize(connectionData));
         }
 
-        GatewayPacket.Builder data(Object data) {
+        public GatewayPacket.Builder data(Object data) {
             return op(GatewayPacket.OpCode.Data).data(serialize(data));
         }
     }

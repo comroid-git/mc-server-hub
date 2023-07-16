@@ -1,10 +1,13 @@
 package org.comroid.mcsd.connector.gateway;
 
+import jakarta.annotation.PostConstruct;
 import lombok.*;
+import lombok.extern.java.Log;
 import org.comroid.api.Container;
 import org.comroid.api.Event;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.connector.HubConnector;
+import org.comroid.mcsd.api.dto.StatusMessage;
 import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
@@ -27,6 +30,7 @@ public class GatewayServer extends GatewayActor implements Runnable {
 
     @Override
     @SneakyThrows
+    @PostConstruct
     public void start() {
         var address = OS.isWindows ? null : InetAddress.getLoopbackAddress();
         if (address == null)
@@ -38,6 +42,7 @@ public class GatewayServer extends GatewayActor implements Runnable {
 
         var server = new ServerSocket(HubConnector.Port);
         server.bind(new InetSocketAddress(address, HubConnector.Port));
+        executor.execute(this);
     }
 
     @Override
@@ -60,6 +65,7 @@ public class GatewayServer extends GatewayActor implements Runnable {
                 .orElseThrow();
     }
 
+    @Log
     @Data
     @EqualsAndHashCode(callSuper = true)
     private class Connection extends Container.Base {
@@ -72,11 +78,17 @@ public class GatewayServer extends GatewayActor implements Runnable {
         }
 
         @Event.Subscriber
-        public void connect(Event<GatewayPacket> event) {
-            connectionData = Objects.requireNonNull(event.getData()).parse(GatewayConnectionData.class);
+        public void connect(GatewayPacket packet) {
+            connectionData = Objects.requireNonNull(packet).parse(GatewayConnectionData.class);
             connections.put(connectionData.id, this);
 
             publish("handshake", handler.data(handler.getUuid()).build());
+        }
+
+        @Event.Subscriber
+        public void heartbeat(GatewayPacket packet) {
+            var stat = packet.parse(StatusMessage.class);
+
         }
     }
 }

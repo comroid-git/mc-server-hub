@@ -11,7 +11,6 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
-import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannelEvent;
@@ -21,7 +20,8 @@ import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.impl.DefaultSftpClientFactory;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.ThrowingFunction;
-import org.comroid.mcsd.core.dto.StatusMessage;
+import org.comroid.mcsd.api.dto.StatusMessage;
+import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.ShConnection;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.repo.DiscordBotRepo;
@@ -30,7 +30,6 @@ import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.entity.Server;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
@@ -133,7 +132,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         //    log.warn("Unable to upload managed server properties to %s".formatted(server));
 
         // is it offline?
-        if (con.status().join().getStatus() == Server.Status.Offline) {
+        if (con.status().join().getStatus() == Status.Offline) {
             // then start server
             if (!con.sendSh(server.cmdStart()))
                 log.log(Level.WARNING, "Auto-Starting %s did not finish successfully".formatted(server));
@@ -164,9 +163,9 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     try (var query = new MCQuery(host, server.getQueryPort())) {
                         var stat = query.fullStat();
                         return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
-                                .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
-                                .withSsh(game.channel.isOpen() ? Server.Status.Online : Server.Status.Offline)
-                                .withStatus(server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online)
+                                .withRcon(rcon.isConnected() ? Status.Online : Status.Offline)
+                                .withSsh(game.channel.isOpen() ? Status.Online : Status.Offline)
+                                .withStatus(server.isMaintenance() ? Status.Maintenance : Status.Online)
                                 .withPlayerCount(stat.getOnlinePlayers())
                                 .withPlayerMax(stat.getMaxPlayers())
                                 .withMotd(stat.getMOTD().replaceAll("§\\w", ""))
@@ -180,9 +179,9 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     log.log(Level.FINER, "Exception was", t);
                     var stat = new MineStat(host, server.getPort());
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
-                            .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
-                            .withSsh(game.channel.isOpen() ? Server.Status.Online : Server.Status.Offline)
-                            .withStatus(stat.isServerUp() ? server.isMaintenance() ? Server.Status.Maintenance : Server.Status.Online : Server.Status.Offline)
+                            .withRcon(rcon.isConnected() ? Status.Online : Status.Offline)
+                            .withSsh(game.channel.isOpen() ? Status.Online : Status.Offline)
+                            .withStatus(stat.isServerUp() ? server.isMaintenance() ? Status.Maintenance : Status.Online : Status.Offline)
                             .withPlayerCount(stat.getCurrentPlayers())
                             .withPlayerMax(stat.getMaximumPlayers())
                             .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), "").replaceAll("§\\w", ""))
@@ -193,8 +192,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
                     log.log(Level.WARNING, "Unable to get server status ["+t.getMessage()+"]");
                     log.log(Level.FINE, "Exception was", t);
                     return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
-                            .withRcon(rcon.isConnected() ? Server.Status.Online : Server.Status.Offline)
-                            .withSsh(game.channel.isOpen() ? Server.Status.Online : Server.Status.Offline);
+                            .withRcon(rcon.isConnected() ? Status.Online : Status.Offline)
+                            .withSsh(game.channel.isOpen() ? Status.Online : Status.Offline);
                 })
                 .thenApply(msg -> {
                     statusCache.put(server.getId(), msg);
