@@ -30,6 +30,8 @@ include('forge')
 include('fabric')
 
 var dirApi = file('../japi/')
+if (!dirApi.exists())
+    dirApi = file('../api')
 if (dirApi.exists()) {
     include(':japi')
     project(':japi').projectDir = dirApi
