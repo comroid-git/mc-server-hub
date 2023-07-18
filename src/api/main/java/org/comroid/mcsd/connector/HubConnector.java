@@ -29,6 +29,7 @@ public final class HubConnector extends Container.Base {
         this.executor = executor;
         this.gateway = new GatewayClient(this);
 
+        gateway.setExecutor(executor);
         gateway.start();
     }
 
