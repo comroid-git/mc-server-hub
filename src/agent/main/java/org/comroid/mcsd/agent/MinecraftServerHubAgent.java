@@ -1,7 +1,6 @@
 package org.comroid.mcsd.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.errorprone.annotations.MustBeClosed;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +47,7 @@ public class MinecraftServerHubAgent {
     }
     @Bean
     public HubConnector connector(@Autowired GatewayConnectionInfo connectionData) {
-        return new HubConnector(connectionData);
+        return new HubConnector(connectionData, executor);
     }
     @Bean
     public GatewayClient gateway(@Autowired HubConnector connector) {

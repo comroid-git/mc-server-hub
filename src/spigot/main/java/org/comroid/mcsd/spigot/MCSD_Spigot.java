@@ -43,7 +43,7 @@ public final class MCSD_Spigot extends JavaPlugin {
 
         // connect to hub
         var connectionData = config.getObject("mcsd.agent", GatewayConnectionInfo.class);
-        this.connector = new HubConnector(connectionData);
+        this.connector = new HubConnector(connectionData, executor);
         this.gateway = connector.getGateway();
         gateway.register(this);
     }
