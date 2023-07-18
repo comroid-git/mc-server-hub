@@ -36,7 +36,7 @@ public class GatewayClient extends GatewayActor {
         handler = handle(socket);
         addChildren(socket);
 
-        listen().setKey("close").await().thenRun(this::close);
+        listen().setKey("close").once().thenRun(this::close);
         publish("connect", handler.connect(connector.getConnectionData()).build());
     }
 
