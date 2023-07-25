@@ -27,7 +27,7 @@ include('agent')
 
 include('spigot')
 include('forge')
-include('fabric')
+//include('fabric')
 
 var dirApi = file('../japi/')
 if (dirApi.exists()) {
