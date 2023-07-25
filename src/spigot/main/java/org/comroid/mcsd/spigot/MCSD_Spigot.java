@@ -43,6 +43,8 @@ public final class MCSD_Spigot extends JavaPlugin {
 
         // connect to hub
         var connectionData = config.getObject("mcsd.agent", GatewayConnectionInfo.class);
+        assert connectionData != null;
+        connectionData.setRole(HubConnector.Role.Server);
         this.connector = new HubConnector(connectionData);
         this.gateway = connector.getGateway();
         gateway.register(this);
@@ -60,11 +62,10 @@ public final class MCSD_Spigot extends JavaPlugin {
     }
 
     private void initConfigDefaults(FileConfiguration config) {
-        config.addDefault("mcsd.agent.role", "1");
         config.addDefault("mcsd.agent.serverId", "<mcsd server id>");
         config.addDefault("mcsd.agent.token", "<mcsd server token>");
         config.addDefault("mcsd.agent.hubBaseUrl", "<mcsd hub base url>");
 
-        saveDefaultConfig();
+        saveConfig();
     }
 }
