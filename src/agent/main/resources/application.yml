@@ -1,4 +1,7 @@
 spring:
+  # bean overriding
+  main:
+    allow-bean-definition-overriding: true
   # database config
   jpa:
     database-platform: org.hibernate.dialect.MySQL57Dialect
