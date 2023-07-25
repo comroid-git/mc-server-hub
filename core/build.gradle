@@ -1,5 +1,4 @@
 plugins {
-    id 'war'
     id 'java-library'
     id 'org.springframework.boot' version '3.0.+'
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
@@ -9,14 +8,6 @@ group = 'org.comroid.mcsd'
 version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
-
-tasks.register('simplifyDist', Copy) {
-    dependsOn 'bootWar'
-    from bootWar.outputs.files.singleFile
-    def target = file("$buildDir/dist")
-    into target
-    rename { String filename -> return "mc-server-hub.war" }
-}
 
 sourceSets {
     main.java.srcDirs       = files(parent.projectDir.toString() + "/src/core/main/java")
@@ -50,8 +41,6 @@ dependencies {
     compileOnly 'jstl:jstl:1.2'
     implementation 'org.glassfish.web:jakarta.servlet.jsp.jstl'
     implementation 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api'
-    providedRuntime 'org.apache.tomcat.embed:tomcat-embed-jasper'
-    providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
 
     // security
     implementation 'org.springframework.session:spring-session-core'

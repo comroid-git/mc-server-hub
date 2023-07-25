@@ -25,7 +25,7 @@ sourceSets {
     test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/hub/test/java")
 }
 
-war {
+bootWar {
     webAppDirectory = file(parent.projectDir.toString() + "/src/hub/main/webapp")
 }
 
