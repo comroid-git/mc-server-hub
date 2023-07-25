@@ -10,13 +10,12 @@ import org.comroid.mcsd.core.repo.ServerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.jdbc.DataSourceBuilder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportResource;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -28,6 +27,8 @@ import java.util.logging.Logger;
 @Slf4j
 @Configuration
 @ImportResource({"classpath:baseBeans.xml"})
+@EntityScan(basePackages = "org.comroid.mcsd.core.entity")
+@EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
 public class MinecraftServerHubConfig {
     public static final Duration CronRate_Watchdog = Duration.ofSeconds(10);
     public static final Duration CronRate_Manager = Duration.ofMinutes(5);

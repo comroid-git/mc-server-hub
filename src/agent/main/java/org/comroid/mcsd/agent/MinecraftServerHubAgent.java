@@ -29,7 +29,7 @@ import static org.comroid.mcsd.core.MinecraftServerHubConfig.cronLog;
 
 @Slf4j
 @ImportResource({"classpath:beans.xml"})
-@SpringBootApplication(exclude = DataSourceAutoConfiguration.class, scanBasePackages = "org.comroid.mcsd")
+@SpringBootApplication(exclude = DataSourceAutoConfiguration.class, scanBasePackages = "org.comroid.mcsd.*")
 public class MinecraftServerHubAgent {
     @Lazy
     @Autowired
