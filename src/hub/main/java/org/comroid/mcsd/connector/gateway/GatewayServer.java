@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -39,7 +40,7 @@ import java.util.stream.Stream;
 @EqualsAndHashCode(callSuper = true)
 public class GatewayServer extends GatewayActor implements Runnable {
     private final Map<UUID, Connection> connections = new ConcurrentHashMap<>();
-    private final ServerSocket server;
+    private ServerSocket server;
     @Autowired
     private AgentRepo agentRepo;
 
@@ -55,8 +56,9 @@ public class GatewayServer extends GatewayActor implements Runnable {
                 address = InetAddress.getLoopbackAddress();
             }
 
-        var server = new ServerSocket(HubConnector.Port);
-        server.bind(new InetSocketAddress(address, HubConnector.Port));
+        server = new ServerSocket(HubConnector.Port);
+        if (!server.isBound())
+            server.bind(new InetSocketAddress(address, HubConnector.Port));
         executor.execute(this);
     }
 
@@ -100,16 +102,13 @@ public class GatewayServer extends GatewayActor implements Runnable {
                 // validate connection
                 if (found == null)
                     throw new EntityNotFoundException(Agent.class, connectionData.id);
-                final var other = found.getConnectionInfo();
-                final var criteria = Map.<Function<GatewayConnectionInfo,Object>,Supplier<Throwable>>of(
-                        GatewayConnectionInfo::getToken, ()->new StatusCode(HttpStatus.UNAUTHORIZED, "Token mismatch"),
-                        GatewayConnectionInfo::getRole, ()->new StatusCode(HttpStatus.CONFLICT, "Role mismatch"),
-                        GatewayConnectionInfo::getTarget, ()->new StatusCode(HttpStatus.CONFLICT, "Target mismatch")
+                final var criteria = Map.<BiPredicate<GatewayConnectionInfo,Agent>,Supplier<Throwable>>of(
+                        (info,agent)->info.getToken().equals(agent.getToken()), ()->new StatusCode(HttpStatus.UNAUTHORIZED, "Token mismatch"),
+                        (info,agent)->info.getRole().equals(agent.getRole()), ()->new StatusCode(HttpStatus.CONFLICT, "Role mismatch"),
+                        (info,agent)->info.getTarget().equals(agent.getTarget()), ()->new StatusCode(HttpStatus.CONFLICT, "Target mismatch")
                 );
-                final Predicate<Function<GatewayConnectionInfo, Object>> check
-                        = attr -> Objects.equals(attr.apply(connectionData), attr.apply(other));
                 for (var entry : criteria.entrySet())
-                    if (!check.test(entry.getKey()))
+                    if (!entry.getKey().test(connectionData, found))
                         throw entry.getValue().get();
 
                 connections.put(connectionData.id, this);

@@ -1,16 +1,17 @@
 package org.comroid.mcsd.connector.gateway;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.comroid.annotations.Convert;
 import org.comroid.mcsd.connector.HubConnector;
-import org.comroid.mcsd.util.JacksonObjectConverter;
 import org.comroid.util.EncryptionUtil;
 import org.intellij.lang.annotations.MagicConstant;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.crypto.Cipher;
+import javax.persistence.AttributeConverter;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.UUID;
@@ -20,14 +21,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PROTECTED)
 public final class GatewayConnectionInfo {
-    public static final int TokenLength = 64;
     final UUID id = UUID.randomUUID();
     @Nullable String hubBaseUrl;
     @NotNull HubConnector.Role role;
     @NotNull UUID target;
     @NotNull UUID agent;
-    @lombok.Builder.Default
-    @NotNull String token = generateToken();
+    @NotNull String token;
 
     @Convert
     public Cipher toCipher(@MagicConstant(valuesFromClass = Cipher.class) int mode) {
@@ -36,20 +35,5 @@ public final class GatewayConnectionInfo {
                 EncryptionUtil.Transformation.RSA_ECB_OAEPWithSHA_256AndMGF1Padding,
                 mode,
                 getToken());
-    }
-
-    public static String generateToken() {
-        var randomBytes = new byte[TokenLength];
-        new SecureRandom().nextBytes(randomBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-    }
-
-    @Value
-    @javax.persistence.Converter
-    @EqualsAndHashCode(callSuper = true)
-    public static class Converter extends JacksonObjectConverter<GatewayConnectionInfo> {
-        public Converter() {
-            super(GatewayConnectionInfo.class);
-        }
     }
 }

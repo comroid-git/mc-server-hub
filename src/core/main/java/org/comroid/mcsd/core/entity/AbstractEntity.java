@@ -13,6 +13,7 @@ import java.util.UUID;
 @Data
 @Slf4j
 @Entity
+@Table(name = "entity")
 public abstract class AbstractEntity {
     @Id
     @Convert(converter = MinecraftProfile.UuidConverter.class)

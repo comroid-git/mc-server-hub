@@ -33,6 +33,8 @@ repositories {
 }
 
 dependencies {
+    runtimeOnly 'javax.persistence:javax.persistence-api:2.2'
+
     // db
     implementation 'com.mysql:mysql-connector-j'
 

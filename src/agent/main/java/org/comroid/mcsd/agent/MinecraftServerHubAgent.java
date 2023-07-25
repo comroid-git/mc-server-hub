@@ -67,8 +67,9 @@ public class MinecraftServerHubAgent {
     }
 
     @Bean @Lazy(false)
-    public void startCronjobs(@Autowired TaskScheduler scheduler, @Autowired Map<Runnable, Duration> cronjobs) {
+    public Map<Runnable, Duration> startCronjobs(@Autowired TaskScheduler scheduler, @Autowired Map<Runnable, Duration> cronjobs) {
         cronjobs.forEach(scheduler::scheduleAtFixedRate);
+        return cronjobs;
     }
 
     @Synchronized

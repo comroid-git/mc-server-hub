@@ -6,7 +6,6 @@ import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.comroid.mcsd.core.MinecraftServerHubConfig;
-import org.comroid.mcsd.core.repo.ServerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -51,13 +50,14 @@ public class MinecraftServerHub {
     }
 
     @Bean @Lazy(false)
-    public void startCronjobs(@Autowired TaskScheduler scheduler, @Autowired Map<Runnable, Duration> cronjobs) {
+    public Map<Runnable, Duration> startCronjobs(@Autowired TaskScheduler scheduler, @Autowired Map<Runnable, Duration> cronjobs) {
         cronjobs.forEach(scheduler::scheduleAtFixedRate);
+        return cronjobs;
     }
 
     @Synchronized
     private void $cronWatchdog() {
-        cronLog.log(Level.FINE, "Running Watchdog");
+        cronLog.log(Level.FINER, "Running Watchdog");
         /*
         StreamSupport.stream(servers.findAll().spliterator(), parallelCron)
                 .filter(Server::isManaged)
@@ -67,24 +67,24 @@ public class MinecraftServerHub {
                 .peek(con -> cronLog.log(Level.WARNING, "Connection to " + con.server.con() + " is dead; restarting!"))
                 .forEach(GameConnection::reconnect);
          */
-        cronLog.log(Level.FINE, "Watchdog finished");
+        cronLog.log(Level.FINER, "Watchdog finished");
     }
 
     @Synchronized
     private void $cronManager() {
-        cronLog.log(Level.FINE, "Running Manager");
+        cronLog.log(Level.FINER, "Running Manager");
         /*
         StreamSupport.stream(servers.findAll().spliterator(), parallelCron)
                 .filter(Server::isManaged)
                 .map(Server::con)
                 .forEach(ServerConnection::cron);
          */
-        cronLog.log(Level.FINE, "Manager finished");
+        cronLog.log(Level.FINER, "Manager finished");
     }
 
     @Synchronized
     private void $cronBackup() {
-        cronLog.log(Level.FINE, "Running Backup Queue");
+        cronLog.log(Level.FINER, "Running Backup Queue");
         /*
         StreamSupport.stream(servers.findAll().spliterator(), parallelCron)
                 .filter(Server::isManaged)
@@ -94,12 +94,12 @@ public class MinecraftServerHub {
                 .peek(srv -> cronLog.info("Successfully created backup of " + srv))
                 .forEach(servers::bumpLastBackup);
          */
-        cronLog.log(Level.FINE, "Backup Queue finished");
+        cronLog.log(Level.FINER, "Backup Queue finished");
     }
 
     @Synchronized
     private void $cronUpdate() {
-        cronLog.log(Level.FINE, "Running Update Queue");
+        cronLog.log(Level.FINER, "Running Update Queue");
         /*
         StreamSupport.stream(servers.findAll().spliterator(), parallelCron)
                 .filter(Server::isManaged)
@@ -114,7 +114,7 @@ public class MinecraftServerHub {
                 .peek(srv -> cronLog.info("Successfully updated " + srv))
                 .forEach(servers::bumpLastUpdate);
          */
-        cronLog.log(Level.FINE, "Update Queue finished");
+        cronLog.log(Level.FINER, "Update Queue finished");
     }
     //endregion
 }
