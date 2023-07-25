@@ -6,6 +6,5 @@ import org.springframework.data.repository.CrudRepository;
 
 import java.util.UUID;
 
-@Table(name = "agents")
 public interface AgentRepo extends CrudRepository<Agent, UUID> {
 }

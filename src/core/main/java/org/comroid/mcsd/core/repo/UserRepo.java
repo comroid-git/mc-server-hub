@@ -12,7 +12,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@Table(name = "users")
 public interface UserRepo extends CrudRepository<User, UUID> {
     @Query("SELECT u FROM User u WHERE u.name = ?1")
     Optional<User> findByName(String name);

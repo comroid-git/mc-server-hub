@@ -1,10 +1,7 @@
 package org.comroid.mcsd.core.entity;
 
 
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +10,7 @@ import java.util.UUID;
 @Data
 @Slf4j
 @Entity
-@Table(name = "entity")
+@Table(name = "entity", uniqueConstraints = {@UniqueConstraint(columnNames = {"port", "rConPort"})})
 public abstract class AbstractEntity {
     @Id
     @Convert(converter = MinecraftProfile.UuidConverter.class)

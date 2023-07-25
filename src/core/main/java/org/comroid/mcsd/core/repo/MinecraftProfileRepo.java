@@ -9,7 +9,6 @@ import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
 
-@Table(name = "minecraft_users")
 public interface MinecraftProfileRepo extends CrudRepository<MinecraftProfile, UUID> {
     Optional<MinecraftProfile> findByName(String name);
     Optional<MinecraftProfile> findByDiscordId(long userId);

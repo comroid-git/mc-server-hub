@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table(name = "servers", uniqueConstraints = {@UniqueConstraint(columnNames = {"port", "rConPort"})})
 public interface ServerRepo extends CrudRepository<Server, UUID> {
     @Query("SELECT DISTINCT s FROM Server s JOIN s.userPermissions p WHERE KEY(p) = :userId AND VALUE(p) > 0")
     Iterable<Server> findByPermittedUser(@Param("userId") UUID userId);

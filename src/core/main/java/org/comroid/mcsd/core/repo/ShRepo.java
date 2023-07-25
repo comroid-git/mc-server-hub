@@ -9,7 +9,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-@Table(name = "sh_connections")
 public interface ShRepo extends CrudRepository<ShConnection, UUID> {
     default Map<String, UUID> toShMap() {
         return StreamSupport.stream(findAll().spliterator(), false)
