@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 
 @Slf4j
 @Configuration
-@ImportResource({"classpath:beans.xml"})
+@ImportResource({"classpath:baseBeans.xml"})
 public class MinecraftServerHubConfig {
     public static final Duration CronRate_Watchdog = Duration.ofSeconds(10);
     public static final Duration CronRate_Manager = Duration.ofMinutes(5);
