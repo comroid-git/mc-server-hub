@@ -84,7 +84,7 @@ public final class GameConnection implements Closeable {
         final var sb = new StringBuilder();
         final Predicate<Event<String>> predicate = e -> pattern.matcher(e.getData()).matches();
         var appender = screen.listen().setPredicate(predicate).subscribe(e -> sb.append(e.getData()));
-        var future = screen.listen().setPredicate(predicate).await().whenComplete((e,t)->appender.close());
+        var future = screen.listen().setPredicate(predicate).once().whenComplete((e, t)->appender.close());
         screen.publish(cmd);
         return future.thenApply($->sb.toString());
     }

@@ -21,6 +21,8 @@ import org.springframework.core.annotation.Order;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
 
 @Slf4j
@@ -70,6 +72,11 @@ public class MinecraftServerHubConfig {
                 .username(dbInfo.getUsername())
                 .password(dbInfo.getPassword())
                 .build();
+    }
+
+    @Bean
+    public ScheduledExecutorService scheduler() {
+        return Executors.newScheduledThreadPool(32);
     }
 }
 

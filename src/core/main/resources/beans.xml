@@ -5,10 +5,4 @@
     <bean class="org.comroid.mcsd.core.util.ApplicationContextProvider" lazy-init="false"/>
     <bean class="org.comroid.mcsd.core.MinecraftServerHubConfig" lazy-init="false"/>
     <bean class="org.springframework.core.io.DefaultResourceLoader"/>
-    <bean class="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler" primary="true">
-        <property name="poolSize" value="16"/>
-        <property name="daemon" value="true"/>
-        <property name="threadGroupName" value="mcsd-pool"/>
-        <property name="threadNamePrefix" value="mcsd-thread-"/>
-    </bean>
 </beans>

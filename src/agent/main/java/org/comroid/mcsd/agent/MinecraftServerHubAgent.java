@@ -1,7 +1,6 @@
 package org.comroid.mcsd.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.errorprone.annotations.MustBeClosed;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +22,7 @@ import org.springframework.scheduling.TaskScheduler;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 
 import static org.comroid.mcsd.core.MinecraftServerHubConfig.cronLog;
@@ -47,8 +47,8 @@ public class MinecraftServerHubAgent {
         return mapper.readValue(configDir.createSubFile("gateway.json"), GatewayConnectionInfo.class);
     }
     @Bean
-    public HubConnector connector(@Autowired GatewayConnectionInfo connectionData) {
-        return new HubConnector(connectionData);
+    public HubConnector connector(@Autowired GatewayConnectionInfo connectionData, @Autowired ScheduledExecutorService scheduler) {
+        return new HubConnector(connectionData, scheduler);
     }
     @Bean
     public GatewayClient gateway(@Autowired HubConnector connector) {

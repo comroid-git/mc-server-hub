@@ -9,20 +9,27 @@ import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.connector.gateway.GatewayClient;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public final class HubConnector extends Container.Base {
     public static final String DefaultBaseUrl = "https://mc.comroid.org";
     public static final int Port = 42065;
-    GatewayClient gateway;
-    GatewayConnectionInfo connectionData;
+
+    private final GatewayConnectionInfo connectionData;
+    private final ScheduledExecutorService executor;
+    private final GatewayClient gateway;
 
     @lombok.Builder
-    public HubConnector(GatewayConnectionInfo connectionData) {
+    public HubConnector(GatewayConnectionInfo connectionData, ScheduledExecutorService executor) {
         this.connectionData = connectionData;
+        this.executor = executor;
         this.gateway = new GatewayClient(this);
 
+        gateway.setExecutor(executor);
         gateway.start();
     }
 
