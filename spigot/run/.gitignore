@@ -1,0 +1,5 @@
+*.*
+
+!plugins/MCSD-Spigot/config.yml
+!server.jar
+!eula.txt

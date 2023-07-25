@@ -1,5 +1,8 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="MinecraftServerHub" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="DEBUG" value="true" />
+    </envs>
     <module name="mcsd.hub.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="org.comroid.mcsd.hub.MinecraftServerHub" />
     <method v="2">

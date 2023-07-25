@@ -13,6 +13,12 @@ sourceSets {
     test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/spigot/test/java")
 }
 
+tasks.register('testPlugin', Copy).configure {
+    dependsOn shadowJar
+    from shadowJar.outputs.files.singleFile
+    into "${projectDir}/run/plugins"
+}
+
 repositories {
     mavenCentral()
     maven {
