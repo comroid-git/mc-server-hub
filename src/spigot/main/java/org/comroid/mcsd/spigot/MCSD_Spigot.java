@@ -10,6 +10,8 @@ import org.comroid.mcsd.connector.gateway.GatewayClient;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
 import org.comroid.mcsd.connector.gateway.GatewayPacket;
 
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
@@ -43,7 +45,13 @@ public final class MCSD_Spigot extends JavaPlugin {
         Logger.getGlobal().addHandler(consoleHandler);
 
         // connect to hub
-        var connectionData = config.getObject("mcsd.agent", GatewayConnectionInfo.class);
+        var connectionData = GatewayConnectionInfo.builder()
+                .role(HubConnector.Role.Server)
+                .agent(UUID.fromString(Objects.requireNonNull(config.getString("mcsd.agent.id"))))
+                .target(UUID.fromString(Objects.requireNonNull(config.getString("mcsd.agent.serverId"))))
+                .token(Objects.requireNonNull(config.getString("mcsd.agent.token")))
+                .hubBaseUrl(config.getString("mcsd.agent.hubBaseUrl"))
+                .build();
         assert connectionData != null;
         connectionData.setRole(HubConnector.Role.Server);
         this.connector = new HubConnector(connectionData, Executors.newSingleThreadScheduledExecutor());
