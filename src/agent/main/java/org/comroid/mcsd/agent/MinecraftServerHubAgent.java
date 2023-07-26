@@ -13,6 +13,7 @@ import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
 import org.comroid.mcsd.connector.gateway.GatewayPacket;
 import org.comroid.mcsd.core.MinecraftServerHubConfig;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.util.Debug;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -38,7 +39,7 @@ public class MinecraftServerHubAgent {
     private ServerRepo servers;
 
     public static void main(String[] args) {
-        if (!OS.isUnix)
+        if (!Debug.isDebug() && !OS.isUnix)
             throw new RuntimeException("Only Unix operation systems are supported");
         SpringApplication.run(MinecraftServerHubAgent.class, args);
     }
