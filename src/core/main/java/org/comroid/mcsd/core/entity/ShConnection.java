@@ -12,7 +12,6 @@ import java.util.UUID;
 
 @Data
 @Entity
-@Deprecated
 @EqualsAndHashCode(callSuper = true)
 public class ShConnection extends AbstractEntity {
     @Basic
