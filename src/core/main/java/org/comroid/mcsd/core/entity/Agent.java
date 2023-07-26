@@ -1,6 +1,9 @@
 package org.comroid.mcsd.core.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.PostLoad;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.comroid.mcsd.connector.HubConnector;
@@ -9,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -20,8 +22,6 @@ public class Agent extends AbstractEntity {
     @Basic UUID target;
     @Basic HubConnector.Role role;
     @Basic String token = generateToken();
-    @ElementCollection
-    List<UUID> servers;
 
     public static String generateToken() {
         var randomBytes = new byte[TokenLength];
