@@ -1,5 +1,5 @@
 mcsd:
   agent:
     serverId: f7d51724-fc3d-4cdf-bb6a-25beca1b79c6
-    token: <mcsd server token>
-    hubBaseUrl: <mcsd hub base url>
+    token: agentToken
+    hubBaseUrl: 127.0.0.1
