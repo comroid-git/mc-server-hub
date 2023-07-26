@@ -1,3 +1,5 @@
+server:
+  port: 42065
 spring:
   # bean overriding
   main:

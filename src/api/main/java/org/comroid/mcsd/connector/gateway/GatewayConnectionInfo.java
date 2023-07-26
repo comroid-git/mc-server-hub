@@ -26,7 +26,7 @@ public final class GatewayConnectionInfo {
     @NotNull HubConnector.Role role;
     @NotNull UUID target;
     @NotNull UUID agent;
-    @NotNull String token;
+    @Nullable String token;
 
     @Convert
     public Cipher toCipher(@MagicConstant(valuesFromClass = Cipher.class) int mode) {

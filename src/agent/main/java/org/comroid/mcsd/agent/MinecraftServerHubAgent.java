@@ -1,6 +1,7 @@
 package org.comroid.mcsd.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,8 @@ import org.comroid.mcsd.connector.gateway.GatewayClient;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
 import org.comroid.mcsd.connector.gateway.GatewayPacket;
 import org.comroid.mcsd.core.MinecraftServerHubConfig;
+import org.comroid.mcsd.core.entity.Agent;
+import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.util.Debug;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,10 +37,6 @@ import static org.comroid.mcsd.core.MinecraftServerHubConfig.cronLog;
 @ImportResource({"classpath:beans.xml"})
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class, scanBasePackages = "org.comroid.mcsd.*")
 public class MinecraftServerHubAgent {
-    @Lazy
-    @Autowired
-    private ServerRepo servers;
-
     public static void main(String[] args) {
         if (!Debug.isDebug() && !OS.isUnix)
             throw new RuntimeException("Only Unix operation systems are supported");
@@ -48,6 +47,10 @@ public class MinecraftServerHubAgent {
     @SneakyThrows
     public GatewayConnectionInfo gatewayConnectionInfo(@Autowired ObjectMapper mapper, @Autowired FileHandle configDir) {
         return mapper.readValue(configDir.createSubFile("gateway.json"), GatewayConnectionInfo.class);
+    }
+    @Bean
+    public Agent me(@Autowired GatewayConnectionInfo connectionData, @Autowired AgentRepo agents) {
+        return agents.findById(connectionData.getAgent()).orElseThrow();
     }
     @Bean
     public HubConnector connector(@Autowired GatewayConnectionInfo connectionData, @Autowired ScheduledExecutorService scheduler) {
