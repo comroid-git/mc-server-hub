@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.Event;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.mcsd.connector.gateway.GatewayClient;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
+import org.comroid.mcsd.connector.gateway.GatewayPacket;
 import org.comroid.mcsd.core.MinecraftServerHubConfig;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,10 @@ public class MinecraftServerHubAgent {
     @Bean
     public GatewayClient gateway(@Autowired HubConnector connector) {
         return connector.getGateway();
+    }
+    @Bean
+    public Event.Listener<GatewayPacket> gatewayListener(@Autowired GatewayClient gateway) {
+        return gateway.register(this);
     }
 
     //region Cron
