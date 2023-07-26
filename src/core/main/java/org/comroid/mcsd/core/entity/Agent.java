@@ -1,9 +1,6 @@
 package org.comroid.mcsd.core.entity;
 
-import jakarta.persistence.Basic;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.PostLoad;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.comroid.mcsd.connector.HubConnector;
@@ -16,6 +13,7 @@ import java.util.UUID;
 
 @Data
 @Entity
+@Table(name = "agent")
 @EqualsAndHashCode(callSuper = true)
 public class Agent extends AbstractEntity {
     public static final int TokenLength = 64;

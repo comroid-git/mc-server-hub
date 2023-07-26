@@ -25,10 +25,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Getter
 @Entity
+@Table(name = "server")
 @RequiredArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class Server extends AbstractEntity {
     private @Setter UUID owner;
+    private @Setter UUID shConnection;
     private @Setter @Nullable UUID discordConnection;
     private @Setter String name;
     private @Setter String mcVersion = "1.19.4";

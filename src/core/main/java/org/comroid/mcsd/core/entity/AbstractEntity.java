@@ -11,6 +11,7 @@ import java.util.UUID;
 @Slf4j
 @Entity
 @Table(name = "entity")
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class AbstractEntity {
     @Id
     @Convert(converter = MinecraftProfile.UuidConverter.class)

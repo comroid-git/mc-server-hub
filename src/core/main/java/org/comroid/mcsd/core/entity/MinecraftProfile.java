@@ -12,6 +12,7 @@ import java.util.UUID;
 
 @Data
 @Entity
+@Table(name = "minecraft_profile")
 @EqualsAndHashCode(callSuper = true)
 public class MinecraftProfile extends AbstractEntity {
     private String name;
