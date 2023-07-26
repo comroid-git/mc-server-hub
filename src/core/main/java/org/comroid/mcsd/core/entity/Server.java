@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @EqualsAndHashCode(callSuper = true)
 public class Server extends AbstractEntity {
     private @Setter UUID owner;
-    private @Setter UUID shConnection;
     private @Setter @Nullable UUID discordConnection;
     private @Setter String name;
     private @Setter String mcVersion = "1.19.4";
@@ -125,7 +124,7 @@ public class Server extends AbstractEntity {
 
     public String cmdBackup() {
         return wrapCmd("./"+ServerConnection.RunScript+" backup " + ApplicationContextProvider.bean(ShRepo.class)
-                .findById(shConnection)
+                .findById(UUID.randomUUID())
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + getId()))
                 .getBackupsDir() + '/' + getUnitName());
     }

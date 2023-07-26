@@ -148,7 +148,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     public CompletableFuture<StatusMessage> status() {
         log.log(Level.FINE, "Getting status of Server %s".formatted(server));
         var host = StreamSupport.stream(bean(ShRepo.class).findAll().spliterator(), false)
-                .filter(con -> con.getId().equals(server.getShConnection()))
+                .filter(con -> con.getId().equals(UUID.randomUUID()))
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server))
                 .getHost();
@@ -411,8 +411,8 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
     private ShConnection shConnection() {
         return bean(ShRepo.class)
-                .findById(server.getShConnection())
-                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server.getShConnection()));
+                .findById(UUID.randomUUID())
+                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, UUID.randomUUID()));
     }
 
     private Object lock(String route) {
