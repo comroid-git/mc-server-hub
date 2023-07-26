@@ -21,7 +21,7 @@ import java.util.function.IntUnaryOperator;
 @RequiredArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class GatewayClient extends GatewayActor {
-    private static final IntUnaryOperator retryDelayFunc = x -> x * 2;
+    private static final IntUnaryOperator retryDelayFunc = x -> Math.min(x * 2, 300);
     private final HubConnector connector;
     private ConnectionHandler handler;
     private Socket socket;
