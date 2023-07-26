@@ -10,7 +10,7 @@ import java.util.UUID;
 @Data
 @Slf4j
 @Entity
-@Table(name = "entity", uniqueConstraints = {@UniqueConstraint(columnNames = {"port", "rConPort"})})
+@Table(name = "entity")
 public abstract class AbstractEntity {
     @Id
     @Convert(converter = MinecraftProfile.UuidConverter.class)
