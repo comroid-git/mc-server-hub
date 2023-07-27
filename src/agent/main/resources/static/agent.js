@@ -1,9 +1,8 @@
 let stompClient = null;
 let subscriptionDisconnect;
 let subscriptionHandshake;
-let subscriptionStatus;
 let subscriptionOutput;
-let sessionId;
+let subscriptionError;
 let servers = [];
 let user;
 let agent;
@@ -17,7 +16,7 @@ function connect() {
             disconnect();
         });
         subscriptionHandshake = stompClient.subscribe('/user/' + user.name + '/console/handshake', function (msg) {
-            handleHandshake(JSON.parse(msg.body));
+            handleHandshake();
         });
         stompClient.send('/console/connect', {}, JSON.stringify(agent.id));
     });
@@ -33,22 +32,13 @@ function disconnect() {
     writeLine("Disconnected")
 }
 
-function handleHandshake(status) {
-    if (status === undefined) {
-        let msg = 'Handshake was not successful';
-        handleOutput(msg)
-        throw new Error(msg)
-    }
+function handleHandshake() {
     console.log("Session started with status " + JSON.stringify(status));
-    sessionId = status.userId;
     subscriptionHandshake.unsubscribe();
-    subscriptionStatus = stompClient.subscribe('/user/' + user.name + '/console/status', function (msg) {
-        handleStatus(msg.body);
-    });
     subscriptionOutput = stompClient.subscribe('/user/' + user.name + '/console/output', function (msg) {
         handleOutput(msg.body);
     });
-    subscriptionOutput = stompClient.subscribe('/user/' + user.name + '/console/error', function (msg) {
+    subscriptionError = stompClient.subscribe('/user/' + user.name + '/console/error', function (msg) {
         handleError(msg.body);
     });
     writeLine("Connected")

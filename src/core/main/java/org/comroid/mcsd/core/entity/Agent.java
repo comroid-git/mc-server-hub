@@ -1,5 +1,6 @@
 package org.comroid.mcsd.core.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,18 +20,17 @@ import java.util.Base64;
 import java.util.UUID;
 
 @Getter
-@Setter
 @Entity
 @Table(name = "agent")
 public class Agent extends AbstractEntity implements Command.Handler {
     public static final int TokenLength = 64;
-    private @Basic UUID target;
-    private @Basic HubConnector.Role role;
-    private @Basic String token = generateToken();
-    public final @Transient DelegateStream.IO oe;
-    public final @Transient PrintStream out;
-    public final @Transient PrintStream err;
-    public final @Transient @Delegate Command.Manager cmd;
+    private @Setter @Basic UUID target;
+    private @Setter @Basic HubConnector.Role role;
+    private @JsonIgnore @Basic String token = generateToken();
+    public final @JsonIgnore @Transient DelegateStream.IO oe;
+    public final @JsonIgnore @Transient PrintStream out;
+    public final @JsonIgnore @Transient PrintStream err;
+    public final @JsonIgnore @Transient Command.Manager cmd;
 
     {
         oe = new DelegateStream.IO(DelegateStream.Capability.Output, DelegateStream.Capability.Error);
@@ -38,6 +38,11 @@ public class Agent extends AbstractEntity implements Command.Handler {
         out = oe.output().require(PrintStream::new);
         err = oe.error().require(PrintStream::new);
         cmd = new Command.Manager(this);
+    }
+
+    public Agent setToken(String token) {
+        this.token = token;
+        return this;
     }
 
     @Command
@@ -48,6 +53,7 @@ public class Agent extends AbstractEntity implements Command.Handler {
     @Override
     public void handleResponse(String text) {
         out.println(text);
+        out.flush();
     }
 
     @Override

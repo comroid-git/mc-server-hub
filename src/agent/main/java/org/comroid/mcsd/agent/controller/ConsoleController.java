@@ -51,8 +51,8 @@ public class ConsoleController {
         var user = userRepo.findBySession(session);
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
-            throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        me.cmd.execute(input.substring(1, input.length() - 1));
+            throw new EntityNotFoundException(Agent.class, "User " + user.getId());
+        me.cmd.execute(input.substring(2, input.length() - 1));
     }
 
     @MessageMapping("/console/disconnect")
@@ -65,10 +65,10 @@ public class ConsoleController {
     }
 
     @Getter
-    private class Connection extends Event.Bus<String> {
+    public class Connection extends Event.Bus<String> {
         private final User user;
 
-        public Connection(User user) {
+        private Connection(User user) {
             this.user = user;
 
             me.oe.redirectToEventBus(this);
