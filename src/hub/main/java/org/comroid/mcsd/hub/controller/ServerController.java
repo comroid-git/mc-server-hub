@@ -116,7 +116,7 @@ public class ServerController {
         var user = users.findBySession(session);
         var result = servers.findById(id).orElseThrow(() -> new EntityNotFoundException(Server.class, id));
         result.requireUserAccess(user, Server.Permission.Status);
-        return result.con().status().join();
+        return result.con().server.status(result.con()).join();
     }
 
     @ResponseBody

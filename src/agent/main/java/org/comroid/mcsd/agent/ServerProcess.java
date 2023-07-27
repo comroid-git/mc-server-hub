@@ -39,6 +39,10 @@ public class ServerProcess extends Container.Base implements Startable{
                 : State.Exited;
     }
 
+    public void manage() {
+        // check whether discord connection is needed
+    }
+
     @Override
     @SneakyThrows
     public void start() {

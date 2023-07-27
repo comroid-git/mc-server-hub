@@ -2,7 +2,6 @@ package org.comroid.mcsd.core.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.rmmccann.minecraft.status.query.MCQuery;
 import io.graversen.minecraft.rcon.service.ConnectOptions;
 import io.graversen.minecraft.rcon.service.IMinecraftRconService;
 import io.graversen.minecraft.rcon.service.MinecraftRconService;
@@ -11,8 +10,6 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
-import lombok.extern.slf4j.Slf4j;
-import me.dilley.MineStat;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
@@ -36,14 +33,10 @@ import org.springframework.core.io.ResourceLoader;
 
 import java.io.*;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
-import java.util.stream.StreamSupport;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
@@ -58,15 +51,12 @@ public final class ServerConnection implements Closeable, ServerHolder {
     public static final String RunScript = "mcsd.sh";
     public static final String UnitFile = "unit.properties";
     private static final Map<UUID, ServerConnection> cache = new ConcurrentHashMap<>();
-    private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     private static final Map<String, Object> locks = new ConcurrentHashMap<>();
-    private static final Duration statusCacheLifetime = Duration.ofMinutes(1);
-    private static final Duration statusTimeout = Duration.ofSeconds(10);
     static final Duration shTimeout = Duration.ofMinutes(2);
     private static final Resource runscript = bean(ResourceLoader.class).getResource("classpath:/"+ServerConnection.RunScript);
     private final ShConnection con;
     @JsonIgnore @Getter
-    private final Server server;
+    public final Server server;
     @JsonIgnore @Getter
     private final GameConnection game;
     @JsonIgnore @Getter
@@ -75,8 +65,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private final SftpClient sftp;
     @JsonIgnore @Getter
     private final IMinecraftRconService rcon;
-    @JsonIgnore @Getter @Nullable
-    private final DiscordConnection discord;
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
 
     private ServerConnection(Server server) throws IOException {
@@ -100,10 +88,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
         this.rcon = new MinecraftRconService(
                 new RconDetails(con.getHost(), server.getRConPort(), server.getRConPassword()),
                 new ConnectOptions(Integer.MAX_VALUE, Duration.ofSeconds(3), Duration.ofMinutes(5)));
-        this.discord = Optional.ofNullable(server.getDiscordConnection())
-                .flatMap(id -> bean(DiscordBotRepo.class).findById(id))
-                .map(info -> new DiscordConnection(this, info))
-                .orElse(null);
     }
 
     public static ServerConnection getInstance(final Server srv) {
@@ -113,7 +97,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
     @Synchronized("rcon")
     boolean tryRcon() {
         try {
-            if (!rcon.connectBlocking(statusTimeout))
+            if (!rcon.connectBlocking(Server.statusTimeout))
                 log.log(Level.WARNING, "RCon handshake timed out for " + server);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unable to connect RCon to " + server, e);
@@ -134,7 +118,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         //    log.warn("Unable to upload managed server properties to %s".formatted(server));
 
         // is it offline?
-        if (con.status().join().getStatus() == Status.Offline) {
+        if (con.server.status().join().getStatus() == Status.Offline) {
             // then start server
             if (!con.sendSh(server.cmdStart()))
                 log.log(Level.WARNING, "Auto-Starting %s did not finish successfully".formatted(server));
@@ -144,64 +128,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
         // validate RCON connection works
         tryRcon();
-    }
-
-    @SneakyThrows
-    public CompletableFuture<StatusMessage> status() {
-        log.log(Level.FINE, "Getting status of Server %s".formatted(server));
-        var host = StreamSupport.stream(bean(ShRepo.class).findAll().spliterator(), false)
-                .filter(con -> con.getId().equals(UUID.randomUUID()))
-                .findFirst()
-                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, server))
-                .getHost();
-        return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(statusCache.computeIfPresent(server.getId(), (k, v) -> {
-                    if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
-                        return null;
-                    return v;
-                }), "Status cache outdated"))
-                .exceptionally(t -> {
-                    log.log(Level.FINE, "Unable to get server status from cache ["+t.getMessage()+"], using Query...");
-                    log.log(Level.FINER, "Exception was", t);
-                    try (var query = new MCQuery(host, server.getQueryPort())) {
-                        var stat = query.fullStat();
-                        return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
-                                .withRcon(rcon.isConnected() ? Status.Online : Status.Offline)
-                                .withSsh(game.channel.isOpen() ? Status.Online : Status.Offline)
-                                .withStatus(server.isMaintenance() ? Status.Maintenance : Status.Online)
-                                .withPlayerCount(stat.getOnlinePlayers())
-                                .withPlayerMax(stat.getMaxPlayers())
-                                .withMotd(stat.getMOTD().replaceAll("§\\w", ""))
-                                .withGameMode(stat.getGameMode())
-                                .withPlayers(stat.getPlayerList())
-                                .withWorldName(stat.getMapName());
-                    }
-                })
-                .exceptionally(t -> {
-                    log.log(Level.FINE, "Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
-                    log.log(Level.FINER, "Exception was", t);
-                    var stat = new MineStat(host, server.getPort());
-                    return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
-                            .withRcon(rcon.isConnected() ? Status.Online : Status.Offline)
-                            .withSsh(game.channel.isOpen() ? Status.Online : Status.Offline)
-                            .withStatus(stat.isServerUp() ? server.isMaintenance() ? Status.Maintenance : Status.Online : Status.Offline)
-                            .withPlayerCount(stat.getCurrentPlayers())
-                            .withPlayerMax(stat.getMaximumPlayers())
-                            .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), "").replaceAll("§\\w", ""))
-                            .withGameMode(stat.getGameMode());
-                })
-                .orTimeout(statusTimeout.toSeconds(), TimeUnit.SECONDS)
-                .exceptionally(t -> {
-                    log.log(Level.WARNING, "Unable to get server status ["+t.getMessage()+"]");
-                    log.log(Level.FINE, "Exception was", t);
-                    return statusCache.compute(server.getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
-                            .withRcon(rcon.isConnected() ? Status.Online : Status.Offline)
-                            .withSsh(game.channel.isOpen() ? Status.Online : Status.Offline);
-                })
-                .thenApply(msg -> {
-                    statusCache.put(server.getId(), msg);
-                    return msg;
-                })
-                .orTimeout(statusTimeout.toSeconds() + 1, TimeUnit.SECONDS);
     }
 
     public boolean uploadProperties() {

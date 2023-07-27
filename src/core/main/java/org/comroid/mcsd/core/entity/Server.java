@@ -1,12 +1,16 @@
 package org.comroid.mcsd.core.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.rmmccann.minecraft.status.query.MCQuery;
 import io.graversen.minecraft.rcon.Defaults;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
+import org.comroid.mcsd.api.dto.StatusMessage;
+import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.model.ServerConnection;
@@ -22,7 +26,13 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.stream.StreamSupport;
+
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Slf4j
 @Getter
@@ -30,6 +40,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Table(name = "server")
 @RequiredArgsConstructor
 public class Server extends AbstractEntity {
+    private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
+    public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
+    public static final Duration statusTimeout = Duration.ofSeconds(10);
     private @Setter UUID owner;
     private @Setter UUID shConnection;
     private @Setter @Nullable UUID discordConnection;
@@ -183,6 +196,73 @@ public class Server extends AbstractEntity {
         prop.setProperty("rcon.password", Objects.requireNonNullElse(getRConPassword(), ""));
 
         return prop;
+    }
+
+    @Transient
+    public StatusMessage getStatus() {
+        return status().join();
+    }
+
+    @SneakyThrows
+    public CompletableFuture<StatusMessage> status() {
+        log.debug("Getting status of Server %s".formatted(this));
+        var host = StreamSupport.stream(bean(ShRepo.class).findAll().spliterator(), false)
+                .filter(con -> con.getId().equals(UUID.randomUUID()))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, this))
+                .getHost();
+        return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(statusCache.computeIfPresent(getId(), (k, v) -> {
+                    if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
+                        return null;
+                    return v;
+                }), "Status cache outdated"))
+                .exceptionally(t -> {
+                    log.debug("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
+                    log.trace("Exception was", t);
+                    try (var query = new MCQuery(host, getQueryPort())) {
+                        var stat = query.fullStat();
+                        return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
+                                //todo
+                                //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
+                                //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
+                                .withStatus(isMaintenance() ? Status.Maintenance : Status.Online)
+                                .withPlayerCount(stat.getOnlinePlayers())
+                                .withPlayerMax(stat.getMaxPlayers())
+                                .withMotd(stat.getMOTD().replaceAll("§\\w", ""))
+                                .withGameMode(stat.getGameMode())
+                                .withPlayers(stat.getPlayerList())
+                                .withWorldName(stat.getMapName());
+                    }
+                })
+                .exceptionally(t -> {
+                    log.debug("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
+                    log.trace("Exception was", t);
+                    var stat = new MineStat(host, getPort());
+                    return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
+                            //todo
+                            //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
+                            //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
+                            .withStatus(stat.isServerUp() ? isMaintenance() ? Status.Maintenance : Status.Online : Status.Offline)
+                            .withPlayerCount(stat.getCurrentPlayers())
+                            .withPlayerMax(stat.getMaximumPlayers())
+                            .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), "").replaceAll("§\\w", ""))
+                            .withGameMode(stat.getGameMode());
+                })
+                .orTimeout(statusTimeout.toSeconds(), TimeUnit.SECONDS)
+                .exceptionally(t -> {
+                    log.warn("Unable to get server status ["+t.getMessage()+"]");
+                    log.debug("Exception was", t);
+                    return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
+                            //todo
+                            //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
+                            //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline);
+                    ;
+                })
+                .thenApply(msg -> {
+                    statusCache.put(getId(), msg);
+                    return msg;
+                })
+                .orTimeout(statusTimeout.toSeconds() + 1, TimeUnit.SECONDS);
     }
 
     public enum Mode implements IntegerAttribute {

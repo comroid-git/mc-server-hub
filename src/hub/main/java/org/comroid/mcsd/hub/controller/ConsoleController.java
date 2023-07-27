@@ -48,7 +48,7 @@ public class ConsoleController {
         server.requireUserAccess(user, Server.Permission.Console);
         Connection connection = new Connection(server, user);
         connections.put(user.getId(), connection);
-        respond.convertAndSendToUser(user.getName(), "/console/handshake", connection.con.status().join().withUserId(user.getId()));
+        respond.convertAndSendToUser(user.getName(), "/console/handshake", connection.con.server.status(connection.con).join().withUserId(user.getId()));
     }
 
     @MessageMapping("/console/input")

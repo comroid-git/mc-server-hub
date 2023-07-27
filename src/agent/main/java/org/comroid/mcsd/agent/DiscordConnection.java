@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.model;
+package org.comroid.mcsd.agent;
 
 import lombok.Data;
 import org.comroid.mcsd.core.entity.DiscordBotInfo;
@@ -25,11 +25,11 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Data
 public class DiscordConnection implements SlashCommandCreateListener {
-    private final ServerConnection server;
+    private final ServerProcess server;
     private final DiscordBotInfo info;
     private final DiscordApi bot;
 
-    public DiscordConnection(ServerConnection server, DiscordBotInfo info) {
+    public DiscordConnection(ServerProcess server, DiscordBotInfo info) {
         this.server = server;
         this.info = info;
         this.bot = new DiscordApiBuilder()
@@ -80,7 +80,7 @@ public class DiscordConnection implements SlashCommandCreateListener {
         interaction.respondLater().thenCompose(resp -> {
             switch (interaction.getCommandName()) {
                 case "stats":
-                    return server.status().thenCompose(stat -> resp.addEmbed(new EmbedBuilder()
+                    return server.getServer().status().thenCompose(stat -> resp.addEmbed(new EmbedBuilder()
                                     .setTitle("Status of %s".formatted(server.getServer()))
                                     .setDescription("%d / %d players are online%s".formatted(stat.playerCount, stat.playerMax,
                                             Optional.ofNullable(stat.players)
@@ -101,9 +101,10 @@ public class DiscordConnection implements SlashCommandCreateListener {
                     final var command = interaction.getOptionByName("command")
                             .flatMap(SlashCommandInteractionOption::getStringValue)
                             .orElseThrow();
-                    var response = server.getGame().sendCmd(command, "\n");
+                    server.getIn().println(command);
                     return resp.addEmbed(new EmbedBuilder()
-                                    .setDescription(MessageDecoration.CODE_LONG.applyToText(response)))
+                                    //.setDescription(MessageDecoration.CODE_LONG.applyToText(response)))
+                                    .setDescription("Command sent"))
                             .setFlags(MessageFlag.EPHEMERAL)
                             .update();
                 case "account":

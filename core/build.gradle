@@ -55,9 +55,6 @@ dependencies {
     implementation 'io.github.MrGraversen:minecraft-rcon:0.+'
     //implementation "dev.jaqobb:namemcapi:2.+" // not actually available ...
 
-    // discord
-    implementation 'org.javacord:javacord:3.+'
-
     // utility
     developmentOnly 'org.springframework.boot:spring-boot-starter-actuator'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
