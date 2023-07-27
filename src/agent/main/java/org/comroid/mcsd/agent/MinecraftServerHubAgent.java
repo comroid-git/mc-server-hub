@@ -120,6 +120,11 @@ public class MinecraftServerHubAgent {
                 .map(agentRunner::process)
                 .filter(proc->proc.getState()!= ServerProcess.State.Running)
                 .peek(proc->cronLog.warning("Enabled "+proc.getServer()+" is offline! Starting..."))
+                .peek(proc->{
+                    if (proc.isJarUpToDate()) return;
+                    cronLog.warning(proc.getServer()+" is outdated; updating...");
+                    proc.runUpdate();
+                })
                 .forEach(ServerProcess::start);
         cronLog.log(Level.FINE, "Watchdog finished");
     }

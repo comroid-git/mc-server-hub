@@ -124,6 +124,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     @SneakyThrows
     public boolean isJarUpToDate() {
         var serverJar = new FileHandle(server.path("server.jar").toFile());
+        if (!serverJar.exists())
+            return false;
         try (var source = new JSON.Deserializer(new URL(server.getJarInfoUrl()).openStream());
              var local = new FileInputStream(serverJar)) {
             var sourceMd5 = source.readObject().get("response").get("md5").asString("");
