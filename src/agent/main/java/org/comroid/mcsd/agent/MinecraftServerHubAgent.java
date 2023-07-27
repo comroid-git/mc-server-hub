@@ -65,8 +65,7 @@ public class MinecraftServerHubAgent {
     @Command(usage="<name> <arg> [--flag]")
     public Object server(String[] args) {
         var srv = servers.findByAgentAndName(runner.getMe().getId(), args[0]).orElse(null);
-        if (srv == null)
-            return "Server with name " + args[0] + " not found";
+        if (srv == null) throw new Command.Error("Server with name " + args[0] + " not found");
         var flags = args.length > 2 ? args[2] : "";
         switch (args[1]) {
             case "status":
