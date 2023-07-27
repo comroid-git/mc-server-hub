@@ -42,12 +42,13 @@ public class Agent extends AbstractEntity implements Command.Handler {
 
     {
         oe = new DelegateStream.IO(DelegateStream.Capability.Output, DelegateStream.Capability.Error);
-        out = oe.output().require(PrintStream::new);
-        err = oe.error().require(PrintStream::new);
+        out = oe.output().require(o -> new PrintStream(o,true));
+        err = oe.error().require(e -> new PrintStream(e,true));
         cmd = new Command.Manager(this);
 
         if (Debug.isDebug())
-            oe.redirectToLogger(Log.get("Agent-"+getId()));
+            //oe.redirectToLogger(Log.get("Agent-"+getId()));
+            oe.redirectToSystem();
     }
 
     public Agent setToken(String token) {
@@ -58,7 +59,6 @@ public class Agent extends AbstractEntity implements Command.Handler {
     @Override
     public void handleResponse(String text) {
         out.println(text);
-        out.flush();
     }
 
     @Override
@@ -66,7 +66,7 @@ public class Agent extends AbstractEntity implements Command.Handler {
         new Exception("An internal exception occurred when executing %s %s".formatted(
                 error.getCommand().getName(),
                 error.getArgs() == null ? "" : Arrays.toString(error.getArgs())), error)
-                .printStackTrace(err);
+                .printStackTrace(out);
     }
 
     public static String generateToken() {

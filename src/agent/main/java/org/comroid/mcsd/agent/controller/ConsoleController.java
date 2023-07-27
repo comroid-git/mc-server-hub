@@ -6,6 +6,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
+import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.core.entity.Agent;
@@ -36,7 +37,7 @@ public class ConsoleController {
     @Autowired
     private UserRepo userRepo;
     @Autowired
-    private Agent me;
+    private AgentRunner runner;
     @Autowired
     private ScheduledExecutorService scheduler;
 
@@ -56,7 +57,7 @@ public class ConsoleController {
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
             throw new EntityNotFoundException(Agent.class, "User " + user.getId());
-        me.cmd.execute(input.substring(2, input.length() - 1), res);
+        runner.me.cmd.execute(input.substring(2, input.length() - 1), res);
     }
 
     @MessageMapping("/console/disconnect")
@@ -77,7 +78,7 @@ public class ConsoleController {
         private Connection(User user) {
             this.user = user;
 
-            me.oe.redirectToEventBus(this);
+            runner.me.oe.redirectToEventBus(this);
         }
 
         public void attach(ServerProcess process) {
@@ -97,7 +98,7 @@ public class ConsoleController {
         @SneakyThrows
         private Void outputForwarder() {
             while (process!=null){
-                process.getOut().transferTo(me.out);
+                process.getOut().transferTo(runner.me.out);
             }
             return null;
         }
@@ -105,7 +106,7 @@ public class ConsoleController {
         @SneakyThrows
         private Void errorForwarder() {
             while (process!=null){
-                process.getErr().transferTo(me.err);
+                process.getErr().transferTo(runner.me.err);
             }
             return null;
         }
@@ -113,13 +114,13 @@ public class ConsoleController {
         @Event.Subscriber(DelegateStream.IO.EventKey_Output)
         public void handleStdout(Event<String> e) {
             respond.convertAndSendToUser(user.getName(), "/console/output",
-                    e.getData() + ServerConnection.br);
+                    e.getData().replaceAll("\r?\n",ServerConnection.br));
         }
 
         @Event.Subscriber(DelegateStream.IO.EventKey_Error)
         public void handleStderr(Event<String> e) {
             respond.convertAndSendToUser(user.getName(), "/console/error",
-                    e.getData() + ServerConnection.br);
+                    e.getData().replaceAll("\r?\n",ServerConnection.br));
         }
 
         @Override

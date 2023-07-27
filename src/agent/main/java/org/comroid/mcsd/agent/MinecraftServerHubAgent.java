@@ -61,7 +61,7 @@ public class MinecraftServerHubAgent {
     public String list() {
         return bean(AgentRunner.class)
                 .streamServerStatusMsgs()
-                .collect(Collectors.joining("\n\t-", "Servers:\n\t-", ""));
+                .collect(Collectors.joining("\n\t- ", "Servers:\n\t- ", ""));
     }
 
     @Command(usage="<name> <arg> [--flag]")
@@ -142,7 +142,10 @@ public class MinecraftServerHubAgent {
     @Bean
     public AgentRunner me(@Autowired GatewayConnectionInfo connectionData, @Autowired AgentRepo agents) {
         return agents.findById(connectionData.getAgent())
-                .map(AgentRunner::new)
+                .map(me -> {
+                    me.cmd.register(this);
+                    return new AgentRunner(me);
+                })
                 .orElseThrow(() -> new EntityNotFoundException(Agent.class, connectionData.getAgent()));
     }
 
