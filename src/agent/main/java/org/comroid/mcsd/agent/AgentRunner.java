@@ -1,5 +1,6 @@
 package org.comroid.mcsd.agent;
 
+import lombok.Data;
 import lombok.Value;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.core.entity.Agent;
@@ -13,10 +14,10 @@ import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
-@Value
+@Data
 public class AgentRunner {
-    Map<UUID, ServerProcess> processes = new ConcurrentHashMap<>();
-    Agent me;
+    public final Map<UUID, ServerProcess> processes = new ConcurrentHashMap<>();
+    public final Agent me;
 
     public Stream<Server> streamServers() {
         return Polyfill.stream(bean(ServerRepo.class).findAllForAgent(getMe().getId()));
