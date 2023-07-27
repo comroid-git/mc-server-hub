@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -104,9 +105,10 @@ public class AgentRunner implements Command.Handler {
                 if (!flags.contains("now"))
                     return srv + " is now disabled";
             case "stop":
-                var timeout = args.length>3?Integer.parseInt(args[3]):10;
-                agentRunner.process(srv).shutdown("Shutdown by Admin",timeout);
-                return srv + " was stopped";
+                var timeout = args.length > 3 ? Integer.parseInt(args[3]) : 10;
+                agentRunner.process(srv).shutdown("Admin", timeout)
+                        .thenRun(() -> out.println(srv + " was shut down"));
+                return srv + " will shut down in " + timeout + " seconds";
         }
         throw new Command.ArgumentError("Invalid argument: " + args[1]);
     }
@@ -129,6 +131,9 @@ public class AgentRunner implements Command.Handler {
     public String attach(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
         var proc = agentRunner.process(srv);
+
+        if (attached!=null)
+            con.detach();
 
         if (proc.getState() != ServerProcess.State.Running)
             throw new Command.MildError("Server is not running");
@@ -184,6 +189,9 @@ public class AgentRunner implements Command.Handler {
 
     @PreDestroy
     public void close() {
-        processes.values().forEach(proc -> proc.shutdown("Host shutdown", 5));
+        CompletableFuture.allOf(processes.values().stream()
+                        .map(proc -> proc.shutdown("Host shutdown", 5))
+                        .toArray(CompletableFuture[]::new))
+                .join();
     }
 }

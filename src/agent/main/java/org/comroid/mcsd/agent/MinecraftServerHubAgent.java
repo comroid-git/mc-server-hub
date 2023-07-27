@@ -145,11 +145,12 @@ public class MinecraftServerHubAgent {
         cronLog.log(Level.FINE, "Running Update Queue");
 
         agentRunner.streamServers()
+                .parallel()
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastUpdate().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(agentRunner::process)
                 .filter(ServerProcess::startUpdate)
-                .peek(serverProcess -> serverProcess.shutdown("Server Update", 60))
+                .peek(serverProcess -> serverProcess.shutdown("Server Update", 60).join())
                 .peek(proc-> {
                     assert proc.getProcess() != null;
                     proc.getProcess().onExit().join();

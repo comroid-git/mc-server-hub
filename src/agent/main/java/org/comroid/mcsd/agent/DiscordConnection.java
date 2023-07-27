@@ -33,6 +33,7 @@ public class DiscordConnection implements SlashCommandCreateListener {
         this.server = server;
         this.info = info;
         this.bot = new DiscordApiBuilder()
+                .setToken(info.getToken())
                 .addListener(this)
                 .login()
                 .join();
