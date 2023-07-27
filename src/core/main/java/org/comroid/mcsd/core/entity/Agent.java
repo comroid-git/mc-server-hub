@@ -9,8 +9,13 @@ import lombok.Setter;
 import lombok.experimental.Delegate;
 import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
+import org.comroid.api.Polyfill;
+import org.comroid.api.info.Log;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
+import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.util.Debug;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.PrintStream;
@@ -18,6 +23,9 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Getter
 @Entity
@@ -34,20 +42,17 @@ public class Agent extends AbstractEntity implements Command.Handler {
 
     {
         oe = new DelegateStream.IO(DelegateStream.Capability.Output, DelegateStream.Capability.Error);
-        oe.redirectToSystem();
         out = oe.output().require(PrintStream::new);
         err = oe.error().require(PrintStream::new);
         cmd = new Command.Manager(this);
+
+        if (Debug.isDebug())
+            oe.redirectToLogger(Log.get("Agent-"+getId()));
     }
 
     public Agent setToken(String token) {
         this.token = token;
         return this;
-    }
-
-    @Command
-    public String help() {
-        return "Commands: help status start stop shutdown";
     }
 
     @Override

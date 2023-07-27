@@ -5,11 +5,14 @@ import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.Command;
 import org.comroid.api.Event;
+import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
+import org.comroid.mcsd.agent.controller.ConsoleController;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.mcsd.connector.gateway.GatewayClient;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
@@ -35,8 +38,10 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import static org.comroid.mcsd.core.MinecraftServerHubConfig.cronLog;
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Slf4j
 @ImportResource({"classpath:beans.xml"})
@@ -49,24 +54,62 @@ public class MinecraftServerHubAgent {
         SpringApplication.run(MinecraftServerHubAgent.class, args);
     }
 
+    @Command
+    public String list() {
+        return bean(AgentRunner.class)
+                .streamServerStatusMsgs()
+                .collect(Collectors.joining("\n\t-", "Servers:\n\t-", ""));
+    }
+
+    @Command
+    public String server(String[] args) {
+        return "not implemented";
+    }
+
+    @Command
+    public String execute(String[] args) {
+        return "not implemented";
+    }
+
+    @Command
+    public String detach(String[] args, ConsoleController.Connection con) {
+        return "not implemented";
+    }
+
+    @Command
+    public String attach(String[] args, ConsoleController.Connection con) {
+        return "not implemented";
+    }
+
+    @Command
+    public String shutdown() {
+        System.exit(0);
+        return "shutting down";
+    }
+
     @Bean
     @SneakyThrows
     public GatewayConnectionInfo gatewayConnectionInfo(@Autowired ObjectMapper mapper, @Autowired FileHandle configDir) {
         return mapper.readValue(configDir.createSubFile("gateway.json"), GatewayConnectionInfo.class);
     }
+
     @Bean
-    public Agent me(@Autowired GatewayConnectionInfo connectionData, @Autowired AgentRepo agents) {
+    public AgentRunner me(@Autowired GatewayConnectionInfo connectionData, @Autowired AgentRepo agents) {
         return agents.findById(connectionData.getAgent())
-                .orElseThrow(()->new EntityNotFoundException(Agent.class, connectionData.getAgent()));
+                .map(AgentRunner::new)
+                .orElseThrow(() -> new EntityNotFoundException(Agent.class, connectionData.getAgent()));
     }
+
     //@Bean
     public HubConnector connector(@Autowired GatewayConnectionInfo connectionData, @Autowired ScheduledExecutorService scheduler) {
         return new HubConnector(connectionData, scheduler);
     }
+
     //@Bean
     public GatewayClient gateway(@Autowired HubConnector connector) {
         return connector.getGateway();
     }
+
     //@Bean
     public Event.Listener<GatewayPacket> gatewayListener(@Autowired GatewayClient gateway) {
         return gateway.register(this);
@@ -83,7 +126,8 @@ public class MinecraftServerHubAgent {
         );
     }
 
-    @Bean @Lazy(false)
+    @Bean
+    @Lazy(false)
     public Map<Runnable, Duration> startCronjobs(@Autowired TaskScheduler scheduler, @Autowired Map<Runnable, Duration> cronjobs) {
         cronjobs.forEach(scheduler::scheduleAtFixedRate);
         return cronjobs;

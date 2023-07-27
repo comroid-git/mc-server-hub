@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.Polyfill;
 import org.comroid.api.StreamSupplier;
+import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.agent.dto.WebAppInfo;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
@@ -33,7 +34,7 @@ public class ApiController {
     @Autowired
     private ServerRepo servers;
     @Autowired
-    private Agent me;
+    private AgentRunner runner;
 
 
     @ResponseBody
@@ -41,8 +42,8 @@ public class ApiController {
     public WebAppInfo getUser(HttpSession session) {
         return new WebAppInfo(
                 users.findBySession(session),
-                me,
-                Polyfill.list(servers.findAllForAgent(me.getId()))
+                runner.getMe(),
+                runner.streamServers().toList()
         );
     }
 }
