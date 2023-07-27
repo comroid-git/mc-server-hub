@@ -35,7 +35,7 @@ public class ServerProcess implements Startable, UncheckedCloseable {
 
     @Override
     @SneakyThrows
-    public void start() {
+    public void start() { // todo: need to update installation first
         if (getState() == State.Running)
             return;
         var exec = Arrays.stream(System.getenv("PATH").split(File.pathSeparator))
