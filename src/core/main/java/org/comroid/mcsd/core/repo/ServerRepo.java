@@ -19,7 +19,7 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
     Iterable<Server> findByAgentId(@Param("agentId") UUID agentId);
 
     @Query("UPDATE Server s SET s.lastBackup = :time WHERE s.id = :srvId")
-    void bumpLastBackup(Server srv, @Param("time") Instant time);
+    void bumpLastBackup(@Param("srv") Server srv, @Param("time") Instant time);
 
     @Query("UPDATE Server s SET s.lastUpdate = :time WHERE s.id = :srvId")
     void bumpLastUpdate(@Param("srv") Server srv, @Param("time") Instant time);
