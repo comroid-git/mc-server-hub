@@ -1,5 +1,6 @@
 package org.comroid.mcsd.agent;
 
+import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.Value;
 import org.comroid.api.Polyfill;
@@ -30,5 +31,10 @@ public class AgentRunner {
     public ServerProcess process(final Server srv) {
         final var id = srv.getId();
         return processes.computeIfAbsent(id, $ -> new ServerProcess(srv));
+    }
+
+    @PreDestroy
+    public void close() {
+        processes.values().forEach(ServerProcess::close);
     }
 }

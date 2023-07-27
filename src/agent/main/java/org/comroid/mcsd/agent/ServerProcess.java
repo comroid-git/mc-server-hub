@@ -16,6 +16,8 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Data
 public class ServerProcess implements Startable, UncheckedCloseable {
@@ -35,7 +37,7 @@ public class ServerProcess implements Startable, UncheckedCloseable {
 
     @Override
     @SneakyThrows
-    public void start() { // todo: need to update installation first
+    public void start() {
         if (getState() == State.Running)
             return;
         var exec = Arrays.stream(System.getenv("PATH").split(File.pathSeparator))
@@ -61,12 +63,22 @@ public class ServerProcess implements Startable, UncheckedCloseable {
     @Override
     @SneakyThrows
     public void close() {
-        if (getState() != State.Running)
+        if (process == null || getState() != State.Running)
             return;
-        if (process != null) {
+
+        // try shut down gracefully
+        in.println("stop");
+        process.onExit().orTimeout(30, TimeUnit.SECONDS).join();
+
+        if (getState() == State.Running) {
+            // forcibly close process
+            process.destroy();
+        }
+
+        /*
             var kill = Runtime.getRuntime().exec(new String[]{"kill", "-2", String.valueOf(process.pid())});
             kill.waitFor();
-        }
+         */
     }
 
     @Override
