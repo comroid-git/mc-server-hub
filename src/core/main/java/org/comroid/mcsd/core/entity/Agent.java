@@ -30,37 +30,16 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @Entity
 @Table(name = "agent")
-public class Agent extends AbstractEntity implements Command.Handler {
+public class Agent extends AbstractEntity {
     public static final int TokenLength = 64;
     private @Setter @Basic UUID target;
     private @Setter @Basic HubConnector.Role role;
     private @JsonIgnore @Basic String token = generateToken();
-    public final @JsonIgnore @Transient DelegateStream.IO oe;
-    public final @JsonIgnore @Transient PrintStream out;
-    public final @JsonIgnore @Transient PrintStream err;
-    public final @JsonIgnore @Transient Command.Manager cmd;
-
-    {
-        oe = new DelegateStream.IO(DelegateStream.Capability.Output, DelegateStream.Capability.Error);
-        out = oe.output().require(o -> new PrintStream(o,true));
-        err = oe.error().require(e -> new PrintStream(e,true));
-        cmd = new Command.Manager(this);
-
-        if (Debug.isDebug())
-            //oe.redirectToLogger(Log.get("Agent-"+getId()));
-            oe.redirectToSystem();
-    }
 
     public Agent setToken(String token) {
         this.token = token;
         return this;
     }
-
-    @Override
-    public void handleResponse(String text) {
-        out.println(text);
-    }
-
     public static String generateToken() {
         var randomBytes = new byte[TokenLength];
         new SecureRandom().nextBytes(randomBytes);

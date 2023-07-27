@@ -2,12 +2,11 @@ package org.comroid.mcsd.agent;
 
 import lombok.Data;
 import lombok.SneakyThrows;
-import org.comroid.api.Named;
-import org.comroid.api.Startable;
-import org.comroid.api.UncheckedCloseable;
+import org.comroid.api.*;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Debug;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,16 +15,18 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Data
-public class ServerProcess implements Startable, UncheckedCloseable {
+public class ServerProcess extends Container.Base implements Startable{
     private final Server server;
     private @Nullable Process process;
     private PrintStream in;
     private InputStream out;
     private InputStream err;
+    private DelegateStream.IO oe;
 
     public State getState() {
         return process == null
@@ -54,15 +55,20 @@ public class ServerProcess implements Startable, UncheckedCloseable {
         in = new PrintStream(process.getOutputStream(), true);
         out = process.getInputStream();
         err = process.getErrorStream();
+        oe = new DelegateStream.IO(DelegateStream.Capability.Output, DelegateStream.Capability.Error);
+        var executor = Executors.newFixedThreadPool(2);
+        addChildren(
+                DelegateStream.redirect(out,oe.getOutput(), executor),
+                DelegateStream.redirect(err,oe.getError(), executor));
 
-        //if (Debug.isDebug())
-            //io.redirectToLogger(Log.get("ServerProcess-"+getId()));
-            //io.redirectToSystem();
+        if (Debug.isDebug())
+            //oe.redirectToLogger(Log.get("ServerProcess-"+getId()));
+            oe.redirectToSystem();
     }
 
     @Override
     @SneakyThrows
-    public void close() {
+    public void closeSelf() {
         if (process == null || getState() != State.Running)
             return;
 

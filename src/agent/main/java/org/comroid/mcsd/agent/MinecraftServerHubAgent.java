@@ -34,9 +34,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.TaskScheduler;
-import org.yaml.snakeyaml.reader.StreamReader;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.StringReader;
@@ -55,158 +53,17 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Slf4j
 @ImportResource({"classpath:beans.xml"})
 @SpringBootApplication(scanBasePackages = "org.comroid.mcsd.*")
-@ComponentScan(basePackageClasses = {ApiController.class, WebSocketConfig.class})
+@ComponentScan(basePackageClasses = {AgentRunner.class, ApiController.class, WebSocketConfig.class})
 public class MinecraftServerHubAgent {
     @Lazy @Autowired
     private ServerRepo servers;
     @Lazy @Autowired
-    private AgentRunner runner;
+    private AgentRunner agentRunner;
 
     public static void main(String[] args) {
         if (!Debug.isDebug() && !OS.isUnix)
             throw new RuntimeException("Only Unix operation systems are supported");
         SpringApplication.run(MinecraftServerHubAgent.class, args);
-    }
-
-    @Command(usage="")
-    public String list() {
-        return bean(AgentRunner.class)
-                .streamServerStatusMsgs()
-                .collect(Collectors.joining("\n\t- ", "Servers:\n\t- ", ""));
-    }
-
-    @SneakyThrows
-    @Command(usage="<name> [-r]")
-    public String update(String[] args) {
-        var srv = getServer(args);
-        var flags = args.length>1?args[1]:"";
-
-        // modify server.properties
-        Properties prop;
-        var serverProperties = new FileHandle(srv.path("server.properties").toFile());
-        if (!serverProperties.exists()) {
-            serverProperties.mkdirs();
-            serverProperties.createNewFile();
-        }
-        try (var in = new FileInputStream(serverProperties)) {
-            prop = srv.updateProperties(in);
-        }
-        try (var out = new FileOutputStream(serverProperties,false)) {
-            prop.store(out, "Managed Server Properties by MCSD");
-        }
-
-        // download server.jar
-        var type = switch(srv.getMode()){
-            case Vanilla -> "vanilla";
-            case Paper -> "servers";
-            case Forge, Fabric -> "modded";
-        };
-        var mode = srv.getMode().name().toLowerCase();
-        var version = srv.getMcVersion();
-        var serverJar = new FileHandle(srv.path("server.jar").toFile());
-        if (!serverJar.exists()) {
-            serverJar.mkdirs();
-            serverJar.createNewFile();
-        } else {
-            try (var source = new JSON.Deserializer(new URL("https://serverjars.com/api/fetchDetails/%s/%s/%s"
-                    .formatted(type,mode,version)).openStream());
-                 var local = new FileInputStream(serverJar)) {
-                var sourceMd5 = source.readObject().get("response").get("md5").asString();
-                var localMd5 = MD5.calculate(local);
-
-                if (!flags.contains("r") && sourceMd5.equals(localMd5))
-                    return srv + " already up to date";
-            }
-        }
-        try (var in = new URL("https://serverjars.com/api/fetchJar/%s/%s/%s"
-                .formatted(type,mode,version)).openStream();
-             var out = new FileOutputStream(serverJar,false)) {
-            in.transferTo(out);
-        }
-
-        // eula.txt
-        var eulaTxt = new FileHandle(srv.path("eula.txt").toFile());
-        if (!eulaTxt.exists()) {
-            eulaTxt.mkdirs();
-            eulaTxt.createNewFile();
-        }
-        try (var in = new DelegateStream.Input(new StringReader("eula=true\n"));
-             var out = new FileOutputStream(eulaTxt,false)) {
-            in.transferTo(out);
-        }
-
-        return srv + " updated";
-    }
-
-    @Command(usage="<name> <arg> [-flag]")
-    public Object server(String[] args, ConsoleController.Connection con) {
-        var srv = getServer(args);
-
-        // handle arg
-        var flags = args.length > 2 ? args[2] : "";
-        switch (args[1]) {
-            case "status":
-                return runner.process(srv);
-            case "enable":
-                servers.setEnabled(srv.getId(), true);
-                if (!flags.contains("now"))
-                    return srv + " is now enabled";
-            case "start":
-                runner.process(srv).start();
-                if (flags.contains("a"))
-                    attach(args, con);
-                return srv + " was started";
-            case "disable":
-                servers.setEnabled(srv.getId(), false);
-                if (!flags.contains("now"))
-                    return srv + " is now disabled";
-            case "stop":
-                runner.process(srv).close();
-                return srv + " was stopped";
-        }
-        throw new Command.ArgumentError("Invalid argument: " + args[1]);
-    }
-
-    @Command(usage = "<name> <command...>")
-    public String execute(String[] args) {
-        var srv = getServer(args);
-        var proc = runner.process(srv);
-
-        if (proc.getState() != ServerProcess.State.Running)
-            throw new Command.MildError("Server is not running");
-
-        // forward command
-        var in = proc.getIn();
-        in.println(Arrays.stream(args).skip(1).collect(Collectors.joining(" ")));
-        return "Executing command";
-    }
-
-    @Command(usage="<name>")
-    public void attach(String[] args, ConsoleController.Connection con) {
-        var srv = getServer(args);
-        var proc = runner.process(srv);
-
-        if (proc.getState() != ServerProcess.State.Running)
-            throw new Command.MildError("Server is not running");
-        con.attach(proc);
-    }
-
-    @Command(usage="")
-    public String detach(String[] args, ConsoleController.Connection con) {
-        con.detach();
-        return "Detached";
-    }
-
-    @Command(usage="")
-    public String shutdown() {
-        System.exit(0);
-        return "shutting down";
-    }
-
-    private Server getServer(String[] args) {
-        var srv = servers.findByAgentAndName(runner.getMe().getId(), args[0]).orElse(null);
-        if (srv == null) throw new Command.ArgumentError("name", "Server not found");
-        return srv;
     }
 
     @Bean
@@ -216,12 +73,8 @@ public class MinecraftServerHubAgent {
     }
 
     @Bean
-    public AgentRunner me(@Autowired GatewayConnectionInfo connectionData, @Autowired AgentRepo agents) {
+    public Agent me(@Autowired GatewayConnectionInfo connectionData, @Autowired AgentRepo agents) {
         return agents.findById(connectionData.getAgent())
-                .map(me -> {
-                    me.cmd.register(this);
-                    return new AgentRunner(me);
-                })
                 .orElseThrow(() -> new EntityNotFoundException(Agent.class, connectionData.getAgent()));
     }
 
@@ -263,7 +116,7 @@ public class MinecraftServerHubAgent {
         cronLog.log(Level.FINE, "Running Watchdog");
         Polyfill.stream(servers.findAll())
                 .filter(Server::isEnabled)
-                .map(runner::process)
+                .map(agentRunner::process)
                 .filter(proc->proc.getState()!= ServerProcess.State.Running)
                 .peek(proc->cronLog.warning("Enabled "+proc.getServer()+" is offline! Starting..."))
                 .forEach(ServerProcess::start);

@@ -9,9 +9,7 @@ import org.comroid.api.Event;
 import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
-import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.User;
-import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.model.ServerConnection;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.jetbrains.annotations.Nullable;
@@ -22,13 +20,9 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
 
 @Slf4j
 @Controller
@@ -39,9 +33,7 @@ public class ConsoleController {
     @Autowired
     private UserRepo userRepo;
     @Autowired
-    private AgentRunner runner;
-    @Autowired
-    private ScheduledExecutorService scheduler;
+    private AgentRunner agentRunner;
 
     public Connection con(Map<String, Object> attr) {
         return con(user(attr));
@@ -67,7 +59,7 @@ public class ConsoleController {
         var con = con(user);
         var cmd = input.substring(2, input.length() - 1);
         con.publish("stdout", "> "+cmd+'\n');
-        runner.me.cmd.execute(cmd, con);
+        agentRunner.cmd.execute(cmd, con);
     }
 
     @MessageMapping("/console/disconnect")
@@ -80,34 +72,23 @@ public class ConsoleController {
     public class Connection extends Event.Bus<String> {
         private final User user;
         private @Nullable ServerProcess process;
-        private CompletableFuture<?> outFwd, errFwd;
 
         private Connection(User user) {
             this.user = user;
 
-            runner.me.oe.redirectToEventBus(this);
+            agentRunner.oe.redirectToEventBus(this);
         }
 
         public void attach(ServerProcess process) {
             this.process = process;
-            outFwd = CompletableFuture.supplyAsync(()->forwarder(process.getOut(),runner.me.out), scheduler);
-            errFwd = CompletableFuture.supplyAsync(()->forwarder(process.getErr(),runner.me.err), scheduler);
+            process.getOe().redirect(agentRunner.oe);
         }
 
         public void detach() {
             if (process == null)
                 return;
-            outFwd.cancel(true);
-            errFwd.cancel(true);
+            agentRunner.oe.detach();
             process = null;
-        }
-
-        @SneakyThrows
-        private Void forwarder(InputStream in, OutputStream out) {
-            while (process != null) {
-                in.transferTo(out);
-            }
-            return null;
         }
 
         @Event.Subscriber(DelegateStream.IO.EventKey_Output)

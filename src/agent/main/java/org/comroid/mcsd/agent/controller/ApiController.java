@@ -34,7 +34,7 @@ public class ApiController {
     @Autowired
     private ServerRepo servers;
     @Autowired
-    private AgentRunner runner;
+    private AgentRunner agentRunner;
 
 
     @ResponseBody
@@ -42,8 +42,8 @@ public class ApiController {
     public WebAppInfo getUser(HttpSession session) {
         return new WebAppInfo(
                 users.findBySession(session),
-                runner.getMe(),
-                runner.streamServers().toList()
+                agentRunner.getMe(),
+                agentRunner.streamServers().toList()
         );
     }
 }
