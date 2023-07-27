@@ -23,10 +23,7 @@ public class AgentRunner {
     }
 
     public Stream<String> streamServerStatusMsgs() {
-        return streamServers().map(srv -> {
-            var process = process(srv).getProcess();
-            return "%s: %s".formatted(srv.toString(), process == null ? "Not Started" : process.isAlive() ? "Running" : ("Exited (%d)".formatted(process.exitValue())));
-        });
+        return streamServers().map(this::process).map(ServerProcess::toString);
     }
 
     public ServerProcess process(final Server srv) {

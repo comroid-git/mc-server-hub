@@ -63,27 +63,30 @@ public class MinecraftServerHubAgent {
     }
 
     @Command(usage="<name> <arg> [--flag]")
-    public String server(String[] args) {
+    public Object server(String[] args) {
         var srv = servers.findByAgentAndName(runner.getMe().getId(), args[0]).orElse(null);
         if (srv == null)
             return "Server with name " + args[0] + " not found";
         var flags = args.length > 2 ? args[2] : "";
         switch (args[1]) {
+            case "status":
+                return runner.process(srv);
             case "enable":
                 servers.setEnabled(srv.getId(), true);
                 if (!flags.contains("now"))
-                    break;
+                    return srv + " is now enabled";
             case "start":
                 runner.process(srv).start();
-                break;
+                return srv + " was started";
             case "disable":
                 servers.setEnabled(srv.getId(), false);
                 if (!flags.contains("now"))
-                    break;
+                    return srv + " is now disabled";
             case "stop":
                 runner.process(srv).close();
-                break;
+                return srv + " was stopped";
         }
+        throw new Command.Error("Invalid argument: " + args[1]);
     }
 
     @Command

@@ -36,7 +36,18 @@ public class ServerProcess implements Startable, UncheckedCloseable {
     @Override
     @SneakyThrows
     public void close() {
-        if (process != null)
-            Runtime.getRuntime().exec(new String[]{"kill", "-2", String.valueOf(process.pid())});
+        if (process != null) {
+            var kill = Runtime.getRuntime().exec(new String[]{"kill", "-2", String.valueOf(process.pid())});
+            kill.waitFor();
+        }
+    }
+
+    @Override
+    public String toString() {
+        return server.toString() + ": " + (process == null
+                ? "Not Started"
+                : process.isAlive()
+                ? "Running"
+                : "Exited (%d)".formatted(process.exitValue()));
     }
 }
