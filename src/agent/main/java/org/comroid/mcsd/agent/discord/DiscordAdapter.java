@@ -76,7 +76,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 if (msg == null || counter.get() + txt.length() >= MaxLength) {
                     this.msg = channel.sendMessage(txt).submit();
                     counter.set(txt.length() + 1);
-                } else Ratelimit.run(Duration.ofMinutes(2), () -> {
+                } else Ratelimit.run(Duration.ofSeconds(2), () -> {
                     msg = msg.thenCompose(msg -> msg.editMessage(msg.getContentRaw() + '\n' + txt).submit());
                     msg.thenAccept(msg -> counter.set(msg.getContentRaw().length()));
                 });
