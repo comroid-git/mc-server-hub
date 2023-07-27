@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Data
-public class DiscordConnection extends Container.Base implements Startable {
+public class DiscordConnection extends Container.Base {
     public static final Pattern CHAT_PATTERN = Pattern.compile(""); //todo
     private final ServerProcess srv;
     private final DiscordAdapter adapter;
@@ -24,17 +24,15 @@ public class DiscordConnection extends Container.Base implements Startable {
         this.srv = srv;
         this.adapter = bean(DiscordBotRepo.class)
                 .findById(Objects.requireNonNull(srv.getServer().getDiscordBot()))
-                .map(bean(AgentRunner.class)::adapter)
+                .map(srv.getRunner()::adapter)
                 .orElseThrow();
-    }
-
-    @Override
-    public void start() {
         var server = srv.getServer();
 
         Optional.ofNullable(server.getPublicChannelId())
                 .map(adapter::minecraftChatTemplate)
                 .map(target->srv.listenForOutput("\\[CHAT]").listen().subscribeData(txt->{
+                    if (txt==null)
+                        return;
                     var matcher = CHAT_PATTERN.matcher(txt);
                     if (!matcher.matches())
                         return;
@@ -47,7 +45,8 @@ public class DiscordConnection extends Container.Base implements Startable {
         //todo: moderation channel
         Optional.ofNullable(server.getConsoleChannelId())
                 .map(adapter::channelAsStream)
-                .ifPresent(target->srv.getOe().redirect(target,target));
+                .map(target->srv.getOe().redirect(target,target))
+                .ifPresent(this::addChildren);
     }
 
     @Override

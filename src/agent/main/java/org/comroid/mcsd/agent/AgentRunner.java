@@ -171,7 +171,7 @@ public class AgentRunner implements Command.Handler {
     }
 
     public ServerProcess process(final Server srv) {
-        return processes.computeIfAbsent(srv.getId(), $ -> new ServerProcess(srv));
+        return processes.computeIfAbsent(srv.getId(), $ -> new ServerProcess(this, srv));
     }
 
     public DiscordAdapter adapter(final DiscordBot bot) {

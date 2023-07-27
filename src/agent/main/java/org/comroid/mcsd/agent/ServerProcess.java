@@ -1,6 +1,8 @@
 package org.comroid.mcsd.agent;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.*;
@@ -29,11 +31,13 @@ import java.util.function.IntFunction;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
-@Data
 @Slf4j
+@Getter
+@RequiredArgsConstructor
 public class ServerProcess extends Event.Bus<String> implements Startable {
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
+    private final AgentRunner runner;
     private final Server server;
     private @Nullable Process process;
     private PrintStream in;
@@ -78,6 +82,9 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 DelegateStream.redirect(err,oe.getError(), executor));
         closed = false;
 
+        waitForOutput("Done\\s\\([\\d.s]+\\)!").thenRun(() -> servers
+                .setStatus(server.getId(), server.isMaintenance() ? Status.Maintenance : Status.Online));
+
         var botConId = server.getDiscordBot();
         if (botConId != null)
             addChildren(discord = new DiscordConnection(this));
@@ -85,9 +92,6 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
             oe.redirectToSystem();
-
-        waitForOutput("Done\\s\\([\\d.s]+\\)!").thenRun(() -> servers
-                .setStatus(server.getId(), server.isMaintenance() ? Status.Maintenance : Status.Online));
     }
 
     private boolean startBackup() {
@@ -244,7 +248,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         return listenForOutput(pattern).listen().once();
     }
     public Event.Bus<String> listenForOutput(@Language("RegExp") String pattern) {
-        return filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
+        return filterData(Objects::nonNull)
+                .filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                 .filterData(str->str.matches(pattern));
     }
 

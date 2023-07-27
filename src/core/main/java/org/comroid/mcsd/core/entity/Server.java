@@ -207,11 +207,13 @@ public class Server extends AbstractEntity {
         prop.setProperty("white-list", String.valueOf(isMaintenance()));
 
         // query
-        prop.setProperty("enable-query", String.valueOf(true));
+        prop.setProperty("enable-query", String.valueOf(false));
+        //prop.setProperty("enable-query", String.valueOf(true));
         prop.setProperty("query.port", String.valueOf(getQueryPort()));
 
         // rcon
-        prop.setProperty("enable-rcon", String.valueOf(getRConPassword() != null && !getRConPassword().isBlank()));
+        prop.setProperty("enable-rcon", String.valueOf(false));
+        //prop.setProperty("enable-rcon", String.valueOf(getRConPassword() != null && !getRConPassword().isBlank()));
         prop.setProperty("rcon.port", String.valueOf(getRConPort()));
         prop.setProperty("rcon.password", Objects.requireNonNullElse(getRConPassword(), ""));
 
