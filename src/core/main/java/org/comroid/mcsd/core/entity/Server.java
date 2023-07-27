@@ -63,6 +63,7 @@ public class Server extends AbstractEntity {
     private @Setter Duration updatePeriod = Duration.ofDays(7);
     private @Setter Instant lastBackup = Instant.ofEpochMilli(0);
     private @Setter Instant lastUpdate = Instant.ofEpochMilli(0);
+    private @Setter @Basic(fetch = FetchType.EAGER) Status status = Status.Unknown;
     @JsonIgnore @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
 

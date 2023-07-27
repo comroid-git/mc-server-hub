@@ -4,29 +4,26 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.*;
-import org.comroid.api.info.Log;
 import org.comroid.api.io.FileHandle;
-import org.comroid.api.os.OS;
+import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Debug;
 import org.comroid.util.JSON;
 import org.comroid.util.MD5;
 import org.comroid.util.PathUtil;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
-import java.util.logging.Level;
-import java.util.stream.IntStream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
@@ -57,6 +54,9 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             return;
         if (getState() == State.Running)
             return;
+        final var servers = bean(ServerRepo.class);
+        servers.setStatus(server.getId(), Status.Starting);
+
         var exec = PathUtil.findExec("java").orElseThrow();
         process = Runtime.getRuntime().exec(new String[]{
                         exec.getAbsolutePath(),
@@ -78,6 +78,9 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
             oe.redirectToSystem();
+
+        waitForOutput("Done\\s\\([\\d.s]+\\)!").thenRun(() -> servers
+                .setStatus(server.getId(), server.isMaintenance() ? Status.Maintenance : Status.Online));
     }
 
     private boolean startBackup() {
@@ -95,7 +98,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         in.println("save-all");
 
         // wait for save to finish
-        waitForText("Saved the game");
+        waitForOutput("Saved the game").join();
 
         // do run backup
         var exec = PathUtil.findExec("tar").orElseThrow();
@@ -228,11 +231,10 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         }; // todo: include server status fetch
     }
 
-    private void waitForText(String text) {
-        listen().setKey(DelegateStream.IO.EventKey_Output)
-                .setPredicate(e -> Objects.requireNonNullElse(e.getData(), "").contains(text))
-                .once()
-                .join();
+    private CompletableFuture<Event<String>> waitForOutput(@Language("RegExp") String pattern) {
+        return listen().setKey(DelegateStream.IO.EventKey_Output)
+                .setPredicate(e -> Objects.requireNonNullElse(e.getData(), "").matches(pattern))
+                .once();
     }
 
     public enum State implements Named { NotStarted, Exited, Running;}

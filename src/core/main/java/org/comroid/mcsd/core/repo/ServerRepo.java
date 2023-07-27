@@ -2,6 +2,7 @@ package org.comroid.mcsd.core.repo;
 
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
 import org.springframework.data.jpa.repository.Query;
@@ -30,6 +31,12 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
 
     @Query("UPDATE Server s SET s.enabled = :enabled WHERE s.id = :srvId")
     void setEnabled(@Param("srvId") UUID srvId, @Param("enabled") boolean enabled);
+
+    @Query("UPDATE Server s SET s.maintenance = :maintenance WHERE s.id = :srvId")
+    void setMaintenance(@Param("srvId") UUID srvId, @Param("maintenance") boolean maintenance);
+
+    @Query("UPDATE Server s SET s.status = :status WHERE s.id = :srvId")
+    void setStatus(@Param("srvId") UUID srvId, @Param("status") Status status);
 
     @Query("UPDATE Server s SET s.lastBackup = :time WHERE s.id = :srvId")
     void bumpLastBackup(@Param("srvId") UUID srvId, @Param("time") Instant time);
