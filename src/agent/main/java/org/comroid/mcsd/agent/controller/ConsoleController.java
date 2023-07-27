@@ -1,19 +1,19 @@
 package org.comroid.mcsd.agent.controller;
 
 import jakarta.servlet.http.HttpSession;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
+import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.core.entity.Agent;
-import org.comroid.mcsd.core.entity.ShConnection;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.model.ServerConnection;
 import org.comroid.mcsd.core.repo.UserRepo;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -23,7 +23,9 @@ import org.springframework.stereotype.Controller;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Slf4j
 @Controller
@@ -35,6 +37,8 @@ public class ConsoleController {
     private UserRepo userRepo;
     @Autowired
     private Agent me;
+    @Autowired
+    private ScheduledExecutorService scheduler;
 
     @MessageMapping("/console/connect")
     public void connect(@Header("simpSessionAttributes") Map<String, Object> attr) {
@@ -67,11 +71,43 @@ public class ConsoleController {
     @Getter
     public class Connection extends Event.Bus<String> {
         private final User user;
+        private @Nullable ServerProcess process;
+        private CompletableFuture<?> outFwd, errFwd;
 
         private Connection(User user) {
             this.user = user;
 
             me.oe.redirectToEventBus(this);
+        }
+
+        public void attach(ServerProcess process) {
+            this.process = process;
+            outFwd = CompletableFuture.supplyAsync(this::outputForwarder, scheduler);
+            errFwd = CompletableFuture.supplyAsync(this::errorForwarder, scheduler);
+        }
+
+        public void detach() {
+            if (process == null)
+                return;
+            outFwd.cancel(true);
+            errFwd.cancel(true);
+            process = null;
+        }
+
+        @SneakyThrows
+        private Void outputForwarder() {
+            while (process!=null){
+                process.getOut().transferTo(me.out);
+            }
+            return null;
+        }
+
+        @SneakyThrows
+        private Void errorForwarder() {
+            while (process!=null){
+                process.getErr().transferTo(me.err);
+            }
+            return null;
         }
 
         @Event.Subscriber(DelegateStream.IO.EventKey_Output)

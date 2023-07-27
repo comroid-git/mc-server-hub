@@ -17,6 +17,7 @@ import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
 import org.comroid.mcsd.connector.gateway.GatewayPacket;
 import org.comroid.mcsd.core.MinecraftServerHubConfig;
 import org.comroid.mcsd.core.entity.Agent;
+import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
@@ -31,6 +32,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.TaskScheduler;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
@@ -64,8 +66,9 @@ public class MinecraftServerHubAgent {
 
     @Command(usage="<name> <arg> [--flag]")
     public Object server(String[] args) {
-        var srv = servers.findByAgentAndName(runner.getMe().getId(), args[0]).orElse(null);
-        if (srv == null) throw new Command.Error("Server with name " + args[0] + " not found");
+        var srv = getServer(args);
+
+        // handle arg
         var flags = args.length > 2 ? args[2] : "";
         switch (args[1]) {
             case "status":
@@ -88,25 +91,46 @@ public class MinecraftServerHubAgent {
         throw new Command.Error("Invalid argument: " + args[1]);
     }
 
-    @Command
+    @Command(usage = "<name> <command...>")
     public String execute(String[] args) {
-        return "not implemented";
+        var srv = getServer(args);
+        var proc = runner.process(srv);
+
+        if (proc.getState() != ServerProcess.State.Running)
+            throw new Command.MildError("Server is not running");
+
+        // forward command
+        var in = proc.getIn();
+        in.println(Arrays.stream(args).skip(1).collect(Collectors.joining(" ")));
+        return "Executing command";
     }
 
     @Command
-    public String attach(String[] args, ConsoleController.Connection con) {
-        return "not implemented";
+    public void attach(String[] args, ConsoleController.Connection con) {
+        var srv = getServer(args);
+        var proc = runner.process(srv);
+
+        if (proc.getState() != ServerProcess.State.Running)
+            throw new Command.MildError("Server is not running");
+        con.attach(proc);
     }
 
     @Command
     public String detach(String[] args, ConsoleController.Connection con) {
-        return "not implemented";
+        con.detach();
+        return "Detached";
     }
 
     @Command
     public String shutdown() {
         System.exit(0);
         return "shutting down";
+    }
+
+    private Server getServer(String[] args) {
+        var srv = servers.findByAgentAndName(runner.getMe().getId(), args[0]).orElse(null);
+        if (srv == null) throw new Command.ArgumentError("name", "Server not found");
+        return srv;
     }
 
     @Bean
