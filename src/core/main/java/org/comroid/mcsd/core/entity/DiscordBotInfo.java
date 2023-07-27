@@ -23,7 +23,6 @@ public class DiscordBotInfo extends AbstractEntity {
     private @Nullable Long PublicChannelId;
     private @Nullable Long ModerationChannelId;
     private @Nullable Long ConsoleChannelId;
-    private boolean UseDiscordWhitelist;
 
     @Override
     public String toString() {

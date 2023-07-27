@@ -170,18 +170,29 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     }
 
     @SneakyThrows
-    public void shutdown(final String reason, int time) {
-        final var msg = (IntFunction<String>)t->"Server will shut down for "+reason+" in "+t+" seconds";
+    public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
+        return CompletableFuture.supplyAsync(() -> {
+            final var msg = (IntFunction<String>) t -> "say Server will shut down in %d seconds (%s)".formatted(t, reason);
+            int time = warnSeconds;
 
-        while (time > 0) {
-            in.println(msg.apply(time));
-            if (time < 10)
-                time /= 2;
-            else time -= 1;
-            Thread.sleep(TimeUnit.SECONDS.toMillis(time));
-        }
+            try {
+                while (time > 0) {
+                    in.println(msg.apply(time));
+                    if (time >= 10) {
+                        time /= 2;
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(time));
+                    } else {
+                        time -= 1;
+                        Thread.sleep(1000);
+                    }
+                }
+            } catch (InterruptedException e) {
+                log.error("Could not wait for shutdown timeout", e);
+            }
 
-        close();
+            close();
+            return null;
+        });
     }
 
     @Override
