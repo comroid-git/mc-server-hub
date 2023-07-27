@@ -24,7 +24,7 @@ function connect() {
 
 function disconnect() {
     if (stompClient != null) {
-        stompClient.send('/console/disconnect', {}, sessionId);
+        stompClient.send('/console/disconnect', {}, agent.id);
         subscriptionDisconnect.unsubscribe();
         subscriptionOutput.unsubscribe();
         stompClient.disconnect();

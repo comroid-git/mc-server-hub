@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
+import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
@@ -260,15 +261,12 @@ public class MinecraftServerHubAgent {
     @Synchronized
     private void $cronWatchdog() {
         cronLog.log(Level.FINE, "Running Watchdog");
-        /*
-        StreamSupport.stream(servers.findAll().spliterator(), parallelCron)
-                .filter(Server::isManaged)
-                .map(Server::con)
-                .map(ServerConnection::getGame)
-                .filter(con -> !con.channel.isOpen())
-                .peek(con -> cronLog.log(Level.WARNING, "Connection to " + con.server.con() + " is dead; restarting!"))
-                .forEach(GameConnection::reconnect);
-         */
+        Polyfill.stream(servers.findAll())
+                .filter(Server::isEnabled)
+                .map(runner::process)
+                .filter(proc->proc.getState()!= ServerProcess.State.Running)
+                .peek(proc->cronLog.warning("Enabled "+proc.getServer()+" is offline! Starting..."))
+                .forEach(ServerProcess::start);
         cronLog.log(Level.FINE, "Watchdog finished");
     }
 
