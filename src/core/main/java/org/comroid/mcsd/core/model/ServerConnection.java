@@ -65,7 +65,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
     private final SftpClient sftp;
     @JsonIgnore @Getter
     private final IMinecraftRconService rcon;
-    private final AtomicBoolean backupRunning = new AtomicBoolean(false);
 
     private ServerConnection(Server server) throws IOException {
         this.server = server;
@@ -178,51 +177,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
             log.log(Level.SEVERE, "Unable to upload runscript for Server " + server, e);
             return false;
         }
-    }
-
-    public boolean runBackup() {
-        if (!startBackup()) {
-            log.log(Level.WARNING, "A backup on server %s is already running".formatted(server));
-            return false;
-        }
-
-        if (rcon.isConnected()) {
-            try {
-                var sOff = game.sendCmdRCon("save-off", this);
-                var sAll = game.sendCmdRCon("save-all", this);
-                if (sOff.isEmpty() || sAll.isEmpty()) {
-                    log.log(Level.SEVERE, "Could not run backup on server %s because save-off and save-all failed".formatted(server));
-                    return false;
-                }
-                if (!doBackup()) {
-                    log.log(Level.SEVERE, "Could not run backup on server %s using RCon".formatted(server));
-                    return false;
-                }
-            } finally {
-                var sOn = game.sendCmdRCon("save-on", this);
-                if (sOn.isEmpty())
-                    log.log(Level.SEVERE, "Could not enable autosave after backup for " + server);
-            }
-            backupRunning.set(false);
-            return true;
-        } else {
-            try {
-                game.sendCmd("save-off", "^.*(Automatic saving is now disabled).*$");
-                game.sendCmd("save-all", "^.*(Saved the game).*$");
-                if (!doBackup()) {
-                    log.log(Level.SEVERE, "Could not run backup on server %s using screen".formatted(server));
-                    return false;
-                }
-            } finally {
-                game.sendCmd("save-on", "^.*(Automatic saving is now enabled).*$");
-            }
-            backupRunning.set(false);
-            return true;
-        }
-    }
-
-    private boolean startBackup() {
-        return backupRunning.compareAndSet(false, true);
     }
 
     private boolean doBackup() {

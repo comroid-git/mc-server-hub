@@ -32,16 +32,16 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
     void setEnabled(@Param("srvId") UUID srvId, @Param("enabled") boolean enabled);
 
     @Query("UPDATE Server s SET s.lastBackup = :time WHERE s.id = :srvId")
-    void bumpLastBackup(@Param("srv") Server srv, @Param("time") Instant time);
+    void bumpLastBackup(@Param("srvId") UUID srvId, @Param("time") Instant time);
 
     @Query("UPDATE Server s SET s.lastUpdate = :time WHERE s.id = :srvId")
-    void bumpLastUpdate(@Param("srv") Server srv, @Param("time") Instant time);
+    void bumpLastUpdate(@Param("srvId") UUID srvId, @Param("time") Instant time);
 
     default void bumpLastBackup(Server srv) {
-        bumpLastBackup(srv, Instant.now());
+        bumpLastBackup(srv.getId(), Instant.now());
     }
 
     default void bumpLastUpdate(Server srv) {
-        bumpLastUpdate(srv, Instant.now());
+        bumpLastUpdate(srv.getId(), Instant.now());
     }
 }

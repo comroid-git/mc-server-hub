@@ -29,7 +29,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.stream.StreamSupport;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -54,6 +53,7 @@ public class Server extends AbstractEntity {
     private @Setter Mode mode = Mode.Paper;
     private @Setter byte ramGB = 4;
     private @Setter boolean enabled = false;
+    private @Setter boolean managed = false;
     private @Setter boolean maintenance = false;
     private @Setter int maxPlayers = 20;
     private @Setter int queryPort = 25565;
@@ -63,8 +63,7 @@ public class Server extends AbstractEntity {
     private @Setter Duration updatePeriod = Duration.ofDays(7);
     private @Setter Instant lastBackup = Instant.ofEpochMilli(0);
     private @Setter Instant lastUpdate = Instant.ofEpochMilli(0);
-    @JsonIgnore
-    @ElementCollection(fetch = FetchType.EAGER)
+    @JsonIgnore @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
 
     @JsonIgnore
@@ -174,6 +173,24 @@ public class Server extends AbstractEntity {
         return "https://mc-api.net/v3/server/ping/" + getAddress();
     }
 
+    public String getJarInfoUrl() {
+        var type = switch(mode){
+            case Vanilla -> "vanilla";
+            case Paper -> "servers";
+            case Forge, Fabric -> "modded";
+        };
+        return "https://serverjars.com/api/fetchDetails/%s/%s/%s".formatted(type,mode.name().toLowerCase(),mcVersion);
+    }
+
+    public String getJarUrl() {
+        var type = switch(mode){
+            case Vanilla -> "vanilla";
+            case Paper -> "servers";
+            case Forge, Fabric -> "modded";
+        };
+        return "https://serverjars.com/api/fetchJar/%s/%s/%s".formatted(type,mode.name().toLowerCase(),mcVersion);
+    }
+
     public Path path(String... extra) {
         return Paths.get(getDirectory(), extra);
     }
@@ -263,6 +280,10 @@ public class Server extends AbstractEntity {
                     return msg;
                 })
                 .orTimeout(statusTimeout.toSeconds() + 1, TimeUnit.SECONDS);
+    }
+
+    public Optional<ShConnection> shCon() {
+        return bean(ShRepo.class).findById(shConnection);
     }
 
     public enum Mode implements IntegerAttribute {

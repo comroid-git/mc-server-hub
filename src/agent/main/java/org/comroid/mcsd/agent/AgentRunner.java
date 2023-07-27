@@ -63,67 +63,22 @@ public class AgentRunner implements Command.Handler {
                 .collect(Collectors.joining("\n\t- ", "Servers:\n\t- ", ""));
     }
 
+    @Command(usage="<name>")
+    public String backup(String[] args) {
+        var srv = getServer(args);
+        var proc = process(srv);
+        if (proc.runBackup())
+            return "Backup started";
+        return "Could not start backup";
+    }
+
     @SneakyThrows
     @Command(usage="<name> [-r]")
     public String update(String[] args) {
         var srv = getServer(args);
         var flags = args.length>1?args[1]:"";
-
-        // modify server.properties
-        Properties prop;
-        var serverProperties = new FileHandle(srv.path("server.properties").toFile());
-        if (!serverProperties.exists()) {
-            serverProperties.mkdirs();
-            serverProperties.createNewFile();
-        }
-        try (var in = new FileInputStream(serverProperties)) {
-            prop = srv.updateProperties(in);
-        }
-        try (var out = new FileOutputStream(serverProperties,false)) {
-            prop.store(out, "Managed Server Properties by MCSD");
-        }
-
-        // download server.jar
-        var type = switch(srv.getMode()){
-            case Vanilla -> "vanilla";
-            case Paper -> "servers";
-            case Forge, Fabric -> "modded";
-        };
-        var mode = srv.getMode().name().toLowerCase();
-        var version = srv.getMcVersion();
-        var serverJar = new FileHandle(srv.path("server.jar").toFile());
-        if (!serverJar.exists()) {
-            serverJar.mkdirs();
-            serverJar.createNewFile();
-        } else {
-            try (var source = new JSON.Deserializer(new URL("https://serverjars.com/api/fetchDetails/%s/%s/%s"
-                    .formatted(type,mode,version)).openStream());
-                 var local = new FileInputStream(serverJar)) {
-                var sourceMd5 = source.readObject().get("response").get("md5").asString();
-                var localMd5 = MD5.calculate(local);
-
-                if (!flags.contains("r") && sourceMd5.equals(localMd5))
-                    return srv + " already up to date";
-            }
-        }
-        try (var in = new URL("https://serverjars.com/api/fetchJar/%s/%s/%s"
-                .formatted(type,mode,version)).openStream();
-             var out = new FileOutputStream(serverJar,false)) {
-            in.transferTo(out);
-        }
-
-        // eula.txt
-        var eulaTxt = new FileHandle(srv.path("eula.txt").toFile());
-        if (!eulaTxt.exists()) {
-            eulaTxt.mkdirs();
-            eulaTxt.createNewFile();
-        }
-        try (var in = new DelegateStream.Input(new StringReader("eula=true\n"));
-             var out = new FileOutputStream(eulaTxt,false)) {
-            in.transferTo(out);
-        }
-
-        return srv + " updated";
+        var proc = process(srv);
+        return proc.runUpdate(flags) ? srv+" already up to date":srv+" updated";
     }
 
     @Command(usage="<name> <arg> [-flag]")
@@ -149,7 +104,8 @@ public class AgentRunner implements Command.Handler {
                 if (!flags.contains("now"))
                     return srv + " is now disabled";
             case "stop":
-                agentRunner.process(srv).close();
+                var timeout = args.length>3?Integer.parseInt(args[3]):10;
+                agentRunner.process(srv).shutdown("Shutdown by Admin",timeout);
                 return srv + " was stopped";
         }
         throw new Command.ArgumentError("Invalid argument: " + args[1]);
@@ -228,6 +184,6 @@ public class AgentRunner implements Command.Handler {
 
     @PreDestroy
     public void close() {
-        processes.values().forEach(ServerProcess::close);
+        processes.values().forEach(proc -> proc.shutdown("Host shutdown", 5));
     }
 }
