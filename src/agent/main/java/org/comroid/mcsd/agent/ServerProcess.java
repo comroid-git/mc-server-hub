@@ -180,6 +180,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             else time -= 1;
             Thread.sleep(TimeUnit.SECONDS.toMillis(time));
         }
+
+        close();
     }
 
     @Override
