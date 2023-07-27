@@ -24,16 +24,13 @@ public class AgentRunner {
 
     public Stream<String> streamServerStatusMsgs() {
         return streamServers().map(srv -> {
-            var process = proc(srv).getProcess();
+            var process = process(srv).getProcess();
             return "%s: %s".formatted(srv.toString(), process == null ? "Not Started" : process.isAlive() ? "Running" : ("Exited (%d)".formatted(process.exitValue())));
         });
     }
 
-    private ServerProcess proc(final Server srv) {
+    public ServerProcess process(final Server srv) {
         final var id = srv.getId();
-        return processes.computeIfAbsent(id, $ -> {
-            var process = new ServerProcess(srv);
-            return process;
-        });
+        return processes.computeIfAbsent(id, $ -> new ServerProcess(srv));
     }
 }

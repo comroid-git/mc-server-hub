@@ -38,7 +38,7 @@ public class Server extends AbstractEntity {
     private @Setter String directory = "~/minecraft";
     private @Setter Mode mode = Mode.Paper;
     private @Setter byte ramGB = 4;
-    private @Setter boolean managed = false;
+    private @Setter boolean enabled = false;
     private @Setter boolean maintenance = false;
     private @Setter int maxPlayers = 20;
     private @Setter int queryPort = 25565;

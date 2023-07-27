@@ -1,13 +1,11 @@
 package org.comroid.mcsd.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.Command;
 import org.comroid.api.Event;
-import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
@@ -26,13 +24,11 @@ import org.comroid.util.Debug;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 
 import java.time.Duration;
 import java.util.Map;
@@ -48,6 +44,11 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @SpringBootApplication(scanBasePackages = "org.comroid.mcsd.*")
 @ComponentScan(basePackageClasses = {ApiController.class, WebSocketConfig.class})
 public class MinecraftServerHubAgent {
+    @Lazy @Autowired
+    private ServerRepo servers;
+    @Lazy @Autowired
+    private AgentRunner runner;
+
     public static void main(String[] args) {
         if (!Debug.isDebug() && !OS.isUnix)
             throw new RuntimeException("Only Unix operation systems are supported");
@@ -61,9 +62,28 @@ public class MinecraftServerHubAgent {
                 .collect(Collectors.joining("\n\t-", "Servers:\n\t-", ""));
     }
 
-    @Command
+    @Command(usage="<name> <arg> [--flag]")
     public String server(String[] args) {
-        return "not implemented";
+        var srv = servers.findByAgentAndName(runner.getMe().getId(), args[0]).orElse(null);
+        if (srv == null)
+            return "Server with name " + args[0] + " not found";
+        var flags = args.length > 2 ? args[2] : "";
+        switch (args[1]) {
+            case "enable":
+                servers.setEnabled(srv.getId(), true);
+                if (!flags.contains("now"))
+                    break;
+            case "start":
+                runner.process(srv).start();
+                break;
+            case "disable":
+                servers.setEnabled(srv.getId(), false);
+                if (!flags.contains("now"))
+                    break;
+            case "stop":
+                runner.process(srv).close();
+                break;
+        }
     }
 
     @Command
@@ -72,12 +92,12 @@ public class MinecraftServerHubAgent {
     }
 
     @Command
-    public String detach(String[] args, ConsoleController.Connection con) {
+    public String attach(String[] args, ConsoleController.Connection con) {
         return "not implemented";
     }
 
     @Command
-    public String attach(String[] args, ConsoleController.Connection con) {
+    public String detach(String[] args, ConsoleController.Connection con) {
         return "not implemented";
     }
 
