@@ -2,7 +2,9 @@ package org.comroid.mcsd.agent;
 
 import lombok.Data;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.*;
+import org.comroid.api.info.Log;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.core.entity.Server;
@@ -20,6 +22,7 @@ import java.util.concurrent.*;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Data
+@Slf4j
 public class ServerProcess extends Container.Base implements Startable{
     private final Server server;
     private @Nullable Process process;
@@ -62,7 +65,7 @@ public class ServerProcess extends Container.Base implements Startable{
                 DelegateStream.redirect(err,oe.getError(), executor));
 
         if (Debug.isDebug())
-            //oe.redirectToLogger(Log.get("ServerProcess-"+getId()));
+            //oe.redirectToLogger(log);
             oe.redirectToSystem();
     }
 

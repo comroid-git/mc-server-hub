@@ -45,12 +45,12 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 public class AgentRunner implements UncheckedCloseable, Command.Handler {
     public final Map<UUID, ServerProcess> processes = new ConcurrentHashMap<>();
     public final Agent me;
-    public final @JsonIgnore DelegateStream.IO oe;
-    public final @JsonIgnore PrintStream out;
-    public final @JsonIgnore PrintStream err;
-    public final @JsonIgnore Command.Manager cmd;
-    @Lazy
-    @Autowired
+    public final DelegateStream.IO oe;
+    public final PrintStream out;
+    public final PrintStream err;
+    public final Command.Manager cmd;
+    public ServerProcess attached;
+    @Lazy @Autowired
     private ServerRepo servers;
     @Lazy @Autowired
     private AgentRunner agentRunner;
@@ -61,10 +61,6 @@ public class AgentRunner implements UncheckedCloseable, Command.Handler {
         this.out = oe.output().require(o -> new PrintStream(o,true));
         this.err = oe.error().require(e -> new PrintStream(e,true));
         this.cmd = new Command.Manager(this);
-
-        if (Debug.isDebug())
-            //oe.redirectToLogger(Log.get("Agent-"+getId()));
-            oe.redirectToSystem();
     }
 
     @Command(usage="")
@@ -188,11 +184,15 @@ public class AgentRunner implements UncheckedCloseable, Command.Handler {
         if (proc.getState() != ServerProcess.State.Running)
             throw new Command.MildError("Server is not running");
         con.attach(proc);
+        attached = proc;
     }
 
     @Command(usage="")
     public String detach(String[] args, ConsoleController.Connection con) {
+        if (attached==null)
+            throw new Command.MildError("Not attached");
         con.detach();
+        attached = null;
         return "Detached";
     }
 

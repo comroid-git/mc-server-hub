@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import static org.comroid.mcsd.core.model.ServerConnection.*;
 
 @Slf4j
+@Deprecated
 public final class GameConnection implements Closeable {
     private final ServerConnection connection;
     public final Server server;
@@ -51,7 +52,7 @@ public final class GameConnection implements Closeable {
                             return outputActive = false;
                         }))
                 //.redirectToSystem() //debug
-                .redirectToLogger(Log.get("screen"))
+                .redirectToLogger(log)
                 .redirectToEventBus(screen);
         io.accept(channel::setIn, channel::setOut, channel::setErr);
         log.info("GameConnection IO Configuration:\n" + io.getAlternateName());

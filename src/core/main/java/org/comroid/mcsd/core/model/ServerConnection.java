@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannelEvent;
@@ -48,6 +49,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Getter
+@Deprecated
 public final class ServerConnection implements Closeable, ServerHolder {
     @Language("html")
     public static final String br = "<br/>";
