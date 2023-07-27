@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.*;
 import org.comroid.api.io.FileHandle;
+import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.discord.DiscordConnection;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.DiscordBot;
@@ -68,7 +69,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         process = Runtime.getRuntime().exec(new String[]{
                         exec.getAbsolutePath(),
                         "-Xmx%dG".formatted(server.getRamGB()),
-                        "-jar", "server.jar", "nogui"},
+                        "-jar", "server.jar", Debug.isDebug()&& OS.isWindows?"":"nogui"},
                 new String[0],
                 new FileHandle(server.getDirectory(), true));
         in = new PrintStream(process.getOutputStream(), true);
