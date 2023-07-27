@@ -64,8 +64,8 @@ public class MinecraftServerHubAgent {
                 .collect(Collectors.joining("\n\t- ", "Servers:\n\t- ", ""));
     }
 
-    @Command(usage="<name> <arg> [--flag]")
-    public Object server(String[] args) {
+    @Command(usage="<name> <arg> [-flag]")
+    public Object server(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
 
         // handle arg
@@ -79,6 +79,8 @@ public class MinecraftServerHubAgent {
                     return srv + " is now enabled";
             case "start":
                 runner.process(srv).start();
+                if (flags.contains("a"))
+                    attach(args, con);
                 return srv + " was started";
             case "disable":
                 servers.setEnabled(srv.getId(), false);
