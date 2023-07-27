@@ -6,15 +6,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.util.Bitmask;
 
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "sh_connection")
-@EqualsAndHashCode(callSuper = true)
 public class ShConnection extends AbstractEntity {
     @Basic
     private UUID owner;

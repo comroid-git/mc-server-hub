@@ -6,15 +6,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "user")
-@EqualsAndHashCode(callSuper = true)
 public class User extends AbstractEntity {
     @Basic
     private String name;

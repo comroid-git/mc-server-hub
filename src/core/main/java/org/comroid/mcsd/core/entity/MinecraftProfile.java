@@ -1,19 +1,16 @@
 package org.comroid.mcsd.core.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
-import lombok.Value;
+import lombok.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "minecraft_profile")
-@EqualsAndHashCode(callSuper = true)
 public class MinecraftProfile extends AbstractEntity {
     private String name;
     private long discordId;

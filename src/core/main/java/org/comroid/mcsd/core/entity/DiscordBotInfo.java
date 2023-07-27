@@ -6,14 +6,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "discord_bot")
-@EqualsAndHashCode(callSuper = true)
 public class DiscordBotInfo extends AbstractEntity {
     @Basic
     private String token;

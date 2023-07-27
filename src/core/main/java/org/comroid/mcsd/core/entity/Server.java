@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Entity
 @Table(name = "server")
 @RequiredArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class Server extends AbstractEntity {
     private @Setter UUID owner;
     private @Setter UUID shConnection;

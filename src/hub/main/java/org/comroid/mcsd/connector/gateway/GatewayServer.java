@@ -104,7 +104,6 @@ public class GatewayServer extends GatewayActor implements Runnable {
                     throw new EntityNotFoundException(Agent.class, connectionData.id);
                 final var criteria = Map.<BiPredicate<GatewayConnectionInfo,Agent>,Supplier<Throwable>>of(
                         (info,agent)->info.getToken().equals(agent.getToken()), ()->new StatusCode(HttpStatus.UNAUTHORIZED, "Token mismatch"),
-                        (info,agent)->info.getRole().equals(agent.getRole()), ()->new StatusCode(HttpStatus.CONFLICT, "Role mismatch"),
                         (info,agent)->info.getTarget().equals(agent.getTarget()), ()->new StatusCode(HttpStatus.CONFLICT, "Target mismatch")
                 );
                 for (var entry : criteria.entrySet())

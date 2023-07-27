@@ -8,12 +8,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.Event;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
+import org.comroid.mcsd.agent.config.WebSocketConfig;
+import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.mcsd.connector.gateway.GatewayClient;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
 import org.comroid.mcsd.connector.gateway.GatewayPacket;
 import org.comroid.mcsd.core.MinecraftServerHubConfig;
 import org.comroid.mcsd.core.entity.Agent;
+import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.util.Debug;
@@ -22,9 +25,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 
 import java.time.Duration;
 import java.util.Map;
@@ -35,7 +40,8 @@ import static org.comroid.mcsd.core.MinecraftServerHubConfig.cronLog;
 
 @Slf4j
 @ImportResource({"classpath:beans.xml"})
-@SpringBootApplication(exclude = DataSourceAutoConfiguration.class, scanBasePackages = "org.comroid.mcsd.*")
+@SpringBootApplication(scanBasePackages = "org.comroid.mcsd.*")
+@ComponentScan(basePackageClasses = {ApiController.class, WebSocketConfig.class})
 public class MinecraftServerHubAgent {
     public static void main(String[] args) {
         if (!Debug.isDebug() && !OS.isUnix)
@@ -50,17 +56,18 @@ public class MinecraftServerHubAgent {
     }
     @Bean
     public Agent me(@Autowired GatewayConnectionInfo connectionData, @Autowired AgentRepo agents) {
-        return agents.findById(connectionData.getAgent()).orElseThrow();
+        return agents.findById(connectionData.getAgent())
+                .orElseThrow(()->new EntityNotFoundException(Agent.class, connectionData.getAgent()));
     }
-    @Bean
+    //@Bean
     public HubConnector connector(@Autowired GatewayConnectionInfo connectionData, @Autowired ScheduledExecutorService scheduler) {
         return new HubConnector(connectionData, scheduler);
     }
-    @Bean
+    //@Bean
     public GatewayClient gateway(@Autowired HubConnector connector) {
         return connector.getGateway();
     }
-    @Bean
+    //@Bean
     public Event.Listener<GatewayPacket> gatewayListener(@Autowired GatewayClient gateway) {
         return gateway.register(this);
     }

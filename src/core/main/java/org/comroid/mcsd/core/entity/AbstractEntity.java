@@ -16,4 +16,12 @@ public abstract class AbstractEntity {
     @Id
     @Convert(converter = MinecraftProfile.UuidConverter.class)
     private UUID id = UUID.randomUUID();
+
+    public final boolean equals(Object other) {
+        return other instanceof AbstractEntity && id.equals(((AbstractEntity) other).id);
+    }
+
+    public final int hashCode() {
+        return id.hashCode();
+    }
 }

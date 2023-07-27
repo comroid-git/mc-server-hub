@@ -1,6 +1,8 @@
 package org.comroid.mcsd.connector.gateway;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.comroid.annotations.Convert;
@@ -23,7 +25,6 @@ import java.util.UUID;
 public final class GatewayConnectionInfo {
     final UUID id = UUID.randomUUID();
     @Nullable String hubBaseUrl;
-    @NotNull HubConnector.Role role;
     @NotNull UUID target;
     @NotNull UUID agent;
     @Nullable String token;

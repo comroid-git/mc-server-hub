@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .clientSecret(info.getSecret())
                 .scope(info.getScope())
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri(info.getRedirectUrl())
+                .redirectUri(info.getRedirectUrl().replace(":42064", ":42065"))
                 .authorizationUri(info.getAuthorizationUrl())
                 .tokenUri(info.getTokenUrl())
                 .userInfoUri(info.getUserInfoUrl())

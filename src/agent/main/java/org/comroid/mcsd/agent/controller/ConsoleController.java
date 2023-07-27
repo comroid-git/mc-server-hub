@@ -52,7 +52,7 @@ public class ConsoleController {
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
             throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        me.execute(input.substring(1, input.length() - 1));
+        me.cmd.execute(input.substring(1, input.length() - 1));
     }
 
     @MessageMapping("/console/disconnect")
