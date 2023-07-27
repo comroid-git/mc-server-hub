@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
+import org.comroid.api.Polyfill;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.util.Ratelimit;
@@ -76,10 +77,11 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 if (msg == null || counter.get() + txt.length() >= MaxLength) {
                     this.msg = channel.sendMessage(txt).submit();
                     counter.set(txt.length() + 1);
-                } else Ratelimit.run(Duration.ofSeconds(2), () -> {
-                    msg = msg.thenCompose(msg -> msg.editMessage(msg.getContentRaw() + '\n' + txt).submit());
-                    msg.thenAccept(msg -> counter.set(msg.getContentRaw().length()));
-                });
+                } else msg = Ratelimit.run(txt, Duration.ofSeconds(2), msg, (msg, lines) -> {
+                    var content = msg.getContentRaw() + '\n' + String.join("", lines);
+                    counter.set(content.length());
+                    return msg.editMessage(content).submit();
+                }).exceptionally(Polyfill.exceptionLogger());
             }
         }));
     }
