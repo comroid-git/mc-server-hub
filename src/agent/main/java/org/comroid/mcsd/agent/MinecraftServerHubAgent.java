@@ -23,6 +23,8 @@ import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.util.Debug;
+import org.comroid.util.JSON;
+import org.comroid.util.MD5;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -73,9 +75,10 @@ public class MinecraftServerHubAgent {
     }
 
     @SneakyThrows
-    @Command(usage="<name>")
-    public String install(String[] args) {
+    @Command(usage="<name> [-r]")
+    public String update(String[] args) {
         var srv = getServer(args);
+        var flags = args.length>1?args[1]:"";
 
         // modify server.properties
         Properties prop;
@@ -92,11 +95,6 @@ public class MinecraftServerHubAgent {
         }
 
         // download server.jar
-        var serverJar = new FileHandle(srv.path("server.jar").toFile());
-        if (!serverJar.exists()) {
-            serverJar.mkdirs();
-            serverJar.createNewFile();
-        }
         var type = switch(srv.getMode()){
             case Vanilla -> "vanilla";
             case Paper -> "servers";
@@ -104,6 +102,21 @@ public class MinecraftServerHubAgent {
         };
         var mode = srv.getMode().name().toLowerCase();
         var version = srv.getMcVersion();
+        var serverJar = new FileHandle(srv.path("server.jar").toFile());
+        if (!serverJar.exists()) {
+            serverJar.mkdirs();
+            serverJar.createNewFile();
+        } else {
+            try (var source = new JSON.Deserializer(new URL("https://serverjars.com/api/fetchDetails/%s/%s/%s"
+                    .formatted(type,mode,version)).openStream());
+                 var local = new FileInputStream(serverJar)) {
+                var sourceMd5 = source.readObject().get("response").get("md5").asString();
+                var localMd5 = MD5.calculate(local);
+
+                if (!flags.contains("r") && sourceMd5.equals(localMd5))
+                    return srv + " already up to date";
+            }
+        }
         try (var in = new URL("https://serverjars.com/api/fetchJar/%s/%s/%s"
                 .formatted(type,mode,version)).openStream();
              var out = new FileOutputStream(serverJar,false)) {
@@ -150,7 +163,7 @@ public class MinecraftServerHubAgent {
                 runner.process(srv).close();
                 return srv + " was stopped";
         }
-        throw new Command.Error("Invalid argument: " + args[1]);
+        throw new Command.ArgumentError("Invalid argument: " + args[1]);
     }
 
     @Command(usage = "<name> <command...>")

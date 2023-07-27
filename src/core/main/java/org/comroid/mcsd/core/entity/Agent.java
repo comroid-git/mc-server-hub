@@ -61,14 +61,6 @@ public class Agent extends AbstractEntity implements Command.Handler {
         out.println(text);
     }
 
-    @Override
-    public void handleError(Command.Error error) {
-        new Exception("An internal exception occurred when executing %s %s".formatted(
-                error.getCommand().getName(),
-                error.getArgs() == null ? "" : Arrays.toString(error.getArgs())), error)
-                .printStackTrace(out);
-    }
-
     public static String generateToken() {
         var randomBytes = new byte[TokenLength];
         new SecureRandom().nextBytes(randomBytes);

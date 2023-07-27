@@ -22,6 +22,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -41,32 +43,37 @@ public class ConsoleController {
     @Autowired
     private ScheduledExecutorService scheduler;
 
+    public Connection con(Map<String, Object> attr) {
+        return con(user(attr));
+    }
+    public Connection con(final User user) {
+        return connections.computeIfAbsent(user.getId(), $->new Connection(user));
+    }
+    public User user(Map<String, Object> attr) {
+        var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
+        return userRepo.findBySession(session);
+    }
+
     @MessageMapping("/console/connect")
     public void connect(@Header("simpSessionAttributes") Map<String, Object> attr) {
-        var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
-        var user = userRepo.findBySession(session);
-        Connection connection = new Connection(user);
-        connections.put(user.getId(), connection);
+        var user = user(attr);
+        var con = con(user);
         respond.convertAndSendToUser(user.getName(), "/console/handshake", "");
     }
 
     @MessageMapping("/console/input")
-    public void input(@Header("simpSessionAttributes") Map<String, Object> sessionAttributes, @Payload String input) {
-        var session = (HttpSession) sessionAttributes.get(WebSocketConfig.HTTP_SESSION_KEY);
-        var user = userRepo.findBySession(session);
-        var res = connections.getOrDefault(user.getId(), null);
-        if (res == null)
-            throw new EntityNotFoundException(Agent.class, "User " + user.getId());
-        runner.me.cmd.execute(input.substring(2, input.length() - 1), res);
+    public void input(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload String input) {
+        var user = user(attr);
+        var con = con(user);
+        var cmd = input.substring(2, input.length() - 1);
+        con.publish("stdout", "> "+cmd+'\n');
+        runner.me.cmd.execute(cmd, con);
     }
 
     @MessageMapping("/console/disconnect")
-    public void disconnect(@Header("simpSessionAttributes") Map<String, Object> sessionAttributes) {
-        var session = (HttpSession) sessionAttributes.get(WebSocketConfig.HTTP_SESSION_KEY);
-        var user = userRepo.findBySession(session);
-        var res = connections.getOrDefault(user.getId(), null);
-        if (res != null)
-            res.close();
+    public void disconnect(@Header("simpSessionAttributes") Map<String, Object> attr) {
+        var user = user(attr);
+        con(user).close();
     }
 
     @Getter
@@ -83,8 +90,8 @@ public class ConsoleController {
 
         public void attach(ServerProcess process) {
             this.process = process;
-            outFwd = CompletableFuture.supplyAsync(this::outputForwarder, scheduler);
-            errFwd = CompletableFuture.supplyAsync(this::errorForwarder, scheduler);
+            outFwd = CompletableFuture.supplyAsync(()->forwarder(process.getOut(),runner.me.out), scheduler);
+            errFwd = CompletableFuture.supplyAsync(()->forwarder(process.getErr(),runner.me.err), scheduler);
         }
 
         public void detach() {
@@ -96,17 +103,9 @@ public class ConsoleController {
         }
 
         @SneakyThrows
-        private Void outputForwarder() {
-            while (process!=null){
-                process.getOut().transferTo(runner.me.out);
-            }
-            return null;
-        }
-
-        @SneakyThrows
-        private Void errorForwarder() {
-            while (process!=null){
-                process.getErr().transferTo(runner.me.err);
+        private Void forwarder(InputStream in, OutputStream out) {
+            while (process != null) {
+                in.transferTo(out);
             }
             return null;
         }
@@ -130,6 +129,8 @@ public class ConsoleController {
         @Override
         @SneakyThrows
         public void closeSelf() {
+            detach();
+            connections.remove(user.getId());
             respond.convertAndSendToUser(user.getName(), "/console/disconnect", "");
             super.closeSelf();
         }
