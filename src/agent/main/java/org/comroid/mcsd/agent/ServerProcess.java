@@ -5,10 +5,12 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.*;
 import org.comroid.api.io.FileHandle;
+import org.comroid.mcsd.agent.discord.DiscordConnection;
 import org.comroid.mcsd.api.model.Status;
+import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Debug;
 import org.comroid.util.JSON;
 import org.comroid.util.MD5;
@@ -38,6 +40,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     private InputStream out;
     private InputStream err;
     private DelegateStream.IO oe;
+    private DiscordConnection discord;
 
     public State getState() {
         return process == null
@@ -74,6 +77,10 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 DelegateStream.redirect(out,oe.getOutput(), executor),
                 DelegateStream.redirect(err,oe.getError(), executor));
         closed = false;
+
+        var botConId = server.getDiscordBot();
+        if (botConId != null)
+            addChildren(discord = new DiscordConnection(this));
 
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
@@ -231,10 +238,12 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         }; // todo: include server status fetch
     }
 
-    private CompletableFuture<Event<String>> waitForOutput(@Language("RegExp") String pattern) {
-        return listen().setKey(DelegateStream.IO.EventKey_Output)
-                .setPredicate(e -> Objects.requireNonNullElse(e.getData(), "").matches(pattern))
-                .once();
+    public CompletableFuture<Event<String>> waitForOutput(@Language("RegExp") String pattern) {
+        return listenForOutput(pattern).listen().once();
+    }
+    public Event.Bus<String> listenForOutput(@Language("RegExp") String pattern) {
+        return filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
+                .filterData(str->str.matches(pattern));
     }
 
     public enum State implements Named { NotStarted, Exited, Running;}

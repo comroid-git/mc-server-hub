@@ -2,10 +2,7 @@ package org.comroid.mcsd.core.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.Delegate;
 import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
@@ -34,7 +31,7 @@ public class Agent extends AbstractEntity {
     public static final int TokenLength = 64;
     private @Setter @Basic UUID target;
     private @Setter @Basic HubConnector.Role role;
-    private @JsonIgnore @Basic String token = generateToken();
+    private @JsonIgnore @Basic @ToString.Exclude String token = generateToken();
 
     public Agent setToken(String token) {
         this.token = token;

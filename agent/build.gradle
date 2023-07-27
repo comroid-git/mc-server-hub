@@ -56,7 +56,7 @@ dependencies {
     implementation 'io.github.MrGraversen:minecraft-rcon:0.+'
 
     // discord
-    implementation 'org.javacord:javacord:3.+'
+    implementation 'net.dv8tion:JDA:5.+'
 
     // webjars
     implementation 'org.webjars:webjars-locator-core'

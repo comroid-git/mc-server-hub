@@ -6,26 +6,19 @@ import lombok.SneakyThrows;
 import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Polyfill;
-import org.comroid.api.UncheckedCloseable;
-import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.agent.controller.ConsoleController;
+import org.comroid.mcsd.agent.discord.DiscordAdapter;
 import org.comroid.mcsd.core.entity.Agent;
+import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.util.JSON;
-import org.comroid.util.MD5;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.io.StringReader;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +31,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Service
 public class AgentRunner implements Command.Handler {
     public final Map<UUID, ServerProcess> processes = new ConcurrentHashMap<>();
+    public final Map<UUID, DiscordAdapter> adapters = new ConcurrentHashMap<>();
     public final Agent me;
     public final DelegateStream.IO oe;
     public final PrintStream out;
@@ -177,8 +171,11 @@ public class AgentRunner implements Command.Handler {
     }
 
     public ServerProcess process(final Server srv) {
-        final var id = srv.getId();
-        return processes.computeIfAbsent(id, $ -> new ServerProcess(srv));
+        return processes.computeIfAbsent(srv.getId(), $ -> new ServerProcess(srv));
+    }
+
+    public DiscordAdapter adapter(final DiscordBot bot) {
+        return adapters.computeIfAbsent(bot.getId(), $->new DiscordAdapter(bot));
     }
 
     public void execute(String cmd, ConsoleController.Connection con) {

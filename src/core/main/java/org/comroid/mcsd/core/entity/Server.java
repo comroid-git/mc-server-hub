@@ -29,7 +29,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.StreamSupport;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
@@ -44,7 +43,10 @@ public class Server extends AbstractEntity {
     public static final Duration statusTimeout = Duration.ofSeconds(10);
     private @Setter UUID owner;
     private @Setter UUID shConnection;
-    private @Setter @Nullable UUID discordConnection;
+    private @Setter @Nullable UUID discordBot;
+    private @Nullable Long PublicChannelId;
+    private @Nullable Long ModerationChannelId;
+    private @Nullable Long ConsoleChannelId;
     private @Setter String name;
     private @Setter String mcVersion = "1.19.4";
     private @Setter String host;

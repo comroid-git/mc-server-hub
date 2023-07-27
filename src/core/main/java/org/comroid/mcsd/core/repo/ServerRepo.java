@@ -2,9 +2,11 @@ package org.comroid.mcsd.core.repo;
 
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.transaction.Transactional;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -29,18 +31,28 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
             " WHERE s.name = :name")
     Optional<Server> findByAgentAndName(@Param("agentId") UUID agentId, @Param("name") String name);
 
+    @Modifying
+    @Transactional
     @Query("UPDATE Server s SET s.enabled = :enabled WHERE s.id = :srvId")
     void setEnabled(@Param("srvId") UUID srvId, @Param("enabled") boolean enabled);
 
+    @Modifying
+    @Transactional
     @Query("UPDATE Server s SET s.maintenance = :maintenance WHERE s.id = :srvId")
     void setMaintenance(@Param("srvId") UUID srvId, @Param("maintenance") boolean maintenance);
 
+    @Modifying
+    @Transactional
     @Query("UPDATE Server s SET s.status = :status WHERE s.id = :srvId")
     void setStatus(@Param("srvId") UUID srvId, @Param("status") Status status);
 
+    @Modifying
+    @Transactional
     @Query("UPDATE Server s SET s.lastBackup = :time WHERE s.id = :srvId")
     void bumpLastBackup(@Param("srvId") UUID srvId, @Param("time") Instant time);
 
+    @Modifying
+    @Transactional
     @Query("UPDATE Server s SET s.lastUpdate = :time WHERE s.id = :srvId")
     void bumpLastUpdate(@Param("srvId") UUID srvId, @Param("time") Instant time);
 
