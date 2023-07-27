@@ -59,7 +59,7 @@ public class ConsoleController {
         var con = con(user);
         var cmd = input.substring(2, input.length() - 1);
         con.publish("stdout", "> "+cmd+'\n');
-        agentRunner.cmd.execute(cmd, con);
+        agentRunner.execute(cmd, con);
     }
 
     @MessageMapping("/console/disconnect")

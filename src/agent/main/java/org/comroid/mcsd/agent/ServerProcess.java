@@ -99,7 +99,7 @@ public class ServerProcess extends Container.Base implements Startable{
                 yield "Exited ("+process.exitValue()+")";
             }
             case Running -> "Running";
-        };
+        }; // todo: include server status fetch
     }
 
     public enum State implements Named { NotStarted, Exited, Running }

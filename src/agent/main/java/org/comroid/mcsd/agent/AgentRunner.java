@@ -1,12 +1,8 @@
 package org.comroid.mcsd.agent;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.PreDestroy;
-import jakarta.persistence.Transient;
-import lombok.Data;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import lombok.Value;
 import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Polyfill;
@@ -16,13 +12,10 @@ import org.comroid.mcsd.agent.controller.ConsoleController;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.util.Debug;
 import org.comroid.util.JSON;
 import org.comroid.util.MD5;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
@@ -42,7 +35,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Getter
 @Service
-public class AgentRunner implements UncheckedCloseable, Command.Handler {
+public class AgentRunner implements Command.Handler {
     public final Map<UUID, ServerProcess> processes = new ConcurrentHashMap<>();
     public final Agent me;
     public final DelegateStream.IO oe;
@@ -177,7 +170,7 @@ public class AgentRunner implements UncheckedCloseable, Command.Handler {
     }
 
     @Command(usage="<name>")
-    public void attach(String[] args, ConsoleController.Connection con) {
+    public String attach(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
         var proc = agentRunner.process(srv);
 
@@ -185,6 +178,7 @@ public class AgentRunner implements UncheckedCloseable, Command.Handler {
             throw new Command.MildError("Server is not running");
         con.attach(proc);
         attached = proc;
+        return "Attached to " + srv;
     }
 
     @Command(usage="")
@@ -224,6 +218,12 @@ public class AgentRunner implements UncheckedCloseable, Command.Handler {
     public ServerProcess process(final Server srv) {
         final var id = srv.getId();
         return processes.computeIfAbsent(id, $ -> new ServerProcess(srv));
+    }
+
+    public void execute(String cmd, ConsoleController.Connection con) {
+        if (!"detach".equals(cmd) && con.getProcess() != null && attached != null)
+            con.getProcess().getIn().println(cmd);
+        else getCmd().execute(cmd, con);
     }
 
     @PreDestroy
