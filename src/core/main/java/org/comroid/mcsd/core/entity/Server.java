@@ -223,11 +223,6 @@ public class Server extends AbstractEntity {
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
         log.debug("Getting status of Server %s".formatted(this));
-        var host = StreamSupport.stream(bean(ShRepo.class).findAll().spliterator(), false)
-                .filter(con -> con.getId().equals(UUID.randomUUID()))
-                .findFirst()
-                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, this))
-                .getHost();
         return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(statusCache.computeIfPresent(getId(), (k, v) -> {
                     if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
                         return null;
