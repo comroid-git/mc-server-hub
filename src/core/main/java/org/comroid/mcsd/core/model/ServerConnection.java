@@ -208,7 +208,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
 
         // download & update & upload properties
         try (var in = downloadFile(path)) {
-            var prop = updateProperties(in);
+            var prop = server.updateProperties(in);
             try (var out = uploadFile(path)) {
                 prop.store(out, "Managed Server Properties by MCSD");
             }
@@ -218,26 +218,6 @@ public final class ServerConnection implements Closeable, ServerHolder {
         }
         log.log(Level.FINE, "Uploaded managed properties of server " + server);
         return true;
-    }
-
-    private Properties updateProperties(InputStream input) throws IOException {
-        var prop = new Properties();
-        prop.load(input);
-
-        prop.setProperty("server-port", String.valueOf(server.getPort()));
-        prop.setProperty("max-players", String.valueOf(server.getMaxPlayers()));
-        prop.setProperty("white-list", String.valueOf(server.isMaintenance()));
-
-        // query
-        prop.setProperty("enable-query", String.valueOf(true));
-        prop.setProperty("query.port", String.valueOf(server.getQueryPort()));
-
-        // rcon
-        prop.setProperty("enable-rcon", String.valueOf(server.getRConPassword() != null && !server.getRConPassword().isBlank()));
-        prop.setProperty("rcon.port", String.valueOf(server.getRConPort()));
-        prop.setProperty("rcon.password", Objects.requireNonNullElse(server.getRConPassword(), ""));
-
-        return prop;
     }
 
     public boolean uploadRunScript() {

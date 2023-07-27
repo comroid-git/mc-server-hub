@@ -114,13 +114,17 @@ public class ConsoleController {
         @Event.Subscriber(DelegateStream.IO.EventKey_Output)
         public void handleStdout(Event<String> e) {
             respond.convertAndSendToUser(user.getName(), "/console/output",
-                    e.getData().replaceAll("\r?\n",ServerConnection.br));
+                    e.getData().replace("<","&lt;")
+                            .replace(">","&gt;")
+                            .replaceAll("\r?\n",ServerConnection.br));
         }
 
         @Event.Subscriber(DelegateStream.IO.EventKey_Error)
         public void handleStderr(Event<String> e) {
             respond.convertAndSendToUser(user.getName(), "/console/error",
-                    e.getData().replaceAll("\r?\n",ServerConnection.br));
+                    e.getData().replace("<","&lt;")
+                            .replace(">","&gt;")
+                            .replaceAll("\r?\n",ServerConnection.br));
         }
 
         @Override

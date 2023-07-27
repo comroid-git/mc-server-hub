@@ -15,11 +15,13 @@ import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -157,6 +159,30 @@ public class Server extends AbstractEntity {
 
     public String getStatusURL() {
         return "https://mc-api.net/v3/server/ping/" + getAddress();
+    }
+
+    public Path path(String... extra) {
+        return Paths.get(getDirectory(), extra);
+    }
+
+    public Properties updateProperties(InputStream input) throws IOException {
+        var prop = new Properties();
+        prop.load(input);
+
+        prop.setProperty("server-port", String.valueOf(getPort()));
+        prop.setProperty("max-players", String.valueOf(getMaxPlayers()));
+        prop.setProperty("white-list", String.valueOf(isMaintenance()));
+
+        // query
+        prop.setProperty("enable-query", String.valueOf(true));
+        prop.setProperty("query.port", String.valueOf(getQueryPort()));
+
+        // rcon
+        prop.setProperty("enable-rcon", String.valueOf(getRConPassword() != null && !getRConPassword().isBlank()));
+        prop.setProperty("rcon.port", String.valueOf(getRConPort()));
+        prop.setProperty("rcon.password", Objects.requireNonNullElse(getRConPassword(), ""));
+
+        return prop;
     }
 
     public enum Mode implements IntegerAttribute {

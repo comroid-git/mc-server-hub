@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.Command;
+import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
@@ -30,10 +31,17 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.TaskScheduler;
+import org.yaml.snakeyaml.reader.StreamReader;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.StringReader;
+import java.net.URL;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -57,11 +65,63 @@ public class MinecraftServerHubAgent {
         SpringApplication.run(MinecraftServerHubAgent.class, args);
     }
 
-    @Command
+    @Command(usage="")
     public String list() {
         return bean(AgentRunner.class)
                 .streamServerStatusMsgs()
                 .collect(Collectors.joining("\n\t- ", "Servers:\n\t- ", ""));
+    }
+
+    @SneakyThrows
+    @Command(usage="<name>")
+    public String install(String[] args) {
+        var srv = getServer(args);
+
+        // modify server.properties
+        Properties prop;
+        var serverProperties = new FileHandle(srv.path("server.properties").toFile());
+        if (!serverProperties.exists()) {
+            serverProperties.mkdirs();
+            serverProperties.createNewFile();
+        }
+        try (var in = new FileInputStream(serverProperties)) {
+            prop = srv.updateProperties(in);
+        }
+        try (var out = new FileOutputStream(serverProperties,false)) {
+            prop.store(out, "Managed Server Properties by MCSD");
+        }
+
+        // download server.jar
+        var serverJar = new FileHandle(srv.path("server.jar").toFile());
+        if (!serverJar.exists()) {
+            serverJar.mkdirs();
+            serverJar.createNewFile();
+        }
+        var type = switch(srv.getMode()){
+            case Vanilla -> "vanilla";
+            case Paper -> "servers";
+            case Forge, Fabric -> "modded";
+        };
+        var mode = srv.getMode().name().toLowerCase();
+        var version = srv.getMcVersion();
+        try (var in = new URL("https://serverjars.com/api/fetchJar/%s/%s/%s"
+                .formatted(type,mode,version)).openStream();
+             var out = new FileOutputStream(serverJar,false)) {
+            in.transferTo(out);
+        }
+
+        // eula.txt
+        var eulaTxt = new FileHandle(srv.path("eula.txt").toFile());
+        if (!eulaTxt.exists()) {
+            eulaTxt.mkdirs();
+            eulaTxt.createNewFile();
+        }
+        try (var in = new DelegateStream.Input(new StringReader("eula=true\n"));
+             var out = new FileOutputStream(eulaTxt,false)) {
+            in.transferTo(out);
+        }
+
+        return srv + " updated";
     }
 
     @Command(usage="<name> <arg> [-flag]")
@@ -107,7 +167,7 @@ public class MinecraftServerHubAgent {
         return "Executing command";
     }
 
-    @Command
+    @Command(usage="<name>")
     public void attach(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
         var proc = runner.process(srv);
@@ -117,13 +177,13 @@ public class MinecraftServerHubAgent {
         con.attach(proc);
     }
 
-    @Command
+    @Command(usage="")
     public String detach(String[] args, ConsoleController.Connection con) {
         con.detach();
         return "Detached";
     }
 
-    @Command
+    @Command(usage="")
     public String shutdown() {
         System.exit(0);
         return "shutting down";
