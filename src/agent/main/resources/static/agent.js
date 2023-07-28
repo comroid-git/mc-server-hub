@@ -42,8 +42,8 @@ function handleHandshake() {
         handleError(msg.body);
     });
     writeLine("Connected")
-    if (servers.length === 1 && servers[0].enabled)
-        sendInput('attach '+servers[0].name)
+    //if (servers.length === 1 && servers[0].enabled)
+    //    sendInput('attach '+servers[0].name)
 }
 
 function handleStatus(data) {
