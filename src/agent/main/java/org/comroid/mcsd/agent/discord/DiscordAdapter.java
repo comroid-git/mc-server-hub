@@ -91,15 +91,18 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 log.finer("accept('" + txt + "')");
                 Ratelimit.run(txt, Duration.ofSeconds(2), msg, (msg, queue) -> {
                     var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
+                    var add = "";
                     log.fine("length of raw = " + raw.length());
                     boolean hasSpace = false;
-                    while (!queue.isEmpty() && (hasSpace = (raw.length() + queue.peek().length() < MaxLength))) {
+                    while (!queue.isEmpty() && (hasSpace = (raw.length() + add.length() + queue.peek().length() < MaxLength))) {
                         var poll = queue.poll();
-                        raw += poll;
+                        add += poll;
                     }
-                    log.finer("editing to:\n" + raw);
-                    RestAction<Message> chain = msg.editMessage(wrapContent(raw));
-                    if (!hasSpace) chain = chain.flatMap($ -> newMsg(queue.poll()));
+                    RestAction<Message> chain;
+                    if (channel.getLatestMessageIdLong() == msg.getIdLong()) {
+                        chain = msg.editMessage(wrapContent(raw + add));
+                        if (!hasSpace) chain = chain.flatMap($ -> newMsg(queue.poll()));
+                    } else chain = newMsg(add);
                     return chain.submit();
                 });
             }
