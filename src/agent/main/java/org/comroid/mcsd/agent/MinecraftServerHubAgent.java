@@ -114,7 +114,7 @@ public class MinecraftServerHubAgent {
 
     @Synchronized
     private void $cronWatchdog() {
-        cronLog.log(Level.FINE, "Running Watchdog");
+        cronLog.log(Level.FINEST, "Running Watchdog");
         agentRunner.streamServers()
                 .filter(Server::isEnabled)
                 .map(agentRunner::process)
@@ -126,13 +126,12 @@ public class MinecraftServerHubAgent {
                     proc.runUpdate();
                 })
                 .forEach(ServerProcess::start);
-        cronLog.log(Level.FINE, "Watchdog finished");
+        cronLog.log(Level.FINER, "Watchdog finished");
     }
 
     @Synchronized
     private void $cronBackup() {
         cronLog.log(Level.FINE, "Running Backup Queue");
-
         agentRunner.streamServers()
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
@@ -141,16 +140,13 @@ public class MinecraftServerHubAgent {
                 .peek(srv -> cronLog.info("Successfully created backup of " + srv))
                 .map(ServerProcess::getServer)
                 .forEach(servers::bumpLastBackup);
-
-        cronLog.log(Level.FINE, "Backup Queue finished");
+        cronLog.log(Level.INFO, "Backup Queue finished");
     }
 
     @Synchronized
     private void $cronUpdate() {
         cronLog.log(Level.FINE, "Running Update Queue");
-
         agentRunner.streamServers()
-                .parallel()
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastUpdate().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(agentRunner::process)
@@ -165,8 +161,7 @@ public class MinecraftServerHubAgent {
                 .map(ServerProcess::getServer)
                 .peek(srv -> cronLog.info("Successfully updated " + srv))
                 .forEach(servers::bumpLastUpdate);
-
-        cronLog.log(Level.FINE, "Update Queue finished");
+        cronLog.log(Level.INFO, "Update Queue finished");
     }
     //endregion
 }
