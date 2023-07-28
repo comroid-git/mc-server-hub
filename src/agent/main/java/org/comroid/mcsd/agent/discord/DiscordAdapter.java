@@ -35,11 +35,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static net.dv8tion.jda.api.entities.Message.MAX_CONTENT_LENGTH;
@@ -74,9 +72,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(final WebhookClient webhook) {
-        return (mc, txt) -> webhook.send(new WebhookMessageBuilder()
-                .setAvatarUrl(mc.getHeadURL())
-                .setUsername(mc.getName())
+        return (mc, txt) -> webhook.send(whMessage(mc)
+                .setContent(txt)
                 .build());
     }
     public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(long channelId) {
@@ -89,13 +86,22 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(final WebhookClient webhook) {
-        return (embed,mc) -> webhook.send(WebhookEmbedBuilder.fromJDA(embed(embed,mc).build()).build());
+        return (embed, mc) -> webhook.send(whMessage(mc)
+                .addEmbeds(WebhookEmbedBuilder.fromJDA(embed(embed, null).build()).build())
+                .build());
     }
+
     public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(long channelId) {
         final var channel = jda.getTextChannelById(channelId);
         if (channel == null)
             throw new NullPointerException("channel not found: " + channelId);
-        return (embed,mc) -> channel.sendMessageEmbeds(embed(embed,mc).build()).queue();
+        return (embed, mc) -> channel.sendMessageEmbeds(embed(embed, mc).build()).queue();
+    }
+
+    private WebhookMessageBuilder whMessage(@Nullable MinecraftProfile mc) {
+        return new WebhookMessageBuilder()
+                .setAvatarUrl(mc != null ? mc.getHeadURL() : jda.getSelfUser().getEffectiveAvatarUrl())
+                .setUsername(mc != null ? mc.getName() : jda.getSelfUser().getEffectiveName());
     }
 
     private EmbedBuilder embed(@Nullable MinecraftProfile mc) {
