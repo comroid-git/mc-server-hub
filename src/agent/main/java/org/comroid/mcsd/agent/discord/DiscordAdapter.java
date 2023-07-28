@@ -115,7 +115,6 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             throw new NullPointerException("channel not found: " + id);
         return new PrintStream(new DelegateStream.Output(new Consumer<>() {
             public static final int MaxLength = MAX_CONTENT_LENGTH - 6;
-            public static final int MaxQueueSize = 300;
 
             private final AtomicReference<CompletableFuture<Message>> msg;
 
@@ -158,8 +157,6 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 if (txt.isBlank()) return; //todo: this shouldn't be necessary
                 log.finer("accept('" + txt + "')");
                 Ratelimit.run(txt, Duration.ofSeconds(scroll ? 3 : 1), msg, (msg, queue) -> {
-                    while (queue.size()>MaxQueueSize)
-                        queue.poll(); // todo find solution
                     var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
                     var add = "";
                     log.fine("length of raw = " + raw.length());
