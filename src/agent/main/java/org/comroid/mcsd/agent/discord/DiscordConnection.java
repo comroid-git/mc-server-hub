@@ -8,6 +8,7 @@ import org.comroid.api.*;
 import org.comroid.api.Container;
 import org.comroid.api.Event;
 import org.comroid.mcsd.agent.ServerProcess;
+import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.repo.DiscordBotRepo;
@@ -91,6 +92,8 @@ public class DiscordConnection extends Container.Base {
                         .subscribeData(matcher -> {
                             var username = matcher.group("username");
                             var message = matcher.group("message");
+                            if (matcher.groupCount() == 2)
+                                bean(Event.Bus.class,"eventBus").publish("chat", new ChatMessage(username, message));
                             var profile = bean(MinecraftProfileRepo.class).get(username);
                             chatTemplate.accept(profile, message);
                         })),
