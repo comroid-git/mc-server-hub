@@ -1,6 +1,5 @@
 package org.comroid.mcsd.agent;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -10,9 +9,7 @@ import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.discord.DiscordConnection;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.util.Debug;
 import org.comroid.util.JSON;
@@ -24,11 +21,13 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Paths;
-import java.util.Objects;
+import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
@@ -36,6 +35,9 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @RequiredArgsConstructor
 public class ServerProcess extends Event.Bus<String> implements Startable {
+    public static final Pattern DonePattern_Vanilla = Pattern.compile("Done\\s\\((?<time>[\\d.])+s\\)!"); //todo
+    public static final Pattern ChatPattern_Vanilla = Pattern.compile("INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\n"); //todo
+    public static final Pattern PlayerEvent_Vanilla = Pattern.compile("INFO]: (?<message>(?<username>[\\S\\w-_]+) (joined|left) the game)\\n"); //todo
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AgentRunner runner;
@@ -46,6 +48,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     private InputStream err;
     private DelegateStream.IO oe;
     private DiscordConnection discord;
+    private CompletableFuture<Event<Duration>> done;
 
     public State getState() {
         return process == null
@@ -53,6 +56,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 : process.isAlive()
                 ? State.Running
                 : State.Exited;
+    }
+
+    public void pushStatus(Status status) {
+        bean(ServerRepo.class).setStatus(server.getId(), status);
+        bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), status);
     }
 
     @Override
@@ -83,6 +91,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 DelegateStream.redirect(err,oe.getError(), executor));
         closed = false;
 
+        this.done = listenForPattern(DonePattern_Vanilla)
+                .mapData(m->m.group("time"))
+                .mapData(Double::parseDouble)
+                .mapData(x-> Duration.ofMillis((long) (x*1000)))
+                .listen().once();
         done.thenRun(() -> pushStatus(server.isMaintenance() ? Status.Maintenance : Status.Online));
 
         var botConId = server.getDiscordBot();
@@ -249,6 +262,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     public Event.Bus<String> listenForOutput(@Language("RegExp") String pattern) {
         return filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                 .filterData(str->str.matches(pattern));
+    }
+    public Event.Bus<Matcher> listenForPattern(Pattern pattern) {
+        return filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
+                .mapData(pattern::matcher)
+                .filterData(Matcher::matches);
     }
 
     public enum State implements Named { NotStarted, Exited, Running;}
