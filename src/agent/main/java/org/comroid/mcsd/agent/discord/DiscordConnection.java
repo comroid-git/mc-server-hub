@@ -1,15 +1,17 @@
 package org.comroid.mcsd.agent.discord;
 
 import lombok.Data;
-import org.comroid.api.Container;
-import org.comroid.api.Startable;
-import org.comroid.mcsd.agent.AgentRunner;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import org.comroid.api.*;
 import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.core.repo.DiscordBotRepo;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 
+import java.io.PrintStream;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -28,25 +30,37 @@ public class DiscordConnection extends Container.Base {
                 .orElseThrow();
         var server = srv.getServer();
 
-        Optional.ofNullable(server.getPublicChannelId())
-                .map(adapter::minecraftChatTemplate)
-                .map(target->srv.listenForOutput("\\[CHAT]").listen().subscribeData(txt->{
-                    if (txt==null)
-                        return;
-                    var matcher = CHAT_PATTERN.matcher(txt);
-                    if (!matcher.matches())
-                        return;
-                    var username = matcher.group("username");
-                    var message = matcher.group("message");
-                    var profile = bean(MinecraftProfileRepo.class).get(username);
-                    target.accept(profile, message);
-                }))
-                .ifPresent(this::addChildren);
-        //todo: moderation channel
-        Optional.ofNullable(server.getConsoleChannelId())
-                .map(adapter::channelAsStream)
-                .map(target->srv.getOe().redirect(target,target))
-                .ifPresent(this::addChildren);
+        var consoleChannel = Optional.ofNullable(server.getConsoleChannelId());
+        Optional<PrintStream> consoleStream = consoleChannel.map(adapter::channelAsStream);
+        Polyfill.stream(
+                Optional.ofNullable(server.getPublicChannelId())
+                        .map(adapter::minecraftChatTemplate)
+                        .map(target -> srv.listenForOutput("\\[CHAT]").listen().subscribeData(txt -> {
+                            if (txt == null)
+                                return;
+                            var matcher = CHAT_PATTERN.matcher(txt);
+                            if (!matcher.matches())
+                                return;
+                            var username = matcher.group("username");
+                            var message = matcher.group("message");
+                            var profile = bean(MinecraftProfileRepo.class).get(username);
+                            target.accept(profile, message);
+                        }))
+                        .stream(),
+                //todo: moderation channel
+                consoleChannel.map(id -> adapter.flatMap(MessageReceivedEvent.class)
+                        .filterData(e -> e.getChannel().getIdLong() == id)
+                        .mapData(MessageReceivedEvent::getMessage)
+                        .filterData(msg -> !msg.getAuthor().isBot())
+                        .mapData(Message::getContentRaw)
+                        .filterData(cmd -> cmd.startsWith(">"))
+                        .peekData(cmd -> consoleStream.ifPresent(out -> out.println(cmd)))
+                        .mapData(cmd -> cmd.substring(1))
+                        .subscribeData(srv.getIn()::println))
+                        .stream(),
+                consoleStream.map(target -> srv.getOe().redirect(target, target))
+                        .stream()
+        ).forEach(this::addChildren);
     }
 
     @Override
