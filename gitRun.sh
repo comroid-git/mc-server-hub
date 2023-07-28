@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export DEBUG_ENV="yes"
+#export DEBUG_ENV="yes"
 export pidFile="unit.pid"
 echo $$ > $pidFile
 trap 'rm -f $pidFile' EXIT
