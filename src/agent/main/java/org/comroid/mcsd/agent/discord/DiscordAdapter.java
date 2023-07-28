@@ -96,7 +96,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     boolean hasSpace = false;
                     while (!queue.isEmpty() && (scroll || (hasSpace = (raw + add + queue.peek()).length() < MaxLength))) {
                         var poll = queue.poll();
-                        add += Polyfill.concat(add,poll,"\n");
+                        add += poll;
                     }
                     RestAction<Message> chain;
                     if (channel.getLatestMessageIdLong() == msg.getIdLong()) {
@@ -130,7 +130,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     rev.add(lines[index--]);
                 log.fine("size after scroll = " + (index < 0 ? size : (size - lines[index].length())));
                 Collections.reverse(rev);
-                return String.join("\r\n", rev)+"\r\n";
+                return String.join("\n", rev)+'\n';
             }
 
             private String header() {
