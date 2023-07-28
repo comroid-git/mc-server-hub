@@ -1,5 +1,8 @@
 package org.comroid.mcsd.core.entity;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.SimpleType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.jetbrains.annotations.Nullable;
@@ -38,7 +41,7 @@ public class MinecraftProfile extends AbstractEntity {
 
     @Value
     @Converter
-    public static class UuidConverter implements AttributeConverter<UUID, String> {
+    public static class UuidConverter implements com.fasterxml.jackson.databind.util.Converter<String, UUID>, AttributeConverter<UUID, String> {
         @Override
         public String convertToDatabaseColumn(UUID id) {
             return id.toString();
@@ -52,6 +55,21 @@ public class MinecraftProfile extends AbstractEntity {
                 str = sb.toString();
             }
             return UUID.fromString(str);
+        }
+
+        @Override
+        public UUID convert(String value) {
+            return convertToEntityAttribute(value);
+        }
+
+        @Override
+        public JavaType getInputType(TypeFactory typeFactory) {
+            return SimpleType.constructUnsafe(String.class);
+        }
+
+        @Override
+        public JavaType getOutputType(TypeFactory typeFactory) {
+            return SimpleType.constructUnsafe(UUID.class);
         }
     }
 }
