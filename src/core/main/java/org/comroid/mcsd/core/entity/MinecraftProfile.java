@@ -13,7 +13,6 @@ import java.util.UUID;
 @Table(name = "minecraft_profile")
 public class MinecraftProfile extends AbstractEntity {
     private String name;
-    private long discordId;
     private @Nullable String verification;
     @ElementCollection
     private Map<UUID, String> serverLogins;

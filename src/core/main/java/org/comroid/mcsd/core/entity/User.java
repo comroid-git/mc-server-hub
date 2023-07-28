@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -22,6 +23,8 @@ public class User extends AbstractEntity {
     private String name;
     private boolean guest;
     private int permissions;
+    private @Nullable UUID minecraftId;
+    private @Nullable Long discordId;
 
     public boolean canManageServers() {
         return Perm.ManageServers.isFlagSet(permissions);
