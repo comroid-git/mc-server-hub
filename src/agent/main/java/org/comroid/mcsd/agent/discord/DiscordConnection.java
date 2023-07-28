@@ -68,7 +68,7 @@ public class DiscordConnection extends Container.Base {
                 Stream.of(mainBus.flatMapData(Status.class)
                         .filter(e -> server.getId().toString().equals(e.getKey()))
                         .mapData(status -> new EmbedBuilder()
-                                .setTitle(status.getEmoji() + ' ' + server + " is " + status.getName())
+                                .setTitle(status.getEmoji() + '\t' + "Server is " + status.getName())
                                 .setColor(status.getColor()))
                         .subscribeData(embed -> embedTemplate.accept(embed, null))),
 
