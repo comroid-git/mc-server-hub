@@ -84,12 +84,6 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (getState() == State.Running)
             return;
 
-        var botConId = server.getDiscordBot();
-        if (botConId != null)
-            addChildren(discord = new DiscordConnection(this));
-
-        pushStatus(Status.Starting);
-
         var exec = PathUtil.findExec("java").orElseThrow();
         process = Runtime.getRuntime().exec(new String[]{
                         exec.getAbsolutePath(),
@@ -107,6 +101,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 DelegateStream.redirect(out,oe.getOutput(), executor),
                 DelegateStream.redirect(err,oe.getError(), executor));
         closed = false;
+
+        var botConId = server.getDiscordBot();
+        if (botConId != null)
+            addChildren(discord = new DiscordConnection(this));
+        pushStatus(Status.Starting);
 
         this.done = listenForPattern(DonePattern_Vanilla)
                 .mapData(m->m.group("time"))
