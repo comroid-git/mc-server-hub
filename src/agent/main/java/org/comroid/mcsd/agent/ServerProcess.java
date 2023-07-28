@@ -63,13 +63,17 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), status);
     }
 
-    public boolean pushMaintenance(boolean val) {
+    public boolean pushMaintenance(boolean val) { //todo
         var is = server.isMaintenance();
+        runner.getServers().setMaintenance(server.getId(), val);
         if (is && !val) {
             // disable maintenance
+            in.println("whitelist off");
         } else if (!is && val) {
             // enable maintenance
+            in.println("whitelist on");
         }
+        return is != val;
     }
 
     @Override
