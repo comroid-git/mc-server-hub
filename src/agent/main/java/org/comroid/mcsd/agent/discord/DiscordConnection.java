@@ -4,6 +4,7 @@ import club.minnced.discord.webhook.WebhookClientBuilder;
 import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.comroid.api.*;
 import org.comroid.api.Container;
 import org.comroid.api.Event;
@@ -94,6 +95,7 @@ public class DiscordConnection extends Container.Base {
                             var message = matcher.group("message");
                             if (matcher.groupCount() == 2)
                                 bean(Event.Bus.class,"eventBus").publish("chat", new ChatMessage(username, message));
+                            else message = MarkdownUtil.quote(message);
                             var profile = bean(MinecraftProfileRepo.class).get(username);
                             chatTemplate.accept(profile, message);
                         })),
