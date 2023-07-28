@@ -98,7 +98,7 @@ public class DiscordConnection extends Container.Base {
                 //todo: moderation channel
 
                 // console channel -> console
-                consoleChannel.map(id -> adapter.filter($->server.getLastStatus().getAsInt()>Status.Starting.getAsInt())
+                consoleChannel.map(id -> adapter
                         .flatMap(MessageReceivedEvent.class)
                         .filterData(e -> e.getChannel().getIdLong() == id)
                         .mapData(MessageReceivedEvent::getMessage)
@@ -114,7 +114,9 @@ public class DiscordConnection extends Container.Base {
                         .mapData(cmd -> cmd.substring(1))
                         .subscribeData(srv.getIn()::println)).stream(),
                 // console -> console channel
-                consoleStream.map(target -> srv.getOe().redirect(target, target)).stream()
+                consoleStream.map(target -> srv.getOe()
+                        .rewireOE(oe->oe.filter($->server.getLastStatus().getAsInt()>Status.Starting.getAsInt()))
+                        .redirect(target, target)).stream()
         ).forEach(this::addChildren);
     }
 }
