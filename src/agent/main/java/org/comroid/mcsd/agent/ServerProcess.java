@@ -63,7 +63,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (getState() == State.Running)
             return;
         final var servers = bean(ServerRepo.class);
-        servers.setStatus(server.getId(), Status.Starting);
+        pushStatus(Status.Starting);
 
         var exec = PathUtil.findExec("java").orElseThrow();
         process = Runtime.getRuntime().exec(new String[]{
@@ -83,8 +83,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 DelegateStream.redirect(err,oe.getError(), executor));
         closed = false;
 
-        waitForOutput("Done\\s\\([\\d.s]+\\)!").thenRun(() -> servers
-                .setStatus(server.getId(), server.isMaintenance() ? Status.Maintenance : Status.Online));
+        done.thenRun(() -> pushStatus(server.isMaintenance() ? Status.Maintenance : Status.Online));
 
         var botConId = server.getDiscordBot();
         if (botConId != null)

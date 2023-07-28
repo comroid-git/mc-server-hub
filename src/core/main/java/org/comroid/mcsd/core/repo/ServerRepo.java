@@ -43,7 +43,7 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE Server s SET s.status = :status WHERE s.id = :srvId")
+    @Query("UPDATE Server s SET s.lastStatus = :status WHERE s.id = :srvId")
     void setStatus(@Param("srvId") UUID srvId, @Param("status") Status status);
 
     @Modifying
