@@ -12,10 +12,10 @@ function fetch() {
 
 (
   cd '../japi';
-  fetch()
+  fetch
 )
 
-fetch()
+fetch
 
 exec="gradle"
 if [ -z "$(which "$exec")" ]; then
