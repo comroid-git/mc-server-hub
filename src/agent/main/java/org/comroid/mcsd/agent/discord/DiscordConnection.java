@@ -14,6 +14,7 @@ import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.repo.DiscordBotRepo;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
+import org.comroid.mcsd.core.repo.ServerRepo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +51,11 @@ public class DiscordConnection extends Container.Base {
         final var publicChannel = Optional.ofNullable(server.getPublicChannelId());
 
         final var webhook = Optional.ofNullable(server.getPublicChannelWebhook())
-                .or(() -> publicChannel.flatMap(adapter::createWebhook))
+                .or(() -> publicChannel.flatMap(adapter::createWebhook)
+                        .map(url -> {
+                            bean(ServerRepo.class).save(server.setPublicChannelWebhook(url));
+                            return url;
+                        }))
                 .map(url -> new WebhookClientBuilder(url).buildJDA());
         this.chatTemplate = webhook
                 .map(adapter::minecraftChatTemplate)
@@ -62,7 +67,7 @@ public class DiscordConnection extends Container.Base {
                 .orElseThrow();
 
         final var consoleChannel = Optional.ofNullable(server.getConsoleChannelId());
-        final var consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, srv.getServer().isLessConsoleSpam()));
+        final var consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, srv.getServer().getConsoleMode()));
 
         Polyfill.stream(
                 // status changes -> discord
@@ -103,7 +108,12 @@ public class DiscordConnection extends Container.Base {
                                 .filterData(e -> e.getChannel().getIdLong() == id)
                                 .mapData(MessageReceivedEvent::getMessage)
                                 .filterData(msg -> !msg.getAuthor().isBot())
-                                .mapData(Message::getContentRaw)
+                                .mapData(msg -> {
+                                    var raw = msg.getContentRaw();
+                                    if (!msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                        msg.delete().queue();
+                                    return raw;
+                                })
                                 .filterData(cmd -> cmd.startsWith(">"))
                                 .peekData(cmd -> consoleStream.ifPresent(out -> out.println(cmd)))
                                 .mapData(cmd -> cmd.substring(1))

@@ -39,17 +39,19 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Table(name = "server")
 @RequiredArgsConstructor
 public class Server extends AbstractEntity {
+    public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
+
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
     private @Setter UUID owner;
     private @Setter UUID shConnection;
     private @Setter @Nullable UUID discordBot;
-    private @Nullable String PublicChannelWebhook;
-    private @Nullable Long PublicChannelId;
-    private @Nullable Long ModerationChannelId;
-    private @Nullable Long ConsoleChannelId;
-    private @Setter boolean LessConsoleSpam = true;
+    private @Setter @Nullable String PublicChannelWebhook;
+    private @Setter @Nullable Long PublicChannelId;
+    private @Setter @Nullable Long ModerationChannelId;
+    private @Setter @Nullable Long ConsoleChannelId;
+    private @Setter ConsoleMode consoleMode = ConsoleMode.Scroll;
     private @Setter String name;
     private @Setter String mcVersion = "1.19.4";
     private @Setter String host;

@@ -1,7 +1,6 @@
 package org.comroid.mcsd.agent.discord;
 
 import club.minnced.discord.webhook.WebhookClient;
-import club.minnced.discord.webhook.send.WebhookEmbed;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import lombok.Data;
@@ -11,6 +10,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.ISnowflake;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Webhook;
 import net.dv8tion.jda.api.events.GenericEvent;
@@ -22,9 +22,10 @@ import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
-import org.comroid.api.N;
+import org.comroid.api.Polyfill;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
+import org.comroid.mcsd.core.entity.Server;
 import org.comroid.util.Ratelimit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,15 +35,20 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import static net.dv8tion.jda.api.entities.Message.MAX_CONTENT_LENGTH;
+import static org.comroid.api.Polyfill.stream;
 
 @Log
 @Data
 public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener {
+    public static final int MaxBulkDelete = 100;
     private final JDA jda;
 
     @SneakyThrows
@@ -102,14 +108,49 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         return builder;
     }
 
-    public PrintStream channelAsStream(final long id, final boolean scroll) {
+    public PrintStream channelAsStream(final long id, final Server.ConsoleMode mode) {
+        final var scroll = mode != Server.ConsoleMode.Append;
         final var channel = jda.getTextChannelById(id);
         if (channel == null)
             throw new NullPointerException("channel not found: " + id);
         return new PrintStream(new DelegateStream.Output(new Consumer<>() {
             public static final int MaxLength = MAX_CONTENT_LENGTH - 6;
 
-            private final AtomicReference<CompletableFuture<Message>> msg = new AtomicReference<>(newMsg(null).submit());
+            private final AtomicReference<CompletableFuture<Message>> msg;
+
+            {
+                // getOrCreate msg
+                final var msg = Optional.of(0)
+                        .filter($ -> mode == Server.ConsoleMode.ScrollClean)
+                        .flatMap($ -> Polyfill.stream(channel.getIterableHistory())
+                                .filter(m -> jda.getSelfUser().equals(m.getAuthor()))
+                                .findFirst())
+                        .map(CompletableFuture::completedFuture)
+                        .orElseGet(() -> newMsg(null).submit());
+                this.msg = new AtomicReference<>(msg);
+
+                // cleanup channel
+                if (mode == Server.ConsoleMode.ScrollClean)
+                    msg.thenApply(ISnowflake::getIdLong).thenComposeAsync(it -> Polyfill
+                            .batches(MaxBulkDelete, channel.getIterableHistory()
+                                    .stream()
+                                    .peek(x->log.info("filter(id): "+x))
+                                    .filter(m -> m.getIdLong() != it)
+                                    .peek(x->log.info("map(id): "+x))
+                                    .map(ISnowflake::getId))
+                            .peek(ids -> log.fine(Polyfill.batches(8, ids.stream())
+                                    .map(ls -> String.join(", ", ls))
+                                    .collect(Collectors.joining("\n\t\t", "Deleting message batch:\n\t\t", ""))))
+                            .peek(x->log.info("bulkDelete(): "+x))
+                            .map(channel::deleteMessagesByIds)
+                            .peek(x->log.info("submit(): "+x))
+                            .map(RestAction::submit)
+                            .peek(x->log.info("collect(): "+x))
+                            .collect(Collectors.collectingAndThen(
+                                    Collectors.<CompletableFuture<?>>toList(),
+                                    all -> CompletableFuture.allOf(all.toArray(CompletableFuture[]::new)))
+                            )).exceptionally(Polyfill.exceptionLogger());
+            }
 
             @Override
             public void accept(final String txt) {
@@ -125,7 +166,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         add += poll;
                     }
                     RestAction<Message> chain;
-                    if (channel.getLatestMessageIdLong() == msg.getIdLong() && msg.isPinned()) {
+                    if (mode == Server.ConsoleMode.ScrollClean ||
+                            channel.getLatestMessageIdLong() == msg.getIdLong() && msg.isPinned()) {
                         var content = raw + add;
                         chain = msg.editMessage(wrapContent(content));
                         if (!scroll && !hasSpace)
