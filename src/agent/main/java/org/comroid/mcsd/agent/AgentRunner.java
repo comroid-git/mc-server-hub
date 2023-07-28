@@ -13,6 +13,7 @@ import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.util.StandardValueType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -41,27 +42,29 @@ public class AgentRunner implements Command.Handler {
     public ServerProcess attached;
     @Autowired
     public Event.Bus<Object> eventBus;
-    @Lazy @Autowired
+    @Lazy
+    @Autowired
     private ServerRepo servers;
-    @Lazy @Autowired
+    @Lazy
+    @Autowired
     private AgentRunner agentRunner;
 
     public AgentRunner(@Autowired Agent me) {
         this.me = me;
         this.oe = new DelegateStream.IO(DelegateStream.Capability.Output, DelegateStream.Capability.Error);
-        this.out = oe.output().require(o -> new PrintStream(o,true));
-        this.err = oe.error().require(e -> new PrintStream(e,true));
+        this.out = oe.output().require(o -> new PrintStream(o, true));
+        this.err = oe.error().require(e -> new PrintStream(e, true));
         this.cmd = new Command.Manager(this);
     }
 
-    @Command(usage="")
+    @Command(usage = "")
     public String list() {
         return bean(AgentRunner.class)
                 .streamServerStatusMsgs()
                 .collect(Collectors.joining("\n\t- ", "Servers:\n\t- ", ""));
     }
 
-    @Command(usage="<name>")
+    @Command(usage = "<name>")
     public String backup(String[] args) {
         var srv = getServer(args);
         var proc = process(srv);
@@ -71,43 +74,66 @@ public class AgentRunner implements Command.Handler {
     }
 
     @SneakyThrows
-    @Command(usage="<name> [-r]")
+    @Command(usage = "<name> [-r]")
     public String update(String[] args) {
         var srv = getServer(args);
-        var flags = args.length>1?args[1]:"";
+        var flags = args.length > 1 ? args[1] : "";
         var proc = process(srv);
-        return proc.runUpdate(flags) ? srv+" already up to date":srv+" updated";
+        return proc.runUpdate(flags) ? srv + " already up to date" : srv + " updated";
     }
 
-    @Command(usage="<name> <arg> [-flag]")
-    public Object server(String[] args, ConsoleController.Connection con) {
+    @Command(usage = "<name>")
+    public Object status(String[] args) {
         var srv = getServer(args);
+        return agentRunner.process(srv);
+    }
 
-        // handle arg
-        var flags = args.length > 2 ? args[2] : "";
-        switch (args[1]) {
-            case "status":
-                return agentRunner.process(srv);
-            case "enable":
-                servers.setEnabled(srv.getId(), true);
-                if (!flags.contains("now"))
-                    return srv + " is now enabled";
-            case "start":
-                agentRunner.process(srv).start();
-                if (flags.contains("a"))
-                    attach(args, con);
-                return srv + " was started";
-            case "disable":
-                servers.setEnabled(srv.getId(), false);
-                if (!flags.contains("now"))
-                    return srv + " is now disabled";
-            case "stop":
-                var timeout = args.length > 3 ? Integer.parseInt(args[3]) : 10;
-                agentRunner.process(srv).shutdown("Admin shutdown", timeout)
-                        .thenRun(() -> out.println(srv + " was shut down"));
-                return srv + " will shut down in " + timeout + " seconds";
-        }
-        throw new Command.ArgumentError("Invalid argument: " + args[1]);
+    @Command(usage = "<name> [-na]")
+    public Object enable(String[] args, ConsoleController.Connection con) {
+        var srv = getServer(args);
+        var flags = args.length > 1 ? args[1] : "";
+        servers.setEnabled(srv.getId(), true);
+        if (flags.contains("n"))
+            return start(args, con);
+        return srv + " is now enabled";
+    }
+
+    @Command(usage = "<name> [-nt]")
+    public Object disable(String[] args, ConsoleController.Connection con) {
+        var srv = getServer(args);
+        var flags = args.length > 1 ? args[1] : "";
+        servers.setEnabled(srv.getId(), false);
+        if (flags.contains("n"))
+            return stop(args);
+        return srv + " is now disabled";
+    }
+
+    @Command(usage = "<name> [-a]")
+    public Object start(String[] args, ConsoleController.Connection con) {
+        var srv = getServer(args);
+        var flags = args.length > 1 ? args[1] : "";
+        agentRunner.process(srv).start();
+        if (flags.contains("a"))
+            attach(args, con);
+        return srv + " was started";
+    }
+
+    @Command(usage = "<name> [time]")
+    public Object stop(String[] args) {
+        var srv = getServer(args);
+        var timeout = args.length > 2 ? Integer.parseInt(args[2]) : 10;
+        agentRunner.process(srv).shutdown("Admin shutdown", timeout)
+                .thenRun(() -> out.println(srv + " was shut down"));
+        return srv + " will shut down in " + timeout + " seconds";
+    }
+
+    @Command(usage = "<name> [y/n]")
+    public Object maintenance(String[] args, ConsoleController.Connection con) {
+        var srv = getServer(args);
+        var proc = process(srv);
+        var val = args.length > 1 ? StandardValueType.BOOLEAN.parse(args[2]) : !proc.getServer().isMaintenance();
+        return srv + (proc.pushMaintenance(val) ? " was " : " could not be ")
+                + (val ? " put into " : " taken out of ") + " Maintenance mode";
     }
 
     @Command(usage = "<name> <command...>")
@@ -124,12 +150,12 @@ public class AgentRunner implements Command.Handler {
         return "Executing command";
     }
 
-    @Command(usage="<name>")
+    @Command(usage = "<name>")
     public String attach(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
         var proc = agentRunner.process(srv);
 
-        if (attached!=null)
+        if (attached != null)
             con.detach();
 
         if (proc.getState() != ServerProcess.State.Running)
@@ -139,16 +165,16 @@ public class AgentRunner implements Command.Handler {
         return "Attached to " + srv;
     }
 
-    @Command(usage="")
+    @Command(usage = "")
     public String detach(String[] args, ConsoleController.Connection con) {
-        if (attached==null)
+        if (attached == null)
             throw new Command.MildError("Not attached");
         con.detach();
         attached = null;
         return "Detached";
     }
 
-    @Command(usage="")
+    @Command(usage = "")
     public String shutdown() {
         System.exit(0);
         return "shutting down";
@@ -178,7 +204,7 @@ public class AgentRunner implements Command.Handler {
     }
 
     public DiscordAdapter adapter(final DiscordBot bot) {
-        return adapters.computeIfAbsent(bot.getId(), $->new DiscordAdapter(bot));
+        return adapters.computeIfAbsent(bot.getId(), $ -> new DiscordAdapter(bot));
     }
 
     public void execute(String cmd, ConsoleController.Connection con) {

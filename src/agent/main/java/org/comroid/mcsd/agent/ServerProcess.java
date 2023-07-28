@@ -63,6 +63,15 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), status);
     }
 
+    public boolean pushMaintenance(boolean val) {
+        var is = server.isMaintenance();
+        if (is && !val) {
+            // disable maintenance
+        } else if (!is && val) {
+            // enable maintenance
+        }
+    }
+
     @Override
     @SneakyThrows
     public void start() {
@@ -255,7 +264,6 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             case Running -> "Running";
         }; // todo: include server status fetch
     }
-
     public CompletableFuture<Event<String>> waitForOutput(@Language("RegExp") String pattern) {
         return listenForOutput(pattern).listen().once();
     }
@@ -263,6 +271,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         return filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                 .filterData(str->str.matches(pattern));
     }
+
     public Event.Bus<Matcher> listenForPattern(Pattern pattern) {
         return filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                 .mapData(pattern::matcher)
