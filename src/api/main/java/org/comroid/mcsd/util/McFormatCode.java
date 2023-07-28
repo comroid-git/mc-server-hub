@@ -58,7 +58,7 @@ public enum McFormatCode implements TextDecoration, Named {
 
     @Override
     public String getName() {
-        return name();
+        return name().toLowerCase();
     }
 
     @Override
