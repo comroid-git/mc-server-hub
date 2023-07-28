@@ -83,6 +83,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             return;
         if (getState() == State.Running)
             return;
+
+        var botConId = server.getDiscordBot();
+        if (botConId != null)
+            addChildren(discord = new DiscordConnection(this));
+
         pushStatus(Status.Starting);
 
         var exec = PathUtil.findExec("java").orElseThrow();
@@ -108,11 +113,10 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 .mapData(Double::parseDouble)
                 .mapData(x-> Duration.ofMillis((long) (x*1000)))
                 .listen().once();
-        done.thenRun(() -> pushStatus(server.isMaintenance() ? Status.Maintenance : Status.Online));
-
-        var botConId = server.getDiscordBot();
-        if (botConId != null)
-            addChildren(discord = new DiscordConnection(this));
+        done.thenAccept(t -> {
+            pushStatus(server.isMaintenance() ? Status.Maintenance : Status.Online);
+            log.info(server+" took "+t+" to start");
+        });
 
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
@@ -276,9 +280,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     }
 
     public Event.Bus<Matcher> listenForPattern(Pattern pattern) {
-        return filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
-                .mapData(pattern::matcher)
-                .filterData(Matcher::matches);
+        return mapData(pattern::matcher).filterData(matcher -> matcher.matches());
     }
 
     public enum State implements Named { NotStarted, Exited, Running;}
