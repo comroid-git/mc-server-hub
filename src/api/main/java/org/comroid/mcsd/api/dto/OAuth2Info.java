@@ -9,6 +9,7 @@ public class OAuth2Info {
     String secret;
     String scope;
     String redirectUrl;
+    String agentRedirectUrl;
     String authorizationUrl;
     String tokenUrl;
     String userInfoUrl;
