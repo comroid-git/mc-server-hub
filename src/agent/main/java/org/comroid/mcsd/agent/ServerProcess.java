@@ -35,17 +35,15 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @RequiredArgsConstructor
 public class ServerProcess extends Event.Bus<String> implements Startable {
-    public static final Pattern DonePattern_Vanilla = Pattern.compile("INFO]: Done\\s\\((?<time>[\\d.])+s\\)!"); //todo
-    public static final Pattern ChatPattern_Vanilla = Pattern.compile("INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\r?\\n"); //todo
-    public static final Pattern PlayerEvent_Vanilla = Pattern.compile("INFO]: (?<message>(?<username>[\\S\\w-_]+) (joined|left) the game)\\r?\\n"); //todo
+    public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?"); //todo
+    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\r?\\n?.*"); //todo
+    public static final Pattern PlayerEvent_Vanilla = Pattern.compile(".*INFO]: (?<message>(?<username>[\\S\\w-_]+) (joined|left) the game)\\r?\\n?.*"); //todo
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AgentRunner runner;
     private final Server server;
     private @Nullable Process process;
     private PrintStream in;
-    private InputStream out;
-    private InputStream err;
     private DelegateStream.IO oe;
     private DiscordConnection discord;
     private CompletableFuture<Event<Duration>> done;
@@ -92,14 +90,12 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 new String[0],
                 new FileHandle(server.getDirectory(), true));
         in = new PrintStream(process.getOutputStream(), true);
-        out = process.getInputStream();
-        err = process.getErrorStream();
         oe = new DelegateStream.IO(DelegateStream.Capability.Output, DelegateStream.Capability.Error)
-                .redirectToEventBus(this);
+                .redirectToEventBus(this, DelegateStream.IO.EventKey_Output);
         var executor = Executors.newFixedThreadPool(2);
         addChildren(
-                DelegateStream.redirect(out,oe.getOutput(), executor),
-                DelegateStream.redirect(err,oe.getError(), executor));
+                DelegateStream.redirect(process.getInputStream(),oe.getOutput(), executor),
+                DelegateStream.redirect(process.getErrorStream(),oe.getError(), executor));
         closed = false;
 
         var botConId = server.getDiscordBot();
