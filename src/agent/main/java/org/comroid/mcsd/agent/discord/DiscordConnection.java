@@ -27,7 +27,8 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Data
 public class DiscordConnection extends Container.Base {
-    public static final Pattern ChatPattern_Vanilla = Pattern.compile("INFO]:\\s<(?<username>[\\w-_]+)>\\s(?<message>.+)\\n"); //todo
+    public static final Pattern ChatPattern_Vanilla = Pattern.compile("INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\n"); //todo
+    public static final Pattern PlayerEvent_Vanilla = Pattern.compile("INFO]: (?<message>(?<username>[\\S\\w-_]+) (joined|left) the game)\\n"); //todo
     private final BiConsumer<MinecraftProfile, String> chatRelay;
     private final DiscordAdapter adapter;
     private final ServerProcess srv;
@@ -61,11 +62,12 @@ public class DiscordConnection extends Container.Base {
                                 msg.getContentStripped()))
                         .subscribeData(srv.getIn()::println)).stream(),
                 Stream.of(srv.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
-                                .mapData(ChatPattern_Vanilla::matcher)
-                                .filterData(Matcher::matches)
+                                .mapData(str -> Stream.of(ChatPattern_Vanilla, PlayerEvent_Vanilla)
+                                        .map(rgx->rgx.matcher(str))
+                                        .filter(Matcher::matches)
+                                        .findAny()
+                                        .orElse(null))
                                 .subscribeData(matcher -> {
-                                    if (!matcher.matches())
-                                        return;
                                     var username = matcher.group("username");
                                     var message = matcher.group("message");
                                     var profile = bean(MinecraftProfileRepo.class).get(username);
