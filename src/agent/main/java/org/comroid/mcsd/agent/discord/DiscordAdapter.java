@@ -104,7 +104,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         add += poll;
                     }
                     RestAction<Message> chain;
-                    if (channel.getLatestMessageIdLong() == msg.getIdLong()) {
+                    if (channel.getLatestMessageIdLong() == msg.getIdLong() && !msg.isPinned()) {
                         var content = raw + add;
                         chain = msg.editMessage(wrapContent(content));
                         if (!scroll && !hasSpace)
