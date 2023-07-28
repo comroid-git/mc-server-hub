@@ -2,6 +2,7 @@ package org.comroid.mcsd.core.repo;
 
 import jakarta.persistence.Table;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.web.client.RestTemplate;
 
@@ -11,6 +12,8 @@ import java.util.UUID;
 
 public interface MinecraftProfileRepo extends CrudRepository<MinecraftProfile, UUID> {
     Optional<MinecraftProfile> findByName(String name);
+
+    @Query("SELECT DISTINCT mc FROM MinecraftProfile mc JOIN User u WHERE u.discordId = :userId")
     Optional<MinecraftProfile> findByDiscordId(long userId);
 
     default MinecraftProfile get(String username) {

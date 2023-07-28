@@ -83,7 +83,6 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             return;
         if (getState() == State.Running)
             return;
-        final var servers = bean(ServerRepo.class);
         pushStatus(Status.Starting);
 
         var exec = PathUtil.findExec("java").orElseThrow();
