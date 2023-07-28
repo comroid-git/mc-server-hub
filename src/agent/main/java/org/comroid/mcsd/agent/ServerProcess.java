@@ -118,7 +118,9 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 "--exclude='./cache/**'",
                 "--exclude='./libraries/**'",
                 "--exclude='./versions/**'",
-                "-zcvf", "\"%s.tar.gz\"".formatted(Paths.get(server.shCon().orElseThrow().getBackupsDir(), server.getName())), "\".\""});
+                "-zcvf",
+                    "'"+Paths.get(server.shCon().orElseThrow().getBackupsDir(), server.getName(), "backup.tar.gz")+"'",
+                    "'.'"});
         tar.onExit().thenRun(() -> {
             in.println("save-on");
             backupRunning.set(false);
