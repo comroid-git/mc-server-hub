@@ -2,14 +2,21 @@ package org.comroid.mcsd.agent.discord;
 
 import lombok.Data;
 import lombok.SneakyThrows;
-import lombok.Synchronized;
+import lombok.Value;
+import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
+import net.dv8tion.jda.api.requests.RestAction;
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.requests.restaction.MessageEditAction;
+import net.dv8tion.jda.api.utils.MarkdownSanitizer;
+import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
@@ -19,15 +26,21 @@ import org.comroid.util.Ratelimit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static net.dv8tion.jda.api.entities.Message.MAX_CONTENT_LENGTH;
+
+@Log
 @Data
 public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener {
     private final JDA jda;
@@ -66,22 +79,37 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         if (channel == null)
             throw new NullPointerException("channel not found: " + id);
         return new PrintStream(new DelegateStream.Output(new Consumer<>() {
-            private static final int MaxLength = 2000;
-            private final AtomicInteger counter = new AtomicInteger(0);
-            private CompletableFuture<Message> msg = null;
+            public static final int MaxLength = MAX_CONTENT_LENGTH - 6;
+
+            private final AtomicReference<CompletableFuture<Message>> msg = new AtomicReference<>(newMsg(null).submit());
 
             @Override
             public void accept(final String txt) {
-                if (txt.isBlank())
-                    return;
-                if (msg == null || counter.get() + txt.length() >= MaxLength) {
-                    this.msg = channel.sendMessage(txt).submit();
-                    counter.set(txt.length() + 1);
-                } else msg = Ratelimit.run(txt, Duration.ofSeconds(2), msg, (msg, lines) -> {
-                    var content = msg.getContentRaw() + '\n' + String.join("", lines);
-                    counter.set(content.length());
-                    return msg.editMessage(content).submit();
-                }).exceptionally(Polyfill.exceptionLogger());
+                if (txt.isBlank()) return; //todo: this shouldn't be necessary
+                log.fine("accept('"+txt+"')");
+                Ratelimit.run(txt, Duration.ofSeconds(20), msg, (msg, queue) -> {
+                    log.fine("Current message:\n"+msg.getContentRaw());
+                    log.fine("Appending:\n\t- "+String.join("\n\t- ", queue));
+
+                    var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
+                    System.out.println("length of raw = " + raw);
+                    boolean hasSpace = false;
+                    while (!queue.isEmpty() && (hasSpace = (raw.length() + queue.peek().length() < MaxLength))) {
+                        var poll = queue.poll();
+                        raw += '\n'+ poll;
+                    }
+                    RestAction<Message> chain = msg.editMessage(MarkdownUtil.codeblock(raw));
+                    if (!hasSpace) chain = chain.flatMap($->newMsg(queue.poll()));
+                    return chain.submit();
+                });
+            }
+
+            private MessageCreateAction newMsg(@Nullable String content) {
+                return channel.sendMessage(Objects.requireNonNullElseGet(content,this::header));
+            }
+
+            private String header() {
+                return "New output session started at "+Date.from(Instant.now());
             }
         }));
     }
