@@ -44,6 +44,7 @@ public class Server extends AbstractEntity {
     private @Setter UUID owner;
     private @Setter UUID shConnection;
     private @Setter @Nullable UUID discordBot;
+    private @Nullable String PublicChannelWebhook;
     private @Nullable Long PublicChannelId;
     private @Nullable Long ModerationChannelId;
     private @Nullable Long ConsoleChannelId;

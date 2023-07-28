@@ -57,6 +57,7 @@ dependencies {
 
     // discord
     implementation 'net.dv8tion:JDA:5.+'
+    implementation 'club.minnced:discord-webhooks:0.+'
 
     // webjars
     implementation 'org.webjars:webjars-locator-core'

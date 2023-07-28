@@ -249,8 +249,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         return listenForOutput(pattern).listen().once();
     }
     public Event.Bus<String> listenForOutput(@Language("RegExp") String pattern) {
-        return filterData(Objects::nonNull)
-                .filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
+        return filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                 .filterData(str->str.matches(pattern));
     }
 

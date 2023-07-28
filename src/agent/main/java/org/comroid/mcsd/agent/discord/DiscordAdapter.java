@@ -1,41 +1,37 @@
 package org.comroid.mcsd.agent.discord;
 
+import club.minnced.discord.webhook.WebhookClient;
+import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import lombok.Data;
 import lombok.SneakyThrows;
-import lombok.Value;
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.Webhook;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.GenericEvent;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
-import net.dv8tion.jda.api.requests.restaction.MessageEditAction;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
-import org.comroid.api.Polyfill;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.util.Ratelimit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.StringWriter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -61,11 +57,20 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         publish(null, event);
     }
 
-    @Override
-    public void closeSelf() {
-        jda.shutdown();
+    public Optional<String> createWebhook(long channelId) {
+        return Optional.ofNullable(jda.getTextChannelById(channelId))
+                .map(chl -> chl.createWebhook("MCSD Chat Relay")
+                        .submit()
+                        .thenApply(Webhook::getUrl)
+                        .join());
     }
 
+    public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(final WebhookClient webhook) {
+        return (mc, txt) -> webhook.send(new WebhookMessageBuilder()
+                .setAvatarUrl(mc.getHeadURL())
+                .setUsername(mc.getName())
+                .build());
+    }
     public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(long id) {
         final var channel = jda.getTextChannelById(id);
         if (channel == null)
@@ -137,5 +142,10 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 return "New output session started at " + Date.from(Instant.now()) + '\n';
             }
         }));
+    }
+
+    @Override
+    public void closeSelf() {
+        jda.shutdown();
     }
 }
