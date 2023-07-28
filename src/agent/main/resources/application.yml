@@ -19,3 +19,4 @@ logging:
     cron: debug
     screen: warn
     org.comroid: debug
+    org.hibernate.SQL: info
