@@ -86,30 +86,33 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             @Override
             public void accept(final String txt) {
                 if (txt.isBlank()) return; //todo: this shouldn't be necessary
-                log.fine("accept('"+txt+"')");
-                Ratelimit.run(txt, Duration.ofSeconds(20), msg, (msg, queue) -> {
-                    log.fine("Current message:\n"+msg.getContentRaw());
-                    log.fine("Appending:\n\t- "+String.join("\n\t- ", queue));
-
+                log.finer("accept('" + txt + "')");
+                Ratelimit.run(txt, Duration.ofSeconds(2), msg, (msg, queue) -> {
                     var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
-                    System.out.println("length of raw = " + raw);
+                    log.fine("length of raw = " + raw.length());
                     boolean hasSpace = false;
                     while (!queue.isEmpty() && (hasSpace = (raw.length() + queue.peek().length() < MaxLength))) {
                         var poll = queue.poll();
-                        raw += '\n'+ poll;
+                        raw += '\n' + poll;
                     }
-                    RestAction<Message> chain = msg.editMessage(MarkdownUtil.codeblock(raw));
-                    if (!hasSpace) chain = chain.flatMap($->newMsg(queue.poll()));
+                    log.finer("editing to:\n" + raw);
+                    RestAction<Message> chain = msg.editMessage(wrapContent(raw));
+                    if (!hasSpace) chain = chain.flatMap($ -> newMsg(queue.poll()));
                     return chain.submit();
                 });
             }
 
             private MessageCreateAction newMsg(@Nullable String content) {
-                return channel.sendMessage(Objects.requireNonNullElseGet(content,this::header));
+                log.finer("new message with start content:\n" + content);
+                return channel.sendMessage(wrapContent(content));
+            }
+
+            private String wrapContent(@Nullable String content) {
+                return MarkdownUtil.codeblock(Objects.requireNonNullElseGet(content, this::header));
             }
 
             private String header() {
-                return "New output session started at "+Date.from(Instant.now());
+                return "New output session started at " + Date.from(Instant.now());
             }
         }));
     }
