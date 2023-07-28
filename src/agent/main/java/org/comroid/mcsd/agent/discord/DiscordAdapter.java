@@ -93,7 +93,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     boolean hasSpace = false;
                     while (!queue.isEmpty() && (hasSpace = (raw.length() + queue.peek().length() < MaxLength))) {
                         var poll = queue.poll();
-                        raw += '\n' + poll;
+                        raw += poll;
                     }
                     log.finer("editing to:\n" + raw);
                     RestAction<Message> chain = msg.editMessage(wrapContent(raw));
@@ -112,7 +112,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             }
 
             private String header() {
-                return "New output session started at " + Date.from(Instant.now());
+                return "New output session started at " + Date.from(Instant.now()) + '\n';
             }
         }));
     }
