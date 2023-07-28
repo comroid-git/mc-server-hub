@@ -7,6 +7,7 @@ import org.comroid.api.*;
 import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.core.repo.DiscordBotRepo;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintStream;
 import java.util.Objects;
@@ -31,7 +32,7 @@ public class DiscordConnection extends Container.Base {
         var server = srv.getServer();
 
         var consoleChannel = Optional.ofNullable(server.getConsoleChannelId());
-        Optional<PrintStream> consoleStream = consoleChannel.map(adapter::channelAsStream);
+        Optional<PrintStream> consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, srv.getServer().isLessConsoleSpam()));
         Polyfill.stream(
                 Optional.ofNullable(server.getPublicChannelId())
                         .map(adapter::minecraftChatTemplate)

@@ -76,7 +76,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .build()).queue();
     }
 
-    public PrintStream channelAsStream(long id) {
+    public PrintStream channelAsStream(final long id, final boolean scroll) {
         final var channel = jda.getTextChannelById(id);
         if (channel == null)
             throw new NullPointerException("channel not found: " + id);
@@ -89,19 +89,21 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             public void accept(final String txt) {
                 if (txt.isBlank()) return; //todo: this shouldn't be necessary
                 log.finer("accept('" + txt + "')");
-                Ratelimit.run(txt, Duration.ofSeconds(2), msg, (msg, queue) -> {
+                Ratelimit.run(txt, Duration.ofSeconds(scroll ? 3 : 1), msg, (msg, queue) -> {
                     var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
                     var add = "";
                     log.fine("length of raw = " + raw.length());
                     boolean hasSpace = false;
-                    while (!queue.isEmpty() && (hasSpace = (raw.length() + add.length() + queue.peek().length() < MaxLength))) {
+                    while (!queue.isEmpty() && (scroll || (hasSpace = (raw + add + queue.peek()).length() < MaxLength))) {
                         var poll = queue.poll();
-                        add += poll;
+                        add += Polyfill.concat(add,poll,"\n");
                     }
                     RestAction<Message> chain;
                     if (channel.getLatestMessageIdLong() == msg.getIdLong()) {
-                        chain = msg.editMessage(wrapContent(raw + add));
-                        if (!hasSpace) chain = chain.flatMap($ -> newMsg(queue.poll()));
+                        var content = raw + add;
+                        chain = msg.editMessage(wrapContent(content));
+                        if (!scroll && !hasSpace)
+                            chain = chain.flatMap($ -> newMsg(queue.poll()));
                     } else chain = newMsg(add);
                     return chain.submit();
                 });
@@ -113,7 +115,22 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             }
 
             private String wrapContent(@Nullable String content) {
-                return MarkdownUtil.codeblock(Objects.requireNonNullElseGet(content, this::header));
+                return MarkdownUtil.codeblock(Optional.ofNullable(content)
+                        .map(x -> scroll ? scroll(x) : x)
+                        .orElseGet(this::header));
+            }
+
+            private String scroll(String content) {
+                if (!scroll) return content;
+                var lines = content.split("\r?\n");
+                var rev = new ArrayList<String>();
+                var index = lines.length - 1;
+                int size = 0;
+                while (index >= 0 && (size = rev.stream().mapToInt(s -> s.length() + 1).sum() + lines[index].length()) < MaxLength)
+                    rev.add(lines[index--]);
+                log.fine("size after scroll = " + (index < 0 ? size : (size - lines[index].length())));
+                Collections.reverse(rev);
+                return String.join("\r\n", rev)+"\r\n";
             }
 
             private String header() {

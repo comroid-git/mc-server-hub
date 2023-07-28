@@ -47,6 +47,7 @@ public class Server extends AbstractEntity {
     private @Nullable Long PublicChannelId;
     private @Nullable Long ModerationChannelId;
     private @Nullable Long ConsoleChannelId;
+    private @Setter boolean LessConsoleSpam = true;
     private @Setter String name;
     private @Setter String mcVersion = "1.19.4";
     private @Setter String host;
