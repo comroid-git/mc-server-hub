@@ -9,6 +9,7 @@ import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.agent.controller.ConsoleController;
 import org.comroid.mcsd.agent.discord.DiscordAdapter;
+import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.Server;
@@ -216,6 +217,7 @@ public class AgentRunner implements Command.Handler {
     @PreDestroy
     public void close() {
         CompletableFuture.allOf(processes.values().stream()
+                        .peek(proc -> proc.pushStatus(Status.Offline))
                         .map(proc -> proc.shutdown("Host shutdown", 5))
                         .toArray(CompletableFuture[]::new))
                 .join();
