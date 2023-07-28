@@ -1,5 +1,6 @@
 package org.comroid.mcsd.core.util;
 
+import org.comroid.api.Polyfill;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -18,12 +19,12 @@ public class ApplicationContextProvider implements ApplicationContextAware {
         return applicationContext;
     }
 
-    public static <T> T bean(Class<T> type) {
+    public static <T, R extends T> R bean(Class<T> type) {
         return bean(type, null);
     }
 
-    public static <T> T bean(Class<T> type, String name) {
-        return name == null ? get().getBean(type) : get().getBean(name, type);
+    public static <T, R extends T> R bean(Class<T> type, String name) {
+        return Polyfill.uncheckedCast(name == null ? get().getBean(type) : get().getBean(name, type));
     }
 
     @Override

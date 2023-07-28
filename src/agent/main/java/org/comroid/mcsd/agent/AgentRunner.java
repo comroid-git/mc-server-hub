@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
+import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.agent.controller.ConsoleController;
 import org.comroid.mcsd.agent.discord.DiscordAdapter;
@@ -38,6 +39,8 @@ public class AgentRunner implements Command.Handler {
     public final PrintStream err;
     public final Command.Manager cmd;
     public ServerProcess attached;
+    @Autowired
+    public Event.Bus<Object> eventBus;
     @Lazy @Autowired
     private ServerRepo servers;
     @Lazy @Autowired

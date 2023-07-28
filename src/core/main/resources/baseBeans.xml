@@ -4,4 +4,7 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="org.comroid.mcsd.core.util.ApplicationContextProvider" lazy-init="false"/>
     <bean class="org.springframework.core.io.DefaultResourceLoader"/>
+    <bean class="org.comroid.api.Event.Bus" primary="true">
+        <qualifier value="eventBus" />
+    </bean>
 </beans>

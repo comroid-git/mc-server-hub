@@ -1,6 +1,8 @@
 package org.comroid.mcsd.agent.discord;
 
 import club.minnced.discord.webhook.WebhookClient;
+import club.minnced.discord.webhook.send.WebhookEmbed;
+import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -11,7 +13,6 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Webhook;
-import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -21,6 +22,7 @@ import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
+import org.comroid.api.N;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.util.Ratelimit;
@@ -71,14 +73,33 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .setUsername(mc.getName())
                 .build());
     }
-    public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(long id) {
-        final var channel = jda.getTextChannelById(id);
+    public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(long channelId) {
+        final var channel = jda.getTextChannelById(channelId);
         if (channel == null)
-            throw new NullPointerException("channel not found: " + id);
-        return (mc, txt) -> channel.sendMessageEmbeds(new EmbedBuilder()
-                .setAuthor(mc.getName(), mc.getNameMcURL(), mc.getHeadURL())
+            throw new NullPointerException("channel not found: " + channelId);
+        return (mc, txt) -> channel.sendMessageEmbeds(embed(mc)
                 .setDescription(txt)
                 .build()).queue();
+    }
+
+    public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(final WebhookClient webhook) {
+        return (embed,mc) -> webhook.send(WebhookEmbedBuilder.fromJDA(embed(embed,mc).build()).build());
+    }
+    public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(long channelId) {
+        final var channel = jda.getTextChannelById(channelId);
+        if (channel == null)
+            throw new NullPointerException("channel not found: " + channelId);
+        return (embed,mc) -> channel.sendMessageEmbeds(embed(embed,mc).build()).queue();
+    }
+
+    private EmbedBuilder embed(@Nullable MinecraftProfile mc) {
+        return embed(new EmbedBuilder(), mc);
+    }
+
+    private EmbedBuilder embed(@NotNull EmbedBuilder builder, @Nullable MinecraftProfile mc) {
+        if (mc != null)
+            builder = builder.setAuthor(mc.getName(), mc.getNameMcURL(), mc.getHeadURL());
+        return builder;
     }
 
     public PrintStream channelAsStream(final long id, final boolean scroll) {
@@ -104,7 +125,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         add += poll;
                     }
                     RestAction<Message> chain;
-                    if (channel.getLatestMessageIdLong() == msg.getIdLong() && !msg.isPinned()) {
+                    if (channel.getLatestMessageIdLong() == msg.getIdLong() && msg.isPinned()) {
                         var content = raw + add;
                         chain = msg.editMessage(wrapContent(content));
                         if (!scroll && !hasSpace)

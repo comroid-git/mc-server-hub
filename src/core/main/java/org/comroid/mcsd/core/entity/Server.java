@@ -8,6 +8,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
+import org.comroid.api.Event;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
@@ -67,9 +68,15 @@ public class Server extends AbstractEntity {
     private @Setter Duration updatePeriod = Duration.ofDays(7);
     private @Setter Instant lastBackup = Instant.ofEpochMilli(0);
     private @Setter Instant lastUpdate = Instant.ofEpochMilli(0);
-    private @Setter @Basic(fetch = FetchType.EAGER) Status status = Status.Unknown;
+    private @Basic(fetch = FetchType.EAGER) Status status = Status.Unknown;
     @JsonIgnore @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
+
+    public Server setStatus(Status status) {
+        this.status = status;
+        bean(Event.Bus.class, "eventBus").publish(getId().toString(), status);
+        return this;
+    }
 
     @JsonIgnore
     public ServerConnection con() {

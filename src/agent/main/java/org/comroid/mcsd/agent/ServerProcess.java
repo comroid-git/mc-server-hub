@@ -229,10 +229,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             process.destroy();
         }
 
-        /*
-            var kill = Runtime.getRuntime().exec(new String[]{"kill", "-2", String.valueOf(process.pid())});
-            kill.waitFor();
-         */
+        runner.eventBus.publish(getServer().getId().toString(), Status.Offline);
     }
 
     @Override
