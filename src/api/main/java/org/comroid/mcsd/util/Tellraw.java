@@ -8,6 +8,7 @@ import org.comroid.util.JSON;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -91,25 +92,33 @@ public interface Tellraw {
         @Nullable Event clickEvent;
         @Nullable Event hoverEvent;
 
+        public JSON.Object json() {
+            var json = new JSON.Object();
+            if (text!=null)json.set("text", text);
+            if (format!=null) for (var code : format) {
+                if (code.isFormat())
+                    json.set(code.name().toLowerCase(), true);
+                else if (code.isColor())
+                    json.set("color", code.name().toLowerCase());
+                else if (code.isReset()) {
+                    for (var format : McFormatCode.FORMATS)
+                        json.set(format.name().toLowerCase(), false);
+                    json.set("color", McFormatCode.White.name().toLowerCase());
+                }
+            }
+            if (clickEvent!=null)json.put("clickEvent", clickEvent.json());
+            if (hoverEvent!=null)json.put("hoverEvent", hoverEvent.json());
+            return json;
+        }
+
         @Override
         @SneakyThrows
         public String toString() {
-            var node = new JSON.Object();
-            if (text!=null)node.set("text", text);
-            if (format!=null) for (var code : format) {
-                if (code.isFormat())
-                    node.set(code.name().toLowerCase(), true);
-                else if (code.isColor())
-                    node.set("color", code.name().toLowerCase());
-                else if (code.isReset()) {
-                    for (var format : McFormatCode.FORMATS)
-                        node.set(format.name().toLowerCase(), false);
-                    node.set("color", McFormatCode.White.name().toLowerCase());
-                }
-            }
-            if (clickEvent!=null)node.put("clickEvent", clickEvent.json());
-            if (hoverEvent!=null)node.put("hoverEvent", hoverEvent.json());
-            return node.toString();
+            return json().toString();
+        }
+
+        public String toFullString() {
+            return "[%s]".formatted(toString());
         }
     }
 
@@ -122,10 +131,14 @@ public interface Tellraw {
         @NotNull String value;
 
         public JSON.Object json() {
-            var node = new JSON.Object();
-            node.set("action", action.name());
-            node.set("value", value);
-            return node;
+            var json = new JSON.Object();
+            json.set("action", action.name());
+            if (action != Action.show_text)
+                json.set("value", value);
+            else json.set("contents", Arrays.stream(value.split("\n"))
+                    .map(DataNode.Value::new)
+                    .collect(Collectors.toCollection(JSON.Array::new)));
+            return json;
         }
 
         @Override
@@ -134,6 +147,7 @@ public interface Tellraw {
             return json().toString();
         }
 
+        @SuppressWarnings("unused")
         public enum Action implements Named {
             open_url,
             run_command,
@@ -142,7 +156,11 @@ public interface Tellraw {
 
             show_text,
             show_item,
-            show_entity
+            show_entity;
+
+            public Event value(String value) {
+                return new Event(this, value);
+            }
         }
     }
 }

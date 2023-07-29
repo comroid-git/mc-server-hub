@@ -1,10 +1,8 @@
 package org.comroid.mcsd.agent.discord;
 
 import club.minnced.discord.webhook.WebhookClientBuilder;
-import io.graversen.minecraft.rcon.commands.tellraw.TellRawCommandBuilder;
-import io.graversen.minecraft.rcon.util.Colors;
-import io.graversen.minecraft.rcon.util.Selectors;
 import lombok.Data;
+import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
@@ -15,16 +13,13 @@ import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
-import org.comroid.mcsd.core.repo.DiscordBotRepo;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
-import org.comroid.util.StateEngine;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -34,6 +29,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 import static org.comroid.mcsd.util.McFormatCode.*;
 import static org.comroid.mcsd.util.McFormatCode.Dark_Aqua;
 
+@Log
 @Data
 public class DiscordConnection extends Container.Base {
     private final BiConsumer<@Nullable MinecraftProfile, @Nullable String> chatTemplate;
@@ -88,11 +84,15 @@ public class DiscordConnection extends Container.Base {
                         .mapData(msg -> Tellraw.Command.builder()
                                 .selector(Tellraw.Selector.Base.ALL_PLAYERS)
                                 .component(Gray.text("<").build())
-                                .component(Dark_Aqua.text(msg.getAuthor().getEffectiveName()).build())
+                                .component(Dark_Aqua.text(msg.getAuthor().getEffectiveName())
+                                        .hoverEvent(Tellraw.Event.Action.show_text.value("Open in Discord"))
+                                        .clickEvent(Tellraw.Event.Action.open_url.value(msg.getJumpUrl()))
+                                        .build())
                                 .component(Gray.text(">").build())
                                 .component(Reset.text(" "+msg.getContentStripped()).build())
                                 .build()
                                 .toString())
+                        .peekData(log::fine)
                         .subscribeData(srv.getIn()::println)).stream(),
                 // minecraft -> public channel
                 Stream.of(srv.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
