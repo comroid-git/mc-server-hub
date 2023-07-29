@@ -1,6 +1,9 @@
 package org.comroid.mcsd.agent.discord;
 
 import club.minnced.discord.webhook.WebhookClientBuilder;
+import io.graversen.minecraft.rcon.commands.tellraw.TellRawCommandBuilder;
+import io.graversen.minecraft.rcon.util.Colors;
+import io.graversen.minecraft.rcon.util.Selectors;
 import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -15,6 +18,8 @@ import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.repo.DiscordBotRepo;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.util.McFormatCode;
+import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.StateEngine;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,9 +84,17 @@ public class DiscordConnection extends Container.Base {
                         .filterData(e -> e.getChannel().getIdLong() == id)
                         .mapData(MessageReceivedEvent::getMessage)
                         .filterData(msg -> !msg.getAuthor().isBot())
-                        .mapData(msg -> "tellraw @p [{\"text\":\"<%s>\",\"color\":\"dark_aqua\"},\" %s\"]".formatted(
-                                msg.getAuthor().getEffectiveName(),
-                                msg.getContentStripped()))
+                        .mapData(msg -> Tellraw.Command.builder()
+                                .selector(Tellraw.Selector.Base.ALL_ENTITIES)
+                                .component(Tellraw.Component.builder()
+                                        .format(McFormatCode.Dark_Aqua)
+                                        .text("<"+msg.getAuthor().getEffectiveName()+">")
+                                        .build())
+                                .component(Tellraw.Component.builder()
+                                        .text(" "+msg.getContentStripped())
+                                        .build())
+                                .build()
+                                .toString())
                         .subscribeData(srv.getIn()::println)).stream(),
                 // minecraft -> public channel
                 Stream.of(srv.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))

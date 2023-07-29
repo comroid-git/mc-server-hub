@@ -23,7 +23,7 @@ repositories {
 
 dependencies {
     // json
-    api 'com.fasterxml.jackson.core:jackson-databind:2.+'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.15.+'
 
     // jpa
     implementation 'jakarta.persistence:jakarta.persistence-api:2.+'

@@ -30,6 +30,9 @@ dependencies {
         implementation project(':japi')
     else implementation 'org.comroid:api:+'
 
+    // json
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.+'
+
     // db
     implementation 'com.mysql:mysql-connector-j'
 
