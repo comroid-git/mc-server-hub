@@ -19,7 +19,6 @@ import org.comroid.mcsd.util.Tellraw;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -98,7 +97,7 @@ public class DiscordConnection extends Container.Base {
                         .subscribeData(srv.getIn()::println)).stream(),
                 // minecraft -> public channel
                 Stream.of(srv.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
-                        .mapData(str -> Stream.of(ServerProcess.ChatPattern_Vanilla, ServerProcess.PlayerEvent_Vanilla)
+                        .mapData(str -> Stream.of(ServerProcess.ChatPattern_Vanilla, ServerProcess.PlayerEventPattern_Vanilla)
                                 .map(rgx -> rgx.matcher(str))
                                 .filter(Matcher::matches)
                                 .findAny()

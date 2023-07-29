@@ -35,9 +35,11 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @RequiredArgsConstructor
 public class ServerProcess extends Event.Bus<String> implements Startable {
-    public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?"); //todo
-    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\r?\\n?.*"); //todo
-    public static final Pattern PlayerEvent_Vanilla = Pattern.compile(".*INFO]: (?<message>(?<username>[\\S\\w-_]+) (joined|left) the game)\\r?\\n?.*"); //todo
+    // todo: improve these
+    public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
+    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\r?\\n?.*");
+    public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
+            ".*INFO]: (?<message>(?<username>[\\S\\w-_]+) (((joined|left) the game)|(has made the advancement (\\[(?<advancement>[\\w\\s]+)]))))\\r?\\n?");
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AgentRunner runner;
