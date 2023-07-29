@@ -8,7 +8,6 @@ let user;
 let agent;
 
 function connect() {
-    writeLine('Connecting...')
     let socket = new SockJS('/console');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function () {
@@ -29,7 +28,6 @@ function disconnect() {
         subscriptionOutput.unsubscribe();
         stompClient.disconnect();
     }
-    writeLine("Disconnected")
 }
 
 function handleHandshake() {
@@ -93,6 +91,7 @@ async function runBackup(id) {
 }
 
 async function load() {
+    writeLine('Connecting...')
     let app = await (await fetch('/api/webapp')).json();
     user = app.user;
     agent = app.agent;
@@ -112,4 +111,5 @@ async function load() {
 
 function unload() {
     disconnect();
+    writeLine("Disconnected")
 }
