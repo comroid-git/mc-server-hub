@@ -1,9 +1,10 @@
 package org.comroid.mcsd.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
+import org.comroid.abstr.DataNode;
 import org.comroid.api.Named;
 import org.comroid.api.Vector;
+import org.comroid.util.JSON;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,8 +13,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public interface Tellraw {
-    ObjectMapper Parser = new ObjectMapper();
-
     @With
     @Value
     @Builder
@@ -95,21 +94,21 @@ public interface Tellraw {
         @Override
         @SneakyThrows
         public String toString() {
-            var node = Parser.createObjectNode();
-            if (text!=null)node.put("text", text);
+            var node = new JSON.Object();
+            if (text!=null)node.set("text", text);
             if (format!=null) for (var code : format) {
                 if (code.isFormat())
-                    node.put(code.name().toLowerCase(), true);
+                    node.set(code.name().toLowerCase(), true);
                 else if (code.isColor())
-                    node.put("color", code.name().toLowerCase());
+                    node.set("color", code.name().toLowerCase());
                 else if (code.isReset()) {
                     for (var format : McFormatCode.FORMATS)
-                        node.put(format.name().toLowerCase(), false);
-                    node.put("color", McFormatCode.White.name().toLowerCase());
+                        node.set(format.name().toLowerCase(), false);
+                    node.set("color", McFormatCode.White.name().toLowerCase());
                 }
             }
-            if (clickEvent!=null)node.set("clickEvent", Parser.valueToTree(clickEvent));
-            if (hoverEvent!=null)node.set("hoverEvent", Parser.valueToTree(hoverEvent));
+            if (clickEvent!=null)node.put("clickEvent", clickEvent.json());
+            if (hoverEvent!=null)node.put("hoverEvent", hoverEvent.json());
             return node.toString();
         }
     }
@@ -122,10 +121,17 @@ public interface Tellraw {
         @NotNull Action action;
         @NotNull String value;
 
+        public JSON.Object json() {
+            var node = new JSON.Object();
+            node.set("action", action.name());
+            node.set("value", value);
+            return node;
+        }
+
         @Override
         @SneakyThrows
         public String toString() {
-            return Parser.writeValueAsString(this);
+            return json().toString();
         }
 
         public enum Action implements Named {
