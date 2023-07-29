@@ -31,6 +31,8 @@ import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
+import static org.comroid.mcsd.util.McFormatCode.*;
+import static org.comroid.mcsd.util.McFormatCode.Dark_Aqua;
 
 @Data
 public class DiscordConnection extends Container.Base {
@@ -85,14 +87,11 @@ public class DiscordConnection extends Container.Base {
                         .mapData(MessageReceivedEvent::getMessage)
                         .filterData(msg -> !msg.getAuthor().isBot())
                         .mapData(msg -> Tellraw.Command.builder()
-                                .selector(Tellraw.Selector.Base.ALL_ENTITIES)
-                                .component(Tellraw.Component.builder()
-                                        .format(McFormatCode.Dark_Aqua)
-                                        .text("<"+msg.getAuthor().getEffectiveName()+">")
-                                        .build())
-                                .component(Tellraw.Component.builder()
-                                        .text(" "+msg.getContentStripped())
-                                        .build())
+                                .selector(Tellraw.Selector.Base.ALL_PLAYERS)
+                                .component(Gray.text("<").build())
+                                .component(Dark_Aqua.text(msg.getAuthor().getEffectiveName()).build())
+                                .component(Gray.text(">").build())
+                                .component(Reset.text(" "+msg.getContentStripped()).build())
                                 .build()
                                 .toString())
                         .subscribeData(srv.getIn()::println)).stream(),

@@ -5,6 +5,9 @@ import org.comroid.api.Named;
 import org.comroid.api.TextDecoration;
 
 import java.awt.*;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public enum McFormatCode implements TextDecoration, Named {
     Black('0', 0x000000),
@@ -32,6 +35,13 @@ public enum McFormatCode implements TextDecoration, Named {
 
     Reset('r');
 
+    public static final Set<McFormatCode> FORMATS = Arrays.stream(values())
+            .filter(McFormatCode::isFormat)
+            .collect(Collectors.toUnmodifiableSet());
+    public static final Set<McFormatCode> COLORS = Arrays.stream(values())
+            .filter(McFormatCode::isColor)
+            .collect(Collectors.toUnmodifiableSet());
+
     private @Getter
     final String code;
     private @Getter
@@ -56,6 +66,12 @@ public enum McFormatCode implements TextDecoration, Named {
     McFormatCode(char ident, int hex) {
         this.code = "§" + ident;
         this.hex = hex;
+    }
+
+    public Tellraw.Component.Builder text(String text) {
+        return Tellraw.Component.builder()
+                .text(text)
+                .format(this);
     }
 
     public Color getColor() {

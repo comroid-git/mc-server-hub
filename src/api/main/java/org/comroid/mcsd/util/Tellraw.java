@@ -102,6 +102,11 @@ public interface Tellraw {
                     node.put(code.name().toLowerCase(), true);
                 else if (code.isColor())
                     node.put("color", code.name().toLowerCase());
+                else if (code.isReset()) {
+                    for (var format : McFormatCode.FORMATS)
+                        node.put(format.name().toLowerCase(), false);
+                    node.put("color", McFormatCode.White.name().toLowerCase());
+                }
             }
             if (clickEvent!=null)node.set("clickEvent", Parser.valueToTree(clickEvent));
             if (hoverEvent!=null)node.set("hoverEvent", Parser.valueToTree(hoverEvent));
