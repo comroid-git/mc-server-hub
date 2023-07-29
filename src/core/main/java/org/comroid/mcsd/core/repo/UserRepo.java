@@ -20,10 +20,10 @@ public interface UserRepo extends CrudRepository<User, UUID> {
     @Query("SELECT DISTINCT u FROM User u WHERE u.discordId = :id")
     Optional<User> findByDiscordId(long id);
 
-    @Query("SELECT DISTINCT u FROM User u WHERE u.minecraftId = :id")
-    Optional<User> findByMinecraftId(long id);
+    @Query("SELECT DISTINCT u FROM User u WHERE u.minecraft.id = :id")
+    Optional<User> findByMinecraftId(UUID id);
 
-    @Query("SELECT DISTINCT u FROM User u JOIN MinecraftProfile mc WHERE mc.name = :username")
+    @Query("SELECT DISTINCT u FROM User u WHERE u.minecraft.name = :username")
     Optional<User> findByMinecraftName(String username);
 
     default User findBySession(HttpSession session) {

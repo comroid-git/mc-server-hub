@@ -1,9 +1,6 @@
 package org.comroid.mcsd.core.entity;
 
-import jakarta.persistence.Basic;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -19,11 +16,10 @@ import java.util.UUID;
 @Entity
 @Table(name = "user")
 public class User extends AbstractEntity {
-    @Basic
     private String name;
     private boolean guest;
     private int permissions;
-    private @Nullable UUID minecraftId;
+    private @ManyToOne @Nullable MinecraftProfile minecraft;
     private @Nullable Long discordId;
 
     public boolean canManageServers() {

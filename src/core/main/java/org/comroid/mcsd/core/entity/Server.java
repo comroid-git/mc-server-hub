@@ -16,6 +16,7 @@ import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.model.ServerConnection;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.hibernate.annotations.ManyToAny;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,9 +44,9 @@ public class Server extends AbstractEntity {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
-    private @Setter UUID owner;
-    private @Setter UUID shConnection;
-    private @Setter @Nullable UUID discordBot;
+    private @ManyToOne User owner;
+    private @ManyToOne ShConnection shConnection;
+    private @ManyToOne @Nullable DiscordBot discordBot;
     private @Setter @Nullable String PublicChannelWebhook;
     private @Setter @Nullable Long PublicChannelId;
     private @Setter @Nullable Long ModerationChannelId;
@@ -60,6 +61,7 @@ public class Server extends AbstractEntity {
     private @Setter byte ramGB = 4;
     private @Setter boolean enabled = false;
     private @Setter boolean managed = false;
+    private @Setter boolean whitelist = false;
     private @Setter boolean maintenance = false;
     private @Setter int maxPlayers = 20;
     private @Setter int queryPort = 25565;
@@ -287,7 +289,7 @@ public class Server extends AbstractEntity {
     }
 
     public Optional<ShConnection> shCon() {
-        return bean(ShRepo.class).findById(shConnection);
+        return Optional.ofNullable(shConnection);
     }
 
     public enum Mode implements IntegerAttribute {

@@ -1,9 +1,6 @@
 package org.comroid.mcsd.core.entity;
 
-import jakarta.persistence.Basic;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -18,8 +15,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "sh_connection")
 public class ShConnection extends AbstractEntity {
-    @Basic
-    private UUID owner;
+    private @ManyToOne User owner;
     private String host;
     private int port = 22;
     private String username;

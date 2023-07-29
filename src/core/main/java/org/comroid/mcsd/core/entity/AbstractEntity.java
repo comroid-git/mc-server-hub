@@ -15,6 +15,7 @@ import java.util.UUID;
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class AbstractEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Convert(converter = MinecraftProfile.UuidConverter.class)
     @JsonDeserialize(converter = MinecraftProfile.UuidConverter.class)
     private UUID id = UUID.randomUUID();

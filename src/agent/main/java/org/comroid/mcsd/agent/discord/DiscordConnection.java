@@ -45,8 +45,7 @@ public class DiscordConnection extends Container.Base {
         final var server = srv.getServer();
 
         this.srv = srv;
-        this.adapter = bean(DiscordBotRepo.class)
-                .findById(Objects.requireNonNull(srv.getServer().getDiscordBot()))
+        this.adapter = Optional.ofNullable(srv.getServer().getDiscordBot())
                 .map(srv.getRunner()::adapter)
                 .orElseThrow();
 
