@@ -210,7 +210,7 @@ public class Server extends AbstractEntity {
 
         prop.setProperty("server-port", String.valueOf(getPort()));
         prop.setProperty("max-players", String.valueOf(getMaxPlayers()));
-        prop.setProperty("white-list", String.valueOf(isMaintenance()));
+        prop.setProperty("white-list", String.valueOf(isWhitelist() || isMaintenance()));
 
         // query
         prop.setProperty("enable-query", String.valueOf(false));
