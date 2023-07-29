@@ -90,13 +90,18 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 new String[0],
                 new FileHandle(server.getDirectory(), true));
         in = new PrintStream(process.getOutputStream(), true);
+        final var redir = new DelegateStream.IO(
+                new DelegateStream.Input(this, DelegateStream.EndlMode.OnDelegate, DelegateStream.IO.EventKey_Output),
+                new DelegateStream.Output(this, DelegateStream.Capability.Output),
+                new DelegateStream.Output(this, DelegateStream.Capability.Error));
         oe = new DelegateStream.IO(DelegateStream.Capability.Output, DelegateStream.Capability.Error)
-                .redirectToEventBus(this, DelegateStream.IO.EventKey_Output);
+                .redirect(redir);
+        onClose().thenRunAsync(redir::detach);
+
         var executor = Executors.newFixedThreadPool(2);
         addChildren(
                 DelegateStream.redirect(process.getInputStream(),oe.getOutput(), executor),
                 DelegateStream.redirect(process.getErrorStream(),oe.getError(), executor));
-        closed = false;
 
         var botConId = server.getDiscordBot();
         if (botConId != null)
