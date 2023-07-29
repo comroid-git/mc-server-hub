@@ -13,6 +13,7 @@ import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
+import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.util.Tellraw;
@@ -124,7 +125,8 @@ public class DiscordConnection extends Container.Base {
                             .filterData(msg -> !msg.getAuthor().isBot())
                             .mapData(msg -> {
                                 var raw = msg.getContentRaw();
-                                if (!msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                if (server.getConsoleMode() == Server.ConsoleMode.ScrollClean
+                                        && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
                                     msg.delete().queue();
                                 return raw;
                             })

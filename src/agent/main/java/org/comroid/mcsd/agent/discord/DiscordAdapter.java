@@ -190,7 +190,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
             private String wrapContent(@Nullable String content) {
                 return MarkdownUtil.codeblock(Optional.ofNullable(content)
-                        .map(x -> scroll ? scroll(x) : x)
+                        .map(this::scroll)
                         .orElseGet(this::header));
             }
 
