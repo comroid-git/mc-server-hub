@@ -129,8 +129,16 @@ public class MinecraftServerHubAgent {
         cronLog.log(Level.FINER, "Watchdog finished");
     }
 
+    @SneakyThrows
     @Synchronized
     private void $cronBackup() {
+        try (var url = new URL("https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/global.json").openStream();
+             var json = new JSON.Deserializer(url)) {
+            if (!json.readObject().get("backups").asBoolean()) {
+                cronLog.info("Not running Backup job because it is globally disabled");
+                return;
+            }
+        } catch (Throwable ignored) {}
         cronLog.log(Level.FINE, "Running Backup Queue");
         agentRunner.streamServers()
                 .filter(Server::isManaged)
@@ -143,8 +151,16 @@ public class MinecraftServerHubAgent {
         cronLog.log(Level.INFO, "Backup Queue finished");
     }
 
+    @SneakyThrows
     @Synchronized
     private void $cronUpdate() {
+        try (var url = new URL("https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/global.json").openStream();
+             var json = new JSON.Deserializer(url)) {
+            if (!json.readObject().get("updates").asBoolean()) {
+                cronLog.info("Not running Update job because it is globally disabled");
+                return;
+            }
+        } catch (Throwable ignored) {}
         cronLog.log(Level.FINE, "Running Update Queue");
         agentRunner.streamServers()
                 .filter(Server::isManaged)
