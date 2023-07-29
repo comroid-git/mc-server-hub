@@ -28,6 +28,8 @@ import java.util.stream.Stream;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 import static org.comroid.mcsd.util.McFormatCode.*;
 import static org.comroid.mcsd.util.McFormatCode.Dark_Aqua;
+import static org.comroid.mcsd.util.Tellraw.Event.Action.*;
+import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 
 @Log
 @Data
@@ -85,8 +87,8 @@ public class DiscordConnection extends Container.Base {
                                 .selector(Tellraw.Selector.Base.ALL_PLAYERS)
                                 .component(Gray.text("<").build())
                                 .component(Dark_Aqua.text(msg.getAuthor().getEffectiveName())
-                                        .hoverEvent(Tellraw.Event.Action.show_text.value("Open in Discord"))
-                                        .clickEvent(Tellraw.Event.Action.open_url.value(msg.getJumpUrl()))
+                                        .hoverEvent(show_text.value("Open in Discord"))
+                                        .clickEvent(open_url.value(msg.getJumpUrl()))
                                         .build())
                                 .component(Gray.text(">").build())
                                 .component(Reset.text(" "+msg.getContentStripped()).build())
