@@ -90,7 +90,7 @@ public class DiscordConnection extends Container.Base {
                                         .clickEvent(open_url.value(msg.getJumpUrl()))
                                         .build())
                                 .component(Gray.text(">").build())
-                                .component(Reset.text(" "+msg.getContentStripped()).build())
+                                .component(Reset.text(" " + msg.getContentStripped()).build())
                                 .build()
                                 .toString())
                         .peekData(log::fine)
@@ -106,7 +106,7 @@ public class DiscordConnection extends Container.Base {
                             var username = matcher.group("username");
                             var message = matcher.group("message");
                             if (matcher.groupCount() == 2)
-                                bean(Event.Bus.class,"eventBus").publish("chat", new ChatMessage(username, message));
+                                bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
                             else message = MarkdownUtil.quote(message);
                             var profile = bean(MinecraftProfileRepo.class).get(username);
                             chatTemplate.accept(profile, message);
@@ -115,24 +115,27 @@ public class DiscordConnection extends Container.Base {
                 //todo: moderation channel
 
                 // console channel -> console
-                consoleChannel.map(id -> adapter
-                        .flatMap(MessageReceivedEvent.class)
-                        .filterData(e -> e.getChannel().getIdLong() == id)
-                        .mapData(MessageReceivedEvent::getMessage)
-                        .filterData(msg -> !msg.getAuthor().isBot())
-                        .mapData(msg -> {
-                            var raw = msg.getContentRaw();
-                            if (!msg.getAuthor().equals(adapter.getJda().getSelfUser()))
-                                msg.delete().queue();
-                            return raw;
-                        })
-                        .filterData(cmd -> cmd.startsWith(">"))
-                        .peekData(cmd -> consoleStream.ifPresent(out -> out.println(cmd)))
-                        .mapData(cmd -> cmd.substring(1))
-                        .subscribeData(srv.getIn()::println)).stream(),
+                consoleStream.map(out -> {
+                    onClose().thenRunAsync(() -> out.println("Agent shutting down"));
+                    return consoleChannel.map(id -> adapter
+                            .flatMap(MessageReceivedEvent.class)
+                            .filterData(e -> e.getChannel().getIdLong() == id)
+                            .mapData(MessageReceivedEvent::getMessage)
+                            .filterData(msg -> !msg.getAuthor().isBot())
+                            .mapData(msg -> {
+                                var raw = msg.getContentRaw();
+                                if (!msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                    msg.delete().queue();
+                                return raw;
+                            })
+                            .filterData(cmd -> cmd.startsWith(">"))
+                            .peekData(out::println)
+                            .mapData(cmd -> cmd.substring(1))
+                            .subscribeData(srv.getIn()::println));
+                }).stream(),
                 // console -> console channel
                 consoleStream.map(target -> srv.getOe()
-                        .rewireOE(oe->oe.filter($->server.getLastStatus().getAsInt()>Status.Starting.getAsInt()))
+                        .rewireOE(oe -> oe.filter($ -> server.getLastStatus().getAsInt() > Status.Starting.getAsInt()))
                         .redirect(target, target)).stream()
         ).forEach(this::addChildren);
     }
