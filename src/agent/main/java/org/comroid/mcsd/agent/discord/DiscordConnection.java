@@ -79,7 +79,7 @@ public class DiscordConnection extends Container.Base {
                         .filterData(e -> e.getChannel().getIdLong() == id)
                         .mapData(MessageReceivedEvent::getMessage)
                         .filterData(msg -> !msg.getAuthor().isBot())
-                        .mapData(msg -> "tell @a §6<%s>§r %s".formatted(
+                        .mapData(msg -> "tellraw @p [{\"text\":\"<%s>\",\"color\":\"dark_aqua\"},\" %s\"]".formatted(
                                 msg.getAuthor().getEffectiveName(),
                                 msg.getContentStripped()))
                         .subscribeData(srv.getIn()::println)).stream(),
