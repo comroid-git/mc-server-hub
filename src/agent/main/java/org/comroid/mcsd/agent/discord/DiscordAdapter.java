@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.comroid.api.DelegateStream;
@@ -30,7 +31,10 @@ import org.comroid.util.Ratelimit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -211,6 +215,13 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 return "New output session started at " + Date.from(Instant.now()) + '\n';
             }
         }));
+    }
+
+    public void uploadFile(long id, InputStream source, String name, String message) {
+        Objects.requireNonNull(jda.getTextChannelById(id))
+                .sendFiles(FileUpload.fromData(source, name))
+                .setContent(message)
+                .queue();
     }
 
     @Override
