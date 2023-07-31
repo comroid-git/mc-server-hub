@@ -122,7 +122,12 @@ public class DiscordConnection extends Container.Base {
                             var message = matcher.group("message");
                             if (matcher.groupCount() == 2)
                                 bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
-                            else message = MarkdownUtil.quote(message);
+                            else {
+                                var c = message.charAt(0);
+                                message = message.substring(1);
+                                message = Character.toUpperCase(c) + message;
+                                message = MarkdownUtil.quote(message);
+                            }
                             var profile = bean(MinecraftProfileRepo.class).get(username);
                             chatTemplate.accept(profile, message);
                         })),

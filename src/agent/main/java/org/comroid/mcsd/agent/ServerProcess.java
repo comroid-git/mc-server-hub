@@ -40,7 +40,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\r?\\n?.*");
     public static final Pattern CrashPattern_Vanilla = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
     public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
-            ".*INFO]: (?<message>(?<username>[\\S\\w-_]+) ((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
+            ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AgentRunner runner;
