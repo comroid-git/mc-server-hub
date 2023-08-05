@@ -49,7 +49,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     private PrintStream in;
     private DelegateStream.IO oe;
     private DiscordConnection discord;
-    private CompletableFuture<Event<Duration>> done;
+    private CompletableFuture<Duration> done;
 
     public State getState() {
         return process == null
@@ -115,7 +115,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 .mapData(m->m.group("time"))
                 .mapData(Double::parseDouble)
                 .mapData(x-> Duration.ofMillis((long) (x*1000)))
-                .listen().once();
+                .listen().once().thenApply(Event::getData);
         done.thenAccept(t -> {
             pushStatus(server.isMaintenance() ? Status.Maintenance : Status.Online);
             log.info(server+" took "+t+" to start");
