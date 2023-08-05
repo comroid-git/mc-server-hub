@@ -146,16 +146,23 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
 
         // do run backup
         var exec = PathUtil.findExec("tar").orElseThrow();
-        Process tar = Runtime.getRuntime().exec(new String[]{exec.getAbsolutePath(),
+        var tar = Runtime.getRuntime().exec(new String[]{exec.getAbsolutePath(),
                 "--exclude='./cache/**'",
                 "--exclude='./libraries/**'",
                 "--exclude='./versions/**'",
                 "-zcvf",
                     "'"+Paths.get(server.shCon().orElseThrow().getBackupsDir(), server.getName(), "backup.tar.gz")+"'",
                     "'.'"});
-        tar.onExit().thenRun(() -> {
+        var executor = Executors.newFixedThreadPool(2);
+        var out = DelegateStream.redirect(tar.getInputStream(),oe.getOutput(), executor);
+        var err = DelegateStream.redirect(tar.getErrorStream(),oe.getError(), executor);
+        tar.onExit().whenComplete((r,t) -> {
+            if (t != null)
+                log.error("Unable to complete Backup for " + server, t);
             in.println("save-on");
             backupRunning.set(false);
+            out.close();
+            err.close();
         });
         return true;
     }
