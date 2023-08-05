@@ -137,7 +137,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             return false;
         }
 
-        in.println("save-off");
+        // todo: fix bugs from this
+        //in.println("save-off");
         in.println("save-all");
 
         // wait for save to finish
