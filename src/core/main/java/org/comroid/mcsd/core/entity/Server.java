@@ -226,11 +226,6 @@ public class Server extends AbstractEntity {
         return prop;
     }
 
-    @Transient
-    public StatusMessage getStatus() {
-        return status().join();
-    }
-
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
         log.debug("Getting status of Server %s".formatted(this));
