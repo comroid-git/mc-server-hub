@@ -26,6 +26,7 @@ import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.util.Debug;
 import org.comroid.util.JSON;
 import org.comroid.util.MD5;
+import org.comroid.util.StackTraceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -108,7 +109,13 @@ public class MinecraftServerHubAgent {
     @Bean
     @Lazy(false)
     public Map<Runnable, Duration> startCronjobs(@Autowired TaskScheduler scheduler, @Autowired Map<Runnable, Duration> cronjobs) {
-        cronjobs.forEach((task, delay) -> scheduler.scheduleWithFixedDelay(task, Instant.now().plus(delay), delay));
+        cronjobs.forEach((task, delay) -> {
+            try {
+                scheduler.scheduleWithFixedDelay(task, Instant.now().plus(delay), delay);
+            } catch (Throwable t) {
+                cronLog.log(Level.SEVERE, "Cronjob %s failed".formatted(StackTraceUtils.lessSimpleName(task.getClass())), t);
+            }
+        });
         return cronjobs;
     }
 
