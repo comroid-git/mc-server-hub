@@ -29,10 +29,10 @@ public enum McFormatCode implements TextDecoration, Named {
     White('f', 0xFFFFFF),
 
     Obfuscated('k'),
-    Bold('l'),
-    Strikethrough('m'),
-    Underlined('n'),
-    Italic('o'),
+    @Italic Italic('o'),
+    @Bold Bold('l'),
+    @Underline Underlined('n'),
+    @Strikethrough Strikethrough('m'),
 
     Reset('r');
 
