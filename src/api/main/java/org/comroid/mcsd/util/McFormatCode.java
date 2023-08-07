@@ -3,6 +3,7 @@ package org.comroid.mcsd.util;
 import lombok.Getter;
 import org.comroid.api.Named;
 import org.comroid.api.TextDecoration;
+import org.comroid.util.Markdown;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -42,10 +43,8 @@ public enum McFormatCode implements TextDecoration, Named {
             .filter(McFormatCode::isColor)
             .collect(Collectors.toUnmodifiableSet());
 
-    private @Getter
-    final String code;
-    private @Getter
-    final int hex;
+    @Getter private final String code;
+    @Getter private final int hex;
 
     public boolean isReset() {
         return Reset == this;
