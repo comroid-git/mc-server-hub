@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.utils.Compression;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
@@ -57,6 +58,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     public DiscordAdapter(DiscordBot bot) {
         this.jda = JDABuilder.createDefault(bot.getToken(), GatewayIntent.getIntents(GatewayIntent.ALL_INTENTS))
                 .setActivity(Activity.playing("Minecraft"))
+                .setCompression(Compression.ZLIB)
                 .addEventListeners(this)
                 .build()
                 .awaitReady();
