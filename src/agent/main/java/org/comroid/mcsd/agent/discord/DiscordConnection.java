@@ -16,7 +16,9 @@ import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
+import org.comroid.util.Markdown;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -93,6 +95,7 @@ public class DiscordConnection extends Container.Base {
                                         .clickEvent(open_url.value(msg.getJumpUrl()))
                                         .build())
                                 .component(Gray.text(">").build())
+                                // todo convert markdown to tellraw data
                                 .component(Reset.text(" " + msg.getContentStripped()).build())
                                 .build()
                                 .toString())
@@ -120,9 +123,10 @@ public class DiscordConnection extends Container.Base {
                             }
                             var username = matcher.group("username");
                             var message = matcher.group("message");
-                            if (matcher.groupCount() == 2)
+                            if (matcher.groupCount() == 2) {
+                                message = TextDecoration.convert(message, McFormatCode.class, Markdown.class);
                                 bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
-                            else {
+                            } else {
                                 var c = message.charAt(0);
                                 message = message.substring(1);
                                 message = Character.toUpperCase(c) + message;
