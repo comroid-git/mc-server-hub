@@ -1,17 +1,26 @@
 package org.comroid.mcsd.util;
 
 import lombok.*;
+import lombok.experimental.NonFinal;
 import org.comroid.abstr.DataNode;
 import org.comroid.api.Named;
+import org.comroid.api.StringAttribute;
+import org.comroid.api.TextDecoration;
 import org.comroid.api.Vector;
 import org.comroid.util.JSON;
+import org.comroid.util.Markdown;
+import org.comroid.util.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface Tellraw {
     @With
@@ -20,6 +29,7 @@ public interface Tellraw {
     class Command implements Tellraw {
         ISelector selector;
         @Singular
+        @NonFinal
         List<Component> components;
 
         @Override
@@ -28,6 +38,36 @@ public interface Tellraw {
             return "tellraw " + selector + " " + components.stream()
                     .map(Component::toString)
                     .collect(Collectors.joining(",","[","]"));
+        }
+
+        public Command appendMarkdown(String txt) {
+            return append(TextDecoration.replacers(Markdown.class, McFormatCode.class)
+                    .map(Pair::getFirst)
+                    .map(".*%s.*"::formatted)
+                    .map(Pattern::compile)
+                    .map(pattern -> pattern.matcher(txt))
+                    .filter(Matcher::matches)
+                    .flatMap(matcher -> {
+                        var ls = new ArrayList<Component>();
+                        var map = TextDecoration.styles(Markdown.class, McFormatCode.class);
+                        var ignored = matcher.replaceAll(result -> {
+                            var format = StringAttribute.valueOf(result.group(1), Markdown.class)
+                                    .orElse(Markdown.None);
+                            var msg = result.group(2);
+                            ls.add(Tellraw.Component.builder()
+                                    .format(map.get(format))
+                                    .text(msg)
+                                    .build());
+                            return msg;
+                        });
+                        return ls.stream();
+                    })
+                    .toArray(Tellraw.Component[]::new));
+        }
+
+        public Command append(Component... components) {
+            this.components = Stream.concat(this.components.stream(), Stream.of(components)).toList();
+            return this;
         }
     }
 

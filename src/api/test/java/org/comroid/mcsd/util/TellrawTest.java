@@ -10,8 +10,9 @@ public class TellrawTest {
                         .component(Gray.text("<").build())
                         .component(Dark_Aqua.text("kaleidox").build())
                         .component(Gray.text(">").build())
-                        .component(Reset.text(" hello world").build())
+                        .component(Reset.text("hello world").build())
                         .build()
+                        .appendMarkdown("_kursive and **bold**_")
                         .toString()
         );
     }

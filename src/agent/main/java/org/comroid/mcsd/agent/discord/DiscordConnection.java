@@ -19,14 +19,18 @@ import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.Markdown;
+import org.comroid.util.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.yaml.snakeyaml.error.Mark;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -87,18 +91,21 @@ public class DiscordConnection extends Container.Base {
                         .filterData(e -> e.getChannel().getIdLong() == id)
                         .mapData(MessageReceivedEvent::getMessage)
                         .filterData(msg -> !msg.getAuthor().isBot())
-                        .mapData(msg -> Tellraw.Command.builder()
-                                .selector(Tellraw.Selector.Base.ALL_PLAYERS)
-                                .component(Gray.text("<").build())
-                                .component(Dark_Aqua.text(msg.getAuthor().getEffectiveName())
-                                        .hoverEvent(show_text.value("Open in Discord"))
-                                        .clickEvent(open_url.value(msg.getJumpUrl()))
-                                        .build())
-                                .component(Gray.text(">").build())
-                                // todo convert markdown to tellraw data
-                                .component(Reset.text(" " + msg.getContentStripped()).build())
-                                .build()
-                                .toString())
+                        .mapData(msg -> {
+                            // convert markdown to tellraw data
+                            return Tellraw.Command.builder()
+                                    .selector(Tellraw.Selector.Base.ALL_PLAYERS)
+                                    .component(Gray.text("<").build())
+                                    .component(Dark_Aqua.text(msg.getAuthor().getEffectiveName())
+                                            .hoverEvent(show_text.value("Open in Discord"))
+                                            .clickEvent(open_url.value(msg.getJumpUrl()))
+                                            .build())
+                                    .component(Gray.text("> ").build())
+                                    //.component(Reset.text(" " + msg.getContentStripped()).build())
+                                    .build()
+                                    .appendMarkdown(msg.getContentRaw())
+                                    .toString();
+                        })
                         .peekData(log::fine)
                         .subscribeData(srv.getIn()::println)).stream(),
                 // minecraft -> public channel
@@ -151,7 +158,8 @@ public class DiscordConnection extends Container.Base {
                                 if (server.getConsoleMode() == Server.ConsoleMode.ScrollClean
                                         && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
                                     msg.delete().queue();
-                                return raw;
+                                //noinspection RedundantCast //todo wtf intellij
+                                return (String) raw;
                             })
                             .filterData(cmd -> cmd.startsWith(">"))
                             .peekData(out::println)
