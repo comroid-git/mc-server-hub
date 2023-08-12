@@ -11,10 +11,7 @@ import org.comroid.mcsd.agent.discord.DiscordConnection;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.util.Debug;
-import org.comroid.util.JSON;
-import org.comroid.util.MD5;
-import org.comroid.util.PathUtil;
+import org.comroid.util.*;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,9 +19,11 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,7 +40,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     public static final Pattern CrashPattern_Vanilla = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
     public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
             ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
-    private final AtomicBoolean backupRunning = new AtomicBoolean(false);
+    private final AtomicReference<CompletableFuture<@Nullable File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AgentRunner runner;
     private final Server server;
@@ -80,7 +79,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     @Override
     @SneakyThrows
     public void start() {
-        if (backupRunning.get() || updateRunning.get())
+        if (!currentBackup.get().isDone() || updateRunning.get())
             return;
         if (getState() == State.Running)
             return;
@@ -89,7 +88,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         process = Runtime.getRuntime().exec(new String[]{
                         exec.getAbsolutePath(),
                         "-Xmx%dG".formatted(server.getRamGB()),
-                        "-jar", "server.jar", Debug.isDebug()&& OS.isWindows?"":"nogui"},
+                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"},
                 new String[0],
                 new FileHandle(server.getDirectory(), true));
         in = new PrintStream(process.getOutputStream(), true);
@@ -103,8 +102,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
 
         var executor = Executors.newFixedThreadPool(2);
         addChildren(
-                DelegateStream.redirect(process.getInputStream(),oe.getOutput(), executor),
-                DelegateStream.redirect(process.getErrorStream(),oe.getError(), executor));
+                DelegateStream.redirect(process.getInputStream(), oe.getOutput(), executor),
+                DelegateStream.redirect(process.getErrorStream(), oe.getError(), executor));
 
         var botConId = server.getDiscordBot();
         if (botConId != null)
@@ -112,13 +111,13 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         pushStatus(Status.Starting);
 
         this.done = listenForPattern(DonePattern_Vanilla)
-                .mapData(m->m.group("time"))
+                .mapData(m -> m.group("time"))
                 .mapData(Double::parseDouble)
-                .mapData(x-> Duration.ofMillis((long) (x*1000)))
+                .mapData(x -> Duration.ofMillis((long) (x * 1000)))
                 .listen().once().thenApply(Event::getData);
         done.thenAccept(t -> {
             pushStatus(server.isMaintenance() ? Status.Maintenance : Status.Online);
-            log.info(server+" took "+t+" to start");
+            log.info(server + " took " + t + " to start");
         });
 
         if (Debug.isDebug())
@@ -126,45 +125,33 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             oe.redirectToSystem();
     }
 
-    private boolean startBackup() {
-        return backupRunning.compareAndSet(false, true);
-    }
-
     @SneakyThrows
-    public boolean runBackup() {
-        if (!startBackup()) {
+    public CompletableFuture<File> runBackup() {
+        if (!currentBackup.get().isDone()) {
             log.warn("A backup on server %s is already running".formatted(server));
-            return false;
+            return currentBackup.get();
         }
 
         // todo: fix bugs from this
+        var saveComplete = waitForOutput("INFO]: Saved the game");
         //in.println("save-off");
         in.println("save-all");
 
-        // wait for save to finish
-        waitForOutput("Saved the game").join();
-
-        // do run backup
-        var exec = PathUtil.findExec("tar").orElseThrow();
-        var tar = Runtime.getRuntime().exec(new String[]{exec.getAbsolutePath(),
-                "--exclude='./cache/**'",
-                "--exclude='./libraries/**'",
-                "--exclude='./versions/**'",
-                "-zcvf",
-                    "'"+Paths.get(server.shCon().orElseThrow().getBackupsDir(), server.getName(), "backup.tar.gz")+"'",
-                    "'.'"});
-        var executor = Executors.newFixedThreadPool(2);
-        var out = DelegateStream.redirect(tar.getInputStream(),oe.getOutput(), executor);
-        var err = DelegateStream.redirect(tar.getErrorStream(),oe.getError(), executor);
-        tar.onExit().whenComplete((r,t) -> {
-            if (t != null)
-                log.error("Unable to complete Backup for " + server, t);
-            in.println("save-on");
-            backupRunning.set(false);
-            out.close();
-            err.close();
-        });
-        return true;
+        return saveComplete
+                // wait for save to finish
+                .thenCompose($ -> SevenZip.zip()
+                        // do run backup
+                        .inputDirectory(server.path().toAbsolutePath())
+                        .excludePattern("**cache/**")
+                        .excludePattern("**libraries/**")
+                        .excludePattern("**versions/**")
+                        .outputPath(Paths.get(server.shCon().orElseThrow().getBackupsDir(), server.getName(), "backup-" + PathUtil.sanitize(Instant.now())))
+                        .execute()
+                        .whenComplete((r, t) -> {
+                            if (t != null)
+                                log.error("Unable to complete Backup for " + server, t);
+                            in.println("save-on");
+                        }));
     }
 
     @SneakyThrows
@@ -198,7 +185,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         try (var in = new FileInputStream(serverProperties)) {
             prop = server.updateProperties(in);
         }
-        try (var out = new FileOutputStream(serverProperties,false)) {
+        try (var out = new FileOutputStream(serverProperties, false)) {
             prop.store(out, "Managed Server Properties by MCSD");
         }
 
@@ -210,7 +197,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         } else if (!flags.contains("r") && isJarUpToDate())
             return false;
         try (var in = new URL(server.getJarUrl()).openStream();
-             var out = new FileOutputStream(serverJar,false)) {
+             var out = new FileOutputStream(serverJar, false)) {
             in.transferTo(out);
         }
 
@@ -221,7 +208,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             eulaTxt.createNewFile();
         }
         try (var in = new DelegateStream.Input(new StringReader("eula=true\n"));
-             var out = new FileOutputStream(eulaTxt,false)) {
+             var out = new FileOutputStream(eulaTxt, false)) {
             in.transferTo(out);
         }
         return true;
@@ -273,26 +260,28 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
 
     @Override
     public String toString() {
-        return server.toString() + ": " + switch(getState()){
+        return server.toString() + ": " + switch (getState()) {
             case NotStarted -> "Not started";
             case Exited -> {
                 assert process != null;
-                yield "Exited ("+process.exitValue()+")";
+                yield "Exited (" + process.exitValue() + ")";
             }
             case Running -> "Running";
         }; // todo: include server status fetch
     }
+
     public CompletableFuture<Event<String>> waitForOutput(@Language("RegExp") String pattern) {
         return listenForOutput(pattern).listen().once();
     }
+
     public Event.Bus<String> listenForOutput(@Language("RegExp") String pattern) {
-        return filter(e->DelegateStream.IO.EventKey_Output.equals(e.getKey()))
-                .filterData(str->str.matches(pattern));
+        return filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
+                .filterData(str -> str.contains(pattern) | str.matches(pattern));
     }
 
     public Event.Bus<Matcher> listenForPattern(Pattern pattern) {
         return mapData(pattern::matcher).filterData(matcher -> matcher.matches());
     }
 
-    public enum State implements Named { NotStarted, Exited, Running;}
+    public enum State implements Named {NotStarted, Exited, Running;}
 }

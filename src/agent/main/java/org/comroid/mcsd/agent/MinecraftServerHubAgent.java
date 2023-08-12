@@ -151,7 +151,7 @@ public class MinecraftServerHubAgent {
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(agentRunner::process)
-                .filter(ServerProcess::runBackup)
+                .peek(serverProcess -> serverProcess.runBackup().join())
                 .peek(srv -> cronLog.info("Successfully created backup of " + srv))
                 .map(ServerProcess::getServer)
                 .forEach(servers::bumpLastBackup);
