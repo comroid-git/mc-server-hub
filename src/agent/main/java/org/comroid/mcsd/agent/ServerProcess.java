@@ -116,9 +116,19 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         done.thenAccept(d -> {
             long seconds = d.getSeconds();
             long absSeconds = Math.abs(seconds);
-            int minutes = (int) (absSeconds / 60);
-            int secs = (int) (absSeconds % 60);
-            var t = String.format("%s%d:%02d", seconds < 0 ? "-" : "", minutes, secs);
+            var t = "";
+            if (absSeconds > 60 * 60) {
+                var diff = absSeconds / (60 * 60);
+                t += diff + "h";
+                absSeconds -= diff;
+            }
+            if (absSeconds > 60) {
+                var diff = absSeconds / 60;
+                t += diff + "min";
+                absSeconds -= diff;
+            }
+            if (absSeconds > 0)
+                t += (absSeconds) + "sec";
             var msg = "Took " + t + " minutes to start";
             pushStatus((server.isMaintenance() ? Status.Maintenance : Status.Online).new Message(msg));
             log.info(server + " " + msg);
