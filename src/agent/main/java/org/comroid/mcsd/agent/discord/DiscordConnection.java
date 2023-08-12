@@ -11,6 +11,7 @@ import org.comroid.api.Container;
 import org.comroid.api.Event;
 import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.api.dto.ChatMessage;
+import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
@@ -75,11 +76,16 @@ public class DiscordConnection extends Container.Base {
 
         Polyfill.stream(
                 // status changes -> discord
-                Stream.of(mainBus.flatMapData(Status.class)
+                Stream.of(mainBus.flatMapData(IStatusMessage.class)
                         .filter(e -> server.getId().toString().equals(e.getKey()))
-                        .mapData(status -> new EmbedBuilder()
-                                .setTitle(status.getEmoji() + '\t' + "Server is " + status.getName())
-                                .setColor(status.getColor()))
+                        .mapData(message -> {
+                            EmbedBuilder builder = new EmbedBuilder();
+                            if (message.getMessage()!=null)
+                                builder.setDescription(message.getMessage());
+                            return builder
+                                    .setTitle(message.getStatus().getEmoji() + '\t' + "Server is " + message.getStatus().getName())
+                                    .setColor(message.getStatus().getColor());
+                        })
                         .subscribeData(embed -> embedTemplate.accept(embed, null))),
 
                 // public channel -> minecraft

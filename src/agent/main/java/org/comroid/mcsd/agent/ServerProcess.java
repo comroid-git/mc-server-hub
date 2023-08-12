@@ -8,6 +8,7 @@ import org.comroid.api.*;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.discord.DiscordConnection;
+import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.ServerRepo;
@@ -58,9 +59,9 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 : State.Exited;
     }
 
-    public void pushStatus(Status status) {
-        bean(ServerRepo.class).setStatus(server.getId(), status);
-        bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), status);
+    public void pushStatus(IStatusMessage message) {
+        bean(ServerRepo.class).setStatus(server.getId(), message.getStatus());
+        bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), message);
     }
 
     public boolean pushMaintenance(boolean val) { //todo
@@ -115,9 +116,15 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 .mapData(Double::parseDouble)
                 .mapData(x -> Duration.ofMillis((long) (x * 1000)))
                 .listen().once().thenApply(Event::getData);
-        done.thenAccept(t -> {
-            pushStatus(server.isMaintenance() ? Status.Maintenance : Status.Online);
-            log.info(server + " took " + t + " to start");
+        done.thenAccept(d -> {
+            long seconds = d.getSeconds();
+            long absSeconds = Math.abs(seconds);
+            int minutes = (int) (absSeconds / 60);
+            int secs = (int) (absSeconds % 60);
+            var t = String.format("%s%d:%02d", seconds < 0 ? "-" : "", minutes, secs);
+            var msg = "Took " + t + " minutes to start";
+            pushStatus((server.isMaintenance() ? Status.Maintenance : Status.Online).new Message(msg));
+            log.info(server + " " + msg);
         });
 
         if (Debug.isDebug())
@@ -150,10 +157,15 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .outputPath(Paths.get(server.shCon().orElseThrow().getBackupsDir(), server.getName(), "backup-" + PathUtil.sanitize(Instant.now())))
                         .execute()
                         .whenComplete((r, t) -> {
-                            if (t != null)
-                                log.error("Unable to complete Backup for " + server, t);
+                            var stat = Status.Online;
+                            var msg = "Backup finished";
+                            if (t != null) {
+                                stat = Status.InTrouble;
+                                msg = "Unable to complete Backup: " + t;
+                                log.error(msg+" for " + server, t);
+                            }
                             in.println("save-on");
-                            pushStatus(Status.Online);
+                            pushStatus(Status.Online.new Message(msg));
                         }));
     }
 
