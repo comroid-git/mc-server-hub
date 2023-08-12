@@ -1,5 +1,5 @@
 {
   "manager": true,
-  "backups": false,
+  "backups": true,
   "updates": true
 }
