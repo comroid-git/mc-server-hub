@@ -167,8 +167,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .excludePattern("**.lock")
                         .outputPath(Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(Instant.now())))
                         .execute()
-                        //.orTimeout(30, TimeUnit.SECONDS) // todo increase
-                        .orTimeout(30, TimeUnit.MINUTES) // todo increase
+                        //.orTimeout(30, TimeUnit.SECONDS) // dev variant
+                        .orTimeout(1, TimeUnit.HOURS)
                         .whenComplete((r, t) -> {
                             var stat = Status.Online;
                             var msg = "Backup finished";
