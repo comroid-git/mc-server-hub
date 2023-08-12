@@ -97,14 +97,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 new DelegateStream.Input(this, DelegateStream.EndlMode.OnDelegate, DelegateStream.IO.EventKey_Output),
                 new DelegateStream.Output(this, DelegateStream.Capability.Output),
                 new DelegateStream.Output(this, DelegateStream.Capability.Error));
-        oe = new DelegateStream.IO(DelegateStream.Capability.Output, DelegateStream.Capability.Error)
-                .redirect(redir);
-        onClose().thenRunAsync(redir::detach);
-
-        var executor = Executors.newFixedThreadPool(2);
-        addChildren(
-                DelegateStream.redirect(process.getInputStream(), oe.getOutput(), executor),
-                DelegateStream.redirect(process.getErrorStream(), oe.getError(), executor));
+        oe = DelegateStream.IO.process(process).redirect(redir);
 
         var botConId = server.getDiscordBot();
         if (botConId != null)
