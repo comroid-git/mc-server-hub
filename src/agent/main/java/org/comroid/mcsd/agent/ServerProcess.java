@@ -295,7 +295,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     }
 
     public Event.Bus<Matcher> listenForPattern(Pattern pattern) {
-        return mapData(pattern::matcher).filterData(matcher -> matcher.matches());
+        return mapData(input -> pattern.matcher(input)).filterData(matcher -> matcher.matches());
     }
 
     public enum State implements Named {NotStarted, Exited, Running;}
