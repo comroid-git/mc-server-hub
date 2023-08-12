@@ -9,10 +9,8 @@ import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.ISnowflake;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Webhook;
+import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -26,6 +24,7 @@ import net.dv8tion.jda.internal.requests.restaction.MessageEditActionImpl;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
+import org.comroid.api.ThrowingFunction;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
@@ -93,23 +92,47 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(final WebhookClient webhook) {
-        return (embed, mc) -> webhook.send(whMessage(mc)
-                .addEmbeds(WebhookEmbedBuilder.fromJDA(embed(embed, null).build()).build())
-                .build());
+        return (embed, mc) -> {
+            final var content = WebhookEmbedBuilder.fromJDA(embed(embed, mc).build()).build();
+            jda.retrieveWebhookById(webhook.getId())
+                    .map(wh -> wh.getChannel().asTextChannel())
+                    .queue(channel -> channel.getHistory().retrievePast(1)
+                            .submit()
+                            .thenApply(ls -> ls.stream()
+                                    .limit(1)
+                                    .filter(msg -> msg.getAuthor().getIdLong() == webhook.getId())
+                                    .filter(msg -> msg.getEmbeds().size() == 1)
+                                    .findFirst())
+                            .thenCompose(related ->
+                                    related.map(ThrowingFunction.fallback(msg -> webhook.edit(msg.getIdLong(), content), () -> null))
+                                            .orElseGet(() -> CompletableFuture.failedFuture(new RuntimeException("Could not find related message to edit"))))
+                            .whenComplete((x, t) -> {
+                                if (t == null)
+                                    return;
+                                webhook.send(whMessage(mc)
+                                                .addEmbeds(content)
+                                                .build())
+                                        .join();
+                            })
+                            .join());
+        };
     }
 
     public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(long channelId) {
         final var channel = jda.getTextChannelById(channelId);
         if (channel == null)
             throw new NullPointerException("channel not found: " + channelId);
-        return (embed, mc) -> channel.getIterableHistory().stream()
-                .limit(1)
-                .filter(msg -> msg.getAuthor().equals(jda.getSelfUser()))
-                .filter(msg -> msg.getEmbeds().size() == 1)
-                .findAny()
-                .<RestAction<Message>>map(msg -> msg.editMessageEmbeds(embed(embed, mc).build()))
-                .orElseGet(() -> channel.sendMessageEmbeds(embed(embed, mc).build()))
-                .queue();
+        return (embed, mc) -> {
+            final var content = embed(embed, mc).build();
+            channel.getIterableHistory().stream()
+                    .limit(1)
+                    .filter(msg -> msg.getAuthor().equals(jda.getSelfUser()))
+                    .filter(msg -> msg.getEmbeds().size() == 1)
+                    .findFirst()
+                    .<RestAction<Message>>map(msg -> msg.editMessageEmbeds(content))
+                    .orElseGet(() -> channel.sendMessageEmbeds(content))
+                    .queue();
+        };
     }
 
     private WebhookMessageBuilder whMessage(@Nullable MinecraftProfile mc) {
