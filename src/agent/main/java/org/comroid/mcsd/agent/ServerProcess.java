@@ -202,6 +202,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     @SneakyThrows
     public boolean runUpdate(String... args) {
         var flags = String.join("", args);
+        pushStatus(Status.Updating);
 
         // modify server.properties
         Properties prop;
@@ -239,6 +240,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
              var out = new FileOutputStream(eulaTxt, false)) {
             in.transferTo(out);
         }
+
+        pushStatus(Status.Online.new Message("Update done"));
         return true;
     }
 
