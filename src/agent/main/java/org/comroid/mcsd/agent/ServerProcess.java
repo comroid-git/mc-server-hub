@@ -120,16 +120,16 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             if (absSeconds > 60 * 60) {
                 var diff = absSeconds / (60 * 60);
                 t += diff + "h";
-                absSeconds -= diff;
+                absSeconds -= diff*60*60;
             }
             if (absSeconds > 60) {
                 var diff = absSeconds / 60;
                 t += diff + "min";
-                absSeconds -= diff;
+                absSeconds -= diff*60;
             }
             if (absSeconds > 0)
                 t += (absSeconds) + "sec";
-            var msg = "Took " + t + " minutes to start";
+            var msg = "Took " + t + " to start";
             pushStatus((server.isMaintenance() ? Status.Maintenance : Status.Online).new Message(msg));
             log.info(server + " " + msg);
         });
