@@ -41,6 +41,7 @@ public interface Tellraw {
         }
 
         public Command appendMarkdown(String txt) {
+            final var map = TextDecoration.styles(Markdown.class, McFormatCode.class);
             return append(TextDecoration.replacers(Markdown.class, McFormatCode.class)
                     .map(Pair::getFirst)
                     .map(".*%s.*"::formatted)
@@ -48,8 +49,7 @@ public interface Tellraw {
                     .map(pattern -> pattern.matcher(txt))
                     .filter(Matcher::matches)
                     .flatMap(matcher -> {
-                        var ls = new ArrayList<Component>();
-                        var map = TextDecoration.styles(Markdown.class, McFormatCode.class);
+                        final var ls = new ArrayList<Component>();
                         var ignored = matcher.replaceAll(result -> {
                             var format = StringAttribute.valueOf(result.group(1), Markdown.class)
                                     .orElse(Markdown.None);
