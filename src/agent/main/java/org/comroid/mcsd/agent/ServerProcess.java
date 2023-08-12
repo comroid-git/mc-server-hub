@@ -153,7 +153,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
 
         // todo: fix bugs from this
         var saveComplete = waitForOutput("INFO]: Saved the game");
-        //in.println("save-off");
+        in.println("save-off");
         in.println("save-all");
 
         return saveComplete
