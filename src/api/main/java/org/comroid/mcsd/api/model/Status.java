@@ -12,6 +12,8 @@ public enum Status implements IntegerAttribute {
     Offline     ("❌", McFormatCode.Red.getColor()),
     Starting    ("⏯", McFormatCode.Aqua.getColor()),
     Maintenance ("�", McFormatCode.Yellow.getColor()),
+    Backing_Up  ("�", McFormatCode.Gold.getColor()),
+    Updating    ("�", McFormatCode.Light_Purple.getColor()),
     Online      ("✅", McFormatCode.Dark_Green.getColor());
 
     private final String emoji;
@@ -20,6 +22,11 @@ public enum Status implements IntegerAttribute {
     Status(String emoji, Color color) {
         this.emoji = emoji;
         this.color = color;
+    }
+
+    @Override
+    public String getName() {
+        return IntegerAttribute.super.getName().replace('_',' ');
     }
 
     @Override

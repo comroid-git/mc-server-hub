@@ -132,6 +132,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             return currentBackup.get();
         }
 
+        pushStatus(Status.Backing_Up);
+
         // todo: fix bugs from this
         var saveComplete = waitForOutput("INFO]: Saved the game");
         //in.println("save-off");
@@ -151,6 +153,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                             if (t != null)
                                 log.error("Unable to complete Backup for " + server, t);
                             in.println("save-on");
+                            pushStatus(Status.Online);
                         }));
     }
 
