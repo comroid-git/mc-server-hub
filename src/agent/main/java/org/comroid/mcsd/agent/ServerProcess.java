@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.abstr.DataNode;
 import org.comroid.api.*;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
@@ -22,12 +23,16 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
@@ -41,6 +46,36 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     public static final Pattern CrashPattern_Vanilla = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
     public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
             ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
+    public static final Pattern DeathPatternBase = Pattern.compile("^%1\\$s (?<message>[\\w\\s%$]+)$");
+    public static final @Language("RegExp") String DeathPatternScheme = ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>%s)\\r?\\n?.*";
+    public static final List<Pattern> DeathMessagePatterns_Vanilla;
+    public static final @Language("RegExp") String CleanWord_Spaced = "\\[?([\\s\\w-_]+)]?";
+
+    static {
+        try (var url = new URL("https://raw.githubusercontent.com/misode/mcmeta/assets-json/assets/minecraft/lang/en_us.json").openStream();
+             var json = new JSON.Deserializer(url)) {
+            var obj = json.readObject();
+            DeathMessagePatterns_Vanilla = obj.entrySet().stream()
+                    .filter(e->e.getKey().startsWith("death."))
+                    .map(Map.Entry::getValue)
+                    .map(DataNode::asString)
+                    .filter(Objects::nonNull)
+                    .flatMap(str -> {
+                        var matcher = DeathPatternBase.matcher(str);
+                        if (!matcher.matches())
+                            return Stream.empty();
+                        var msg = matcher.group("message");
+                        //noinspection RedundantEscapeInRegexReplacement
+                        var out = DeathPatternScheme.formatted(msg).replaceAll("%\\d\\$s", CleanWord_Spaced);
+                        return Stream.of(out);
+                    })
+                    .map(Pattern::compile)
+                    .toList();
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private final AtomicBoolean backupRunning = new AtomicBoolean(false);
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AgentRunner runner;
