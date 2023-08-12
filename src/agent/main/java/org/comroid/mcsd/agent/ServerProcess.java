@@ -74,9 +74,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (is && !val) {
             // disable maintenance
             in.println("whitelist off");
+            pushStatus(Status.Maintenance.new Message("Maintenance has been turned off"));
         } else if (!is && val) {
             // enable maintenance
             in.println("whitelist on");
+            pushStatus(Status.Maintenance);
         }
         return is != val;
     }
