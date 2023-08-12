@@ -147,6 +147,9 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         }
 
         pushStatus(Status.Backing_Up);
+        var backupDir = new FileHandle(server.shCon().orElseThrow().getBackupsDir()).createSubDir(server.getName());
+        if (!backupDir.exists() && !backupDir.mkdirs())
+            return CompletableFuture.failedFuture(new RuntimeException("Could not create backup directory"));
 
         // todo: fix bugs from this
         var saveComplete = waitForOutput("INFO]: Saved the game");
@@ -162,7 +165,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .excludePattern("**libraries/**")
                         .excludePattern("**versions/**")
                         .excludePattern("**.lock")
-                        .outputPath(Paths.get(server.shCon().orElseThrow().getBackupsDir(), server.getName(), "backup-" + PathUtil.sanitize(Instant.now())))
+                        .outputPath(Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(Instant.now())))
                         .execute()
                         //.orTimeout(30, TimeUnit.SECONDS) // todo increase
                         .orTimeout(30, TimeUnit.MINUTES) // todo increase
