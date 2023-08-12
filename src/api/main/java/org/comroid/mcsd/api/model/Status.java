@@ -15,7 +15,7 @@ public enum Status implements IntegerAttribute, IStatusMessage {
     Offline     ("❌", McFormatCode.Red.getColor()),
     Starting    ("⏯️", McFormatCode.Aqua.getColor()),
     Maintenance ("\uD83D\uDD27", McFormatCode.Yellow.getColor()),
-    Backing_Up  ("\uD83D\uDCBE", McFormatCode.Dark_Green.getColor()),
+    Backing_Up  ("\uD83D\uDCBE", McFormatCode.Green.getColor()),
     Updating    ("\uD83D\uDD04️", McFormatCode.Light_Purple.getColor()),
     In_Trouble  ("⚠️", McFormatCode.Gold.getColor()),
     Online      ("✅", McFormatCode.Dark_Green.getColor());

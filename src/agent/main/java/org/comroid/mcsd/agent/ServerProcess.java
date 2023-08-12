@@ -145,14 +145,17 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
 
         return saveComplete
                 // wait for save to finish
-                .thenCompose($ -> SevenZip.zip()
+                .thenCompose($ -> Archiver.find(Archiver.ReadOnly).zip()
                         // do run backup
                         .inputDirectory(server.path().toAbsolutePath())
                         .excludePattern("**cache/**")
                         .excludePattern("**libraries/**")
                         .excludePattern("**versions/**")
+                        .excludePattern("**.lock")
                         .outputPath(Paths.get(server.shCon().orElseThrow().getBackupsDir(), server.getName(), "backup-" + PathUtil.sanitize(Instant.now())))
                         .execute()
+                        //.orTimeout(30, TimeUnit.SECONDS) // todo increase
+                        .orTimeout(30, TimeUnit.MINUTES) // todo increase
                         .whenComplete((r, t) -> {
                             var stat = Status.Online;
                             var msg = "Backup finished";
