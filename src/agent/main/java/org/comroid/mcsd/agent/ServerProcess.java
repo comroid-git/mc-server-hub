@@ -50,6 +50,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     private DelegateStream.IO oe;
     private DiscordConnection discord;
     private CompletableFuture<Duration> done;
+    private IStatusMessage previousStatus;
+    private IStatusMessage currentStatus;
 
     public State getState() {
         return process == null
@@ -60,6 +62,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     }
 
     public void pushStatus(IStatusMessage message) {
+        previousStatus = currentStatus;
+        currentStatus = message;
         bean(ServerRepo.class).setStatus(server.getId(), message.getStatus());
         bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), message);
     }
@@ -158,7 +162,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                                 log.error(msg+" for " + server, t);
                             }
                             in.println("save-on");
-                            pushStatus(Status.Online.new Message(msg));
+                            pushStatus(stat.new Message(msg));
                         }));
     }
 
