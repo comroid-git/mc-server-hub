@@ -153,7 +153,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                             var stat = Status.Online;
                             var msg = "Backup finished";
                             if (t != null) {
-                                stat = Status.InTrouble;
+                                stat = Status.In_Trouble;
                                 msg = "Unable to complete Backup: " + t;
                                 log.error(msg+" for " + server, t);
                             }
