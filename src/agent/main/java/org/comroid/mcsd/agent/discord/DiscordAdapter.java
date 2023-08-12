@@ -96,10 +96,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             final var content = WebhookEmbedBuilder.fromJDA(embed(embed, mc).build()).build();
             jda.retrieveWebhookById(webhook.getId())
                     .map(wh -> wh.getChannel().asTextChannel())
-                    .queue(channel -> channel.getHistory().retrievePast(1)
+                    .queue(channel -> channel.getHistory().retrievePast(5)
                             .submit()
                             .thenApply(ls -> ls.stream()
-                                    .limit(1)
                                     .filter(msg -> msg.getAuthor().getIdLong() == webhook.getId())
                                     .filter(msg -> msg.getEmbeds().size() == 1)
                                     .findFirst())
