@@ -22,6 +22,7 @@ import net.dv8tion.jda.api.utils.Compression;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
+import net.dv8tion.jda.internal.requests.restaction.MessageEditActionImpl;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
@@ -101,7 +102,14 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         final var channel = jda.getTextChannelById(channelId);
         if (channel == null)
             throw new NullPointerException("channel not found: " + channelId);
-        return (embed, mc) -> channel.sendMessageEmbeds(embed(embed, mc).build()).queue();
+        return (embed, mc) -> channel.getIterableHistory().stream()
+                .limit(1)
+                .filter(msg -> msg.getAuthor().equals(jda.getSelfUser()))
+                .filter(msg -> msg.getEmbeds().size() == 1)
+                .findAny()
+                .<RestAction<Message>>map(msg -> msg.editMessageEmbeds(embed(embed, mc).build()))
+                .orElseGet(() -> channel.sendMessageEmbeds(embed(embed, mc).build()))
+                .queue();
     }
 
     private WebhookMessageBuilder whMessage(@Nullable MinecraftProfile mc) {
