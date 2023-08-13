@@ -147,6 +147,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     private EmbedBuilder embed(@NotNull EmbedBuilder builder, @Nullable MinecraftProfile mc) {
         if (mc != null)
             builder = builder.setAuthor(mc.getName(), mc.getNameMcURL(), mc.getHeadURL());
+        builder.setTimestamp(Instant.now());
         return builder;
     }
 
