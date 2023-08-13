@@ -52,6 +52,7 @@ import static org.comroid.api.Polyfill.stream;
 @Data
 public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener {
     public static final int MaxBulkDelete = 100;
+    public static final int MaxEditBacklog = 10;
     private final JDA jda;
 
     @SneakyThrows
@@ -96,7 +97,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             final var content = WebhookEmbedBuilder.fromJDA(embed(embed, mc).build()).build();
             jda.retrieveWebhookById(webhook.getId())
                     .map(wh -> wh.getChannel().asTextChannel())
-                    .queue(channel -> channel.getHistory().retrievePast(1)
+                    .queue(channel -> channel.getHistory().retrievePast(MaxEditBacklog)
                             .submit()
                             .thenApply(ls -> ls.stream()
                                     .filter(msg -> msg.getAuthor().getIdLong() == webhook.getId())
@@ -124,7 +125,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         return (embed, mc) -> {
             final var content = embed(embed, mc).build();
             channel.getIterableHistory().stream()
-                    .limit(1)
+                    .limit(MaxEditBacklog)
                     .filter(msg -> msg.getAuthor().equals(jda.getSelfUser()))
                     .filter(msg -> msg.getEmbeds().size() == 1)
                     .findFirst()
