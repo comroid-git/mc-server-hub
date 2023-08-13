@@ -9,10 +9,13 @@ import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.GenericEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
@@ -20,22 +23,18 @@ import net.dv8tion.jda.api.utils.Compression;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
-import net.dv8tion.jda.internal.requests.restaction.MessageEditActionImpl;
-import org.comroid.api.DelegateStream;
-import org.comroid.api.Event;
-import org.comroid.api.Polyfill;
-import org.comroid.api.ThrowingFunction;
+import org.comroid.api.*;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Ratelimit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -44,13 +43,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.dv8tion.jda.api.entities.Message.MAX_CONTENT_LENGTH;
 import static org.comroid.api.Polyfill.stream;
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Data
-public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener {
+public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener, Command.Handler {
     public static final int MaxBulkDelete = 100;
     public static final int MaxEditBacklog = 10;
     private final JDA jda;
@@ -62,7 +63,47 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .setCompression(Compression.ZLIB)
                 .addEventListeners(this)
                 .build()
-                .awaitReady();
+                .updateCommands()
+                .addCommands(
+                        Commands.slash("info", "Shows server information")
+                                .setGuildOnly(true),
+                        Commands.slash("list", "Shows list of online players")
+                                .setGuildOnly(true),
+                        Commands.slash("execute", "Run a command on the server")
+                                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
+                                .setGuildOnly(true))
+                .getJDA().awaitReady();
+        final var cmdr = new Command.Manager(this);
+        cmdr.register(this);
+        flatMap(SlashCommandInteractionEvent.class).subscribeData(e -> cmdr.execute(e.getName(), e));
+    }
+
+    @Override
+    public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
+        final var e = Stream.of(args)
+                .flatMap(Polyfill.flatCast(SlashCommandInteractionEvent.class))
+                .findAny()
+                .orElseThrow();
+        final var mc = bean(MinecraftProfileRepo.class)
+                .findByDiscordId(e.getUser().getIdLong())
+                .orElse(null);
+        if (response instanceof CompletableFuture)
+            e.deferReply().submit().thenCombine(((CompletableFuture<?>) response), (hook, resp) -> {
+                if (resp instanceof EmbedBuilder)
+                    e.getHook().sendMessageEmbeds(embed((EmbedBuilder) resp, mc).build()).queue();
+                else e.getHook().sendMessage(String.valueOf(resp)).queue();
+                return null;
+            }).exceptionally(Polyfill.exceptionLogger());
+        else if (response instanceof EmbedBuilder)
+            e.replyEmbeds(embed((EmbedBuilder) response, mc).build()).queue();
+        else e.reply(String.valueOf(response)).queue();
+    }
+
+    @Command public Object info(SlashCommandInteractionEvent e) {
+    }
+    @Command public Object list(SlashCommandInteractionEvent e) {
+    }
+    @Command public Object execute(SlashCommandInteractionEvent e) {
     }
 
     @Override
@@ -77,12 +118,12 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         .thenApply(Webhook::getUrl)
                         .join());
     }
-
     public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(final WebhookClient webhook) {
         return (mc, txt) -> webhook.send(whMessage(mc)
                 .setContent(txt)
                 .build());
     }
+
     public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(long channelId) {
         final var channel = jda.getTextChannelById(channelId);
         if (channel == null)
