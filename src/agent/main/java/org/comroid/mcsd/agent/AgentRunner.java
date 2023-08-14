@@ -15,6 +15,7 @@ import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.util.StandardValueType;
+import org.comroid.util.Streams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -177,7 +178,7 @@ public class AgentRunner implements Command.Handler {
 
     @Command(usage = "")
     public String shutdown() {
-        if (Polyfill.stream(servers.findAll())
+        if (Streams.of(servers.findAll())
                 .map(this::process)
                 .anyMatch(srv -> !srv.getCurrentBackup().get().isDone() || srv.getUpdateRunning().get()))
             throw new Command.MildError("Unable to shutdown while a backup or update is running");
@@ -197,7 +198,7 @@ public class AgentRunner implements Command.Handler {
     }
 
     public Stream<Server> streamServers() {
-        return Polyfill.stream(bean(ServerRepo.class).findAllForAgent(getMe().getId()));
+        return Streams.of(bean(ServerRepo.class).findAllForAgent(getMe().getId()));
     }
 
     public Stream<String> streamServerStatusMsgs() {

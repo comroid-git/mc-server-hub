@@ -10,7 +10,6 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -20,7 +19,6 @@ import net.dv8tion.jda.api.utils.Compression;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
-import net.dv8tion.jda.internal.requests.restaction.MessageEditActionImpl;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
@@ -29,13 +27,12 @@ import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.util.Ratelimit;
+import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -46,7 +43,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static net.dv8tion.jda.api.entities.Message.MAX_CONTENT_LENGTH;
-import static org.comroid.api.Polyfill.stream;
 
 @Log
 @Data
@@ -166,7 +162,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 // getOrCreate msg
                 final var msg = Optional.of(0)
                         .filter($ -> mode == Server.ConsoleMode.ScrollClean)
-                        .flatMap($ -> Polyfill.stream(channel.getIterableHistory())
+                        .flatMap($ -> Streams.of(channel.getIterableHistory())
                                 .filter(m -> jda.getSelfUser().equals(m.getAuthor()))
                                 .findFirst())
                         .map(CompletableFuture::completedFuture)

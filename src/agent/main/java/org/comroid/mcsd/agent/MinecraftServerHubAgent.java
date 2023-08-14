@@ -13,6 +13,7 @@ import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.agent.controller.ConsoleController;
+import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.mcsd.connector.gateway.GatewayClient;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
@@ -23,10 +24,7 @@ import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.util.Debug;
-import org.comroid.util.JSON;
-import org.comroid.util.MD5;
-import org.comroid.util.StackTraceUtils;
+import org.comroid.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -151,6 +149,8 @@ public class MinecraftServerHubAgent {
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(agentRunner::process)
+                .flatMap(Streams.yield(srv -> srv.getCurrentStatus().getStatus() == Status.Online,
+                        srv -> cronLog.warning("Not running backup job for " + srv)))
                 .peek(serverProcess -> serverProcess.runBackup().join())
                 .peek(srv -> cronLog.info("Successfully created backup of " + srv))
                 .map(ServerProcess::getServer)
@@ -173,6 +173,8 @@ public class MinecraftServerHubAgent {
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastUpdate().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(agentRunner::process)
+                .flatMap(Streams.yield(srv -> srv.getCurrentStatus().getStatus() == Status.Online,
+                        srv -> cronLog.warning("Not running backup job for " + srv)))
                 .filter(ServerProcess::startUpdate)
                 .peek(serverProcess -> serverProcess.shutdown("Server Update", 60).join())
                 .peek(proc-> {
