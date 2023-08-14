@@ -148,6 +148,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         in.println("save-off");
         in.println("save-all");
 
+        var backup = Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(Instant.now())).toFile();
         return saveComplete
                 // wait for save to finish
                 .thenCompose($ -> Archiver.find(Archiver.ReadOnly).zip()
@@ -157,13 +158,15 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .excludePattern("**libraries/**")
                         .excludePattern("**versions/**")
                         .excludePattern("**.lock")
-                        .outputPath(Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(Instant.now())))
+                        .outputPath(backup)
                         .execute()
                         //.orTimeout(30, TimeUnit.SECONDS) // dev variant
                         .orTimeout(1, TimeUnit.HOURS)
                         .whenComplete((r, t) -> {
                             var stat = Status.Online;
-                            var msg = "Backup finished; took " + Polyfill.durationString(stopwatch.stop());
+                            var msg = "Backup finished; took %s; size: %sGB".formatted(
+                                    Polyfill.durationString(stopwatch.stop()),
+                                    (double) backup.length() / (1024 * 1024 * 1024));
                             if (t != null) {
                                 stat = Status.In_Trouble;
                                 msg = "Unable to complete Backup: " + t;
