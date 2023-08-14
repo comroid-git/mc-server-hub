@@ -177,6 +177,10 @@ public class AgentRunner implements Command.Handler {
 
     @Command(usage = "")
     public String shutdown() {
+        if (Polyfill.stream(servers.findAll())
+                .map(this::process)
+                .anyMatch(srv -> !srv.getCurrentBackup().get().isDone() || srv.getUpdateRunning().get()))
+            throw new Command.MildError("Unable to shutdown while a backup or update is running");
         System.exit(0);
         return "shutting down";
     }
