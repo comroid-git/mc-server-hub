@@ -91,6 +91,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (getState() == State.Running)
             return;
 
+        Stopwatch.start(server.getId());
+
         var exec = PathUtil.findExec("java").orElseThrow();
         process = Runtime.getRuntime().exec(new String[]{
                         exec.getAbsolutePath(),
@@ -114,7 +116,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 .mapData(m -> m.group("time"))
                 .mapData(Double::parseDouble)
                 .mapData(x -> Duration.ofMillis((long) (x * 1000)))
-                .listen().once().thenApply(Event::getData);
+                .listen().once().thenApply($ -> Stopwatch.stop(server.getId()));
         done.thenAccept(d -> {
             long seconds = d.getSeconds();
             long absSeconds = Math.abs(seconds);
@@ -122,12 +124,12 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             if (absSeconds > 60 * 60) {
                 var diff = absSeconds / (60 * 60);
                 t += diff + "h";
-                absSeconds -= diff*60*60;
+                absSeconds -= diff * 60 * 60;
             }
             if (absSeconds > 60) {
                 var diff = absSeconds / 60;
                 t += diff + "min";
-                absSeconds -= diff*60;
+                absSeconds -= diff * 60;
             }
             if (absSeconds > 0)
                 t += (absSeconds) + "sec";
