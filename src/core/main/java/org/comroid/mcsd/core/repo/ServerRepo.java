@@ -31,6 +31,12 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
             " WHERE s.name = :name")
     Optional<Server> findByAgentAndName(@Param("agentId") UUID agentId, @Param("name") String name);
 
+    @Query("SELECT s FROM Server s" +
+            " WHERE s.PublicChannelId = :id" +
+            " OR s.ModerationChannelId = :id" +
+            " OR s.ConsoleChannelId = :id")
+    Optional<Server> findByDiscordChannel(long id);
+
     @Modifying
     @Transactional
     @Query("UPDATE Server s SET s.enabled = :enabled WHERE s.id = :srvId")
