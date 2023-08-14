@@ -13,7 +13,7 @@ fi
 
 function fetch() {
   prevBranch="$branch"
-  if git show-ref --verify --quiet "refs/heads/$branch"; then
+  if [ "$(git show-ref --verify --quiet "refs/heads/$branch")" ]; then
     branch="main"
   fi
   git checkout "$branch"
