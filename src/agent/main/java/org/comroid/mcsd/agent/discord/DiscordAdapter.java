@@ -77,8 +77,10 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .setCompression(Compression.ZLIB)
                 .addEventListeners(this)
                 .build()
-                .updateCommands()
-                .addCommands(
+                .awaitReady();
+        jda.retrieveCommands()
+                .flatMap(cmds -> RestAction.allOf(cmds.stream().map(net.dv8tion.jda.api.interactions.commands.Command::delete).toList()))
+                .flatMap($ -> jda.updateCommands().addCommands(
                         Commands.slash("info", "Shows server information")
                                 .setGuildOnly(true),
                         Commands.slash("list", "Shows list of online players")
@@ -86,8 +88,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         Commands.slash("execute", "Run a command on the server")
                                 .addOption(OptionType.STRING, "command", "The command to run", true)
                                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
-                                .setGuildOnly(true))
-                .getJDA().awaitReady();
+                                .setGuildOnly(true)))
+                .queue();
+
         final var cmdr = new Command.Manager(this);
         cmdr.register(this);
         flatMap(SlashCommandInteractionEvent.class).subscribeData(e -> cmdr.execute(e.getName(), e));
