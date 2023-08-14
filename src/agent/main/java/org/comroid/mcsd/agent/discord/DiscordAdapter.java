@@ -24,12 +24,17 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.comroid.api.*;
+import org.comroid.api.DelegateStream;
+import org.comroid.api.Event;
+import org.comroid.api.Polyfill;
+import org.comroid.api.ThrowingFunction;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Ratelimit;
+import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,7 +86,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     @Override
     public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
         final var e = Stream.of(args)
-                .flatMap(Polyfill.flatCast(SlashCommandInteractionEvent.class))
+                .flatMap(Streams.cast(SlashCommandInteractionEvent.class))
                 .findAny()
                 .orElseThrow();
         final var mc = bean(MinecraftProfileRepo.class)
@@ -207,7 +212,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 // getOrCreate msg
                 final var msg = Optional.of(0)
                         .filter($ -> mode == Server.ConsoleMode.ScrollClean)
-                        .flatMap($ -> Polyfill.stream(channel.getIterableHistory())
+                        .flatMap($ -> Streams.of(channel.getIterableHistory())
                                 .filter(m -> jda.getSelfUser().equals(m.getAuthor()))
                                 .findFirst())
                         .map(CompletableFuture::completedFuture)
