@@ -9,6 +9,13 @@ version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
+tasks.register('simplify', Copy) {
+    dependsOn 'jar'
+    from jar.outputs.files.singleFile
+    into "$buildDir/libs"
+    rename { "${project.name}.jar" }
+}
+
 sourceSets {
     main.java.srcDirs       = files(parent.projectDir.toString() + "/src/agent/main/java")
     main.resources.srcDirs  = files(parent.projectDir.toString() + "/src/agent/main/resources")
