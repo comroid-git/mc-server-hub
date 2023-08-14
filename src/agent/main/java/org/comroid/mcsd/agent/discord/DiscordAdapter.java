@@ -15,10 +15,13 @@ import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import net.dv8tion.jda.api.utils.Compression;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
@@ -28,11 +31,16 @@ import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
 import org.comroid.api.ThrowingFunction;
+import org.comroid.mcsd.agent.AgentRunner;
+import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
+import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.util.Markdown;
 import org.comroid.util.Ratelimit;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +55,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,6 +84,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         Commands.slash("list", "Shows list of online players")
                                 .setGuildOnly(true),
                         Commands.slash("execute", "Run a command on the server")
+                                .addOption(OptionType.STRING, "command", "The command to run", true)
                                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                 .setGuildOnly(true))
                 .getJDA().awaitReady();
@@ -93,22 +103,82 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .findByDiscordId(e.getUser().getIdLong())
                 .orElse(null);
         if (response instanceof CompletableFuture)
-            e.deferReply().submit().thenCombine(((CompletableFuture<?>) response), (hook, resp) -> {
-                if (resp instanceof EmbedBuilder)
-                    e.getHook().sendMessageEmbeds(embed((EmbedBuilder) resp, mc).build()).queue();
-                else e.getHook().sendMessage(String.valueOf(resp)).queue();
-                return null;
-            }).exceptionally(Polyfill.exceptionLogger());
-        else if (response instanceof EmbedBuilder)
-            e.replyEmbeds(embed((EmbedBuilder) response, mc).build()).queue();
-        else e.reply(String.valueOf(response)).queue();
+            e.deferReply().setEphemeral(cmd.ephemeral())
+                    .submit()
+                    .thenCombine(((CompletableFuture<?>) response), (hook, resp) -> {
+                        WebhookMessageCreateAction<Message> req;
+                        if (resp instanceof EmbedBuilder)
+                            req = hook.sendMessageEmbeds(embed((EmbedBuilder) resp, mc).build());
+                        else req = hook.sendMessage(String.valueOf(resp));
+                        return req.submit();
+                    })
+                    .thenCompose(Function.identity())
+                    .exceptionally(Polyfill.exceptionLogger());
+        else {
+            ReplyCallbackAction req;
+            if (response instanceof EmbedBuilder)
+                req = e.replyEmbeds(embed((EmbedBuilder) response, mc).build());
+            else req = e.reply(String.valueOf(response));
+            req.submit();
+        }
     }
 
-    @Command public Object info(SlashCommandInteractionEvent e) {
+    @Command
+    public CompletableFuture<EmbedBuilder> info(SlashCommandInteractionEvent e) {
+        var server = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .orElseThrow(() -> new Command.Error("Unable to find server"));
+        return server.status().thenApply(stat -> {
+            var embed = new EmbedBuilder()
+                    .setTitle(stat.getStatus().toStatusMessage())
+                    .setDescription(stat.getMotd())
+                    .setColor(stat.getStatus().getColor())
+                    .setThumbnail(server.getThumbnailURL())
+                    .addField("Host", server.getHost(), true)
+                    .addField("Version", server.getMcVersion(), true)
+                    .addField("Game Type", server.getMode().getName(), true)
+                    .setTimestamp(stat.getTimestamp());
+            if (stat.getPlayers() != null)
+                embed.addField("Players", "\n- " + String.join("\n- ", stat.getPlayers()), false);
+            else
+                embed.addField("Players", "%d out of %d".formatted(stat.getPlayerCount(), server.getMaxPlayers()), false);
+            Optional.ofNullable(server.getOwner().getMinecraft()).ifPresent(owner ->
+                    embed.setAuthor("Owner: " + owner.getName(), owner.getNameMcURL(), owner.getHeadURL()));
+            return embed;
+        });
     }
-    @Command public Object list(SlashCommandInteractionEvent e) {
+
+    @Command
+    public CompletableFuture<EmbedBuilder> list(SlashCommandInteractionEvent e) {
+        var server = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .orElseThrow(() -> new Command.Error("Unable to find server"));
+        return server.status().thenApply(stat -> {
+            var embed = new EmbedBuilder()
+                    .setDescription(stat.getMotd())
+                    .setThumbnail(server.getThumbnailURL())
+                    .setTimestamp(stat.getTimestamp());
+            if (stat.getPlayers() == null)
+                return embed.setDescription("There are no players online");
+            final var users = bean(UserRepo.class);
+            stat.getPlayers().forEach(playerName -> embed.addField(
+                    playerName,
+                    users.findByMinecraftName(playerName).map(user -> user.getDiscordId() == null
+                            ? Markdown.Italic.apply("No linked Discord account (wip)")
+                            : jda.retrieveUserById(user.getDiscordId())
+                            .map(User::getEffectiveName)
+                            .submit().join()).orElseThrow(),
+                    true));
+            return embed;
+        });
     }
-    @Command public Object execute(SlashCommandInteractionEvent e) {
+
+    @Command(ephemeral = true)
+    public String execute(SlashCommandInteractionEvent e) {
+        var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .map(bean(AgentRunner.class)::process)
+                .orElseThrow(() -> new Command.Error("Unable to find server"));
+        var cmd = Objects.requireNonNull(e.getOption("command")).getAsString();
+        proc.getIn().println(cmd);
+        return "Command was sent";
     }
 
     @Override
@@ -123,6 +193,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         .thenApply(Webhook::getUrl)
                         .join());
     }
+
     public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(final WebhookClient webhook) {
         return (mc, txt) -> webhook.send(whMessage(mc)
                 .setContent(txt)
@@ -224,18 +295,18 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     msg.thenApply(ISnowflake::getIdLong).thenComposeAsync(it -> Polyfill
                             .batches(MaxBulkDelete, channel.getIterableHistory()
                                     .stream()
-                                    .peek(x->log.info("filter(id): "+x))
+                                    .peek(x -> log.info("filter(id): " + x))
                                     .filter(m -> m.getIdLong() != it)
-                                    .peek(x->log.info("map(id): "+x))
+                                    .peek(x -> log.info("map(id): " + x))
                                     .map(ISnowflake::getId))
                             .peek(ids -> log.fine(Polyfill.batches(8, ids.stream())
                                     .map(ls -> String.join(", ", ls))
                                     .collect(Collectors.joining("\n\t\t", "Deleting message batch:\n\t\t", ""))))
-                            .peek(x->log.info("bulkDelete(): "+x))
+                            .peek(x -> log.info("bulkDelete(): " + x))
                             .map(channel::deleteMessagesByIds)
-                            .peek(x->log.info("submit(): "+x))
+                            .peek(x -> log.info("submit(): " + x))
                             .map(RestAction::submit)
-                            .peek(x->log.info("collect(): "+x))
+                            .peek(x -> log.info("collect(): " + x))
                             .collect(Collectors.collectingAndThen(
                                     Collectors.<CompletableFuture<?>>toList(),
                                     all -> CompletableFuture.allOf(all.toArray(CompletableFuture[]::new)))
@@ -288,7 +359,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     rev.add(lines[index--]);
                 log.fine("size after scroll = " + (index < 0 ? size : (size - lines[index].length())));
                 Collections.reverse(rev);
-                return String.join("\n", rev)+'\n';
+                return String.join("\n", rev) + '\n';
             }
 
             private String header() {
