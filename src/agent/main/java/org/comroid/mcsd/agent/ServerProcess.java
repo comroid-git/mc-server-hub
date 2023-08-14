@@ -91,7 +91,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (getState() == State.Running)
             return;
 
-        Stopwatch.start(server.getId());
+        final var stopwatch = Stopwatch.start("startup-" + server.getId());
 
         var exec = PathUtil.findExec("java").orElseThrow();
         process = Runtime.getRuntime().exec(new String[]{
@@ -116,23 +116,9 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 .mapData(m -> m.group("time"))
                 .mapData(Double::parseDouble)
                 .mapData(x -> Duration.ofMillis((long) (x * 1000)))
-                .listen().once().thenApply($ -> Stopwatch.stop(server.getId()));
+                .listen().once().thenApply($ -> stopwatch.stop());
         done.thenAccept(d -> {
-            long seconds = d.getSeconds();
-            long absSeconds = Math.abs(seconds);
-            var t = "";
-            if (absSeconds > 60 * 60) {
-                var diff = absSeconds / (60 * 60);
-                t += diff + "h";
-                absSeconds -= diff * 60 * 60;
-            }
-            if (absSeconds > 60) {
-                var diff = absSeconds / 60;
-                t += diff + "min";
-                absSeconds -= diff * 60;
-            }
-            if (absSeconds > 0)
-                t += (absSeconds) + "sec";
+            var t = Polyfill.durationString(d);
             var msg = "Took " + t + " to start";
             pushStatus((server.isMaintenance() ? Status.Maintenance : Status.Online).new Message(msg));
             log.info(server + " " + msg);
@@ -151,6 +137,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         }
 
         pushStatus(Status.Backing_Up);
+        final var stopwatch = Stopwatch.start("backup-" + server.getId());
+
         var backupDir = new FileHandle(server.shCon().orElseThrow().getBackupsDir()).createSubDir(server.getName());
         if (!backupDir.exists() && !backupDir.mkdirs())
             return CompletableFuture.failedFuture(new RuntimeException("Could not create backup directory"));
@@ -175,11 +163,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .orTimeout(1, TimeUnit.HOURS)
                         .whenComplete((r, t) -> {
                             var stat = Status.Online;
-                            var msg = "Backup finished";
+                            var msg = "Backup finished; took " + Polyfill.durationString(stopwatch.stop());
                             if (t != null) {
                                 stat = Status.In_Trouble;
                                 msg = "Unable to complete Backup: " + t;
-                                log.error(msg+" for " + server, t);
+                                log.error(msg + " for " + server, t);
                             }
                             in.println("save-on");
                             pushStatus(stat.new Message(msg));
