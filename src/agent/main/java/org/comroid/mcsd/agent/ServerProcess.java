@@ -158,7 +158,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .excludePattern("**libraries/**")
                         .excludePattern("**versions/**")
                         .excludePattern("**.lock")
-                        .outputPath(backup)
+                        .outputPath(backup.getAbsolutePath())
                         .execute()
                         //.orTimeout(30, TimeUnit.SECONDS) // dev variant
                         .orTimeout(1, TimeUnit.HOURS)
@@ -169,7 +169,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                                     (double) backup.length() / (1024 * 1024 * 1024));
                             if (t != null) {
                                 stat = Status.In_Trouble;
-                                msg = "Unable to complete Backup: " + t;
+                                msg = "Unable to complete Backup";
                                 log.error(msg + " for " + server, t);
                             }
                             in.println("save-on");
