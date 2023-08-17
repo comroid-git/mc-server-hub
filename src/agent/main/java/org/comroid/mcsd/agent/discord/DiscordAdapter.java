@@ -102,8 +102,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .flatMap(Streams.cast(SlashCommandInteractionEvent.class))
                 .findAny()
                 .orElseThrow();
-        final var mc = bean(MinecraftProfileRepo.class)
+        final var mc = bean(UserRepo.class)
                 .findByDiscordId(e.getUser().getIdLong())
+                .map(org.comroid.mcsd.core.entity.User::getMinecraft)
                 .orElse(null);
         if (response instanceof CompletableFuture)
             e.deferReply().setEphemeral(cmd.ephemeral())
