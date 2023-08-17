@@ -8,20 +8,8 @@ Manage all your Minecraft Servers from one Web interface!
 ## Warning
 #### Compatibility is very limited currently
 System Requirements:
-- Linux Operating System
+- Linux Operating System for full functionality
 - Required Programs
-  - `screen`
-  - `wget`
-  - `tar`
-- Authentication
-  - Currently only supports OAuth2 Authentication through [JetBrains Hub](https://www.jetbrains.com/hub/)
+  - `tar` (GNU tar)
 - Database
   - Currently only supports MySQL
-
-### Known issues
-- View and Edit server is bugged
-- Edit User/Server permissions in web incomplete; please modify the DB instead
-- Console page sometimes does not connect
-
-### Screenshots
-[![Dashboard](https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/docs/img/dashboard.png)](https://raw.githubusercontent.com/comroid-git/mc-server-hub/main/docs/img/dashboard.png)
