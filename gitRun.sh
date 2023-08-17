@@ -29,7 +29,13 @@ function fetch() {
 fetch
 
 exec="gradle"
+debugOptions=""
 if [ -z "$(which "$exec")" ]; then
   exec="gradlew"
 fi
-$exec --no-daemon ':agent:bootRun';
+if [ $branch != "main" ]; then
+  debugOptions="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+fi
+
+$exec --no-daemon ':agent:simplify';
+java -Xmx2G $debugOptions -jar agent/build/libs/agent.jar;

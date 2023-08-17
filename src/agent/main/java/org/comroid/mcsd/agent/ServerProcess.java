@@ -164,7 +164,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .orTimeout(1, TimeUnit.HOURS)
                         .whenComplete((r, t) -> {
                             var stat = Status.Online;
-                            var msg = "Backup finished; took %s; size: %sGB".formatted(
+                            var msg = "Backup finished; took %s; size: %1.2fGB".formatted(
                                     Polyfill.durationString(stopwatch.stop()),
                                     (double) backup.length() / (1024 * 1024 * 1024));
                             if (t != null) {

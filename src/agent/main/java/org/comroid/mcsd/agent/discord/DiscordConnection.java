@@ -83,7 +83,7 @@ public class DiscordConnection extends Container.Base {
                             if (message.getMessage()!=null)
                                 builder.setDescription(message.getMessage());
                             return builder
-                                    .setTitle(message.getStatus().getEmoji() + '\t' + "Server is " + message.getStatus().getName())
+                                    .setTitle(message.toStatusMessage())
                                     .setColor(message.getStatus().getColor());
                         })
                         .subscribeData(embed -> embedTemplate.accept(embed, null))),
