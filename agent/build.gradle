@@ -11,8 +11,8 @@ targetCompatibility = '17'
 mainClassName = 'org.comroid.mcsd.agent.MinecraftServerHubAgent'
 
 tasks.register('simplify', Copy) {
-    dependsOn 'jar'
-    from jar.outputs.files.singleFile
+    dependsOn 'bootJar'
+    from bootJar.outputs.files.singleFile
     into "$buildDir/libs"
     rename { "${project.name}.jar" }
 }
