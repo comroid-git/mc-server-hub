@@ -21,7 +21,6 @@ import java.util.UUID;
 @Data
 @Slf4j
 @Entity
-@Table(name = "entity")
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class AbstractEntity implements Named {
     @Id

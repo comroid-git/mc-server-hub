@@ -36,7 +36,6 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Slf4j
 @Getter
 @Entity
-@Table(name = "server")
 @RequiredArgsConstructor
 public class Server extends AbstractEntity {
     public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }

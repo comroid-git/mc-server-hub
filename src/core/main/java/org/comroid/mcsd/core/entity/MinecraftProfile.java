@@ -13,7 +13,6 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "minecraft_profile")
 public class MinecraftProfile extends AbstractEntity {
     private @Nullable String verification;
     @ElementCollection

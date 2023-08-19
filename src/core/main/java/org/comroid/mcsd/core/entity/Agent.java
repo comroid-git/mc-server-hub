@@ -26,7 +26,6 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Getter
 @Entity
-@Table(name = "agent")
 public class Agent extends AbstractEntity {
     public static final int TokenLength = 64;
     private @Setter @ManyToOne AbstractEntity target;

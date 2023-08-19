@@ -14,7 +14,6 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "user")
 public class User extends AbstractEntity {
     private boolean guest;
     private @ManyToOne @Nullable MinecraftProfile minecraft;

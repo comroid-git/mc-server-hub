@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 @Getter
 @Setter
 @Entity
-@Table(name = "discord_bot")
 public class DiscordBot extends AbstractEntity {
     @Basic @ToString.Exclude
     private String token;

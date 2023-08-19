@@ -13,7 +13,6 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "sh_connection")
 public class ShConnection extends AbstractEntity {
     private String host;
     private int port = 22;
