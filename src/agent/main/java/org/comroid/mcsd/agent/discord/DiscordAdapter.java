@@ -148,8 +148,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 embed.addField("Players", "\n- " + String.join("\n- ", stat.getPlayers()), false);
             else
                 embed.addField("Players", "%d out of %d".formatted(stat.getPlayerCount(), server.getMaxPlayers()), false);
-            Optional.ofNullable(server.getOwner().getMinecraft()).ifPresent(owner ->
-                    embed.setAuthor("Owner: " + owner.getName(), owner.getNameMcURL(), owner.getHeadURL()));
+            Optional.ofNullable(server.getOwner())
+                    .map(org.comroid.mcsd.core.entity.User::getMinecraft)
+                    .ifPresent(owner -> embed.setAuthor("Owner: " + owner.getName(), owner.getNameMcURL(), owner.getHeadURL()));
             return embed;
         });
     }
