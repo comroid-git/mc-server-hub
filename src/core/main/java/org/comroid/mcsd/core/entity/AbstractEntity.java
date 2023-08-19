@@ -47,6 +47,10 @@ public abstract class AbstractEntity implements Named {
         return () -> hasPermission(user, permissions) ? new Object() : null;
     }
 
+    public String toString() {
+        return getClass().getSimpleName() + ' ' + getName();
+    }
+
     public final boolean equals(Object other) {
         return other instanceof AbstractEntity && id.equals(((AbstractEntity) other).id);
     }
