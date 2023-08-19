@@ -52,7 +52,6 @@ public class Server extends AbstractEntity {
     private @Setter @Nullable Long ConsoleChannelId;
     private @Setter @Deprecated ConsoleMode consoleMode = ConsoleMode.Scroll;
     private @Setter boolean fancyConsole = true;
-    private @Setter String name;
     private @Setter String mcVersion = "1.19.4";
     private @Setter String host;
     private @Setter int port = 25565;
@@ -161,7 +160,7 @@ public class Server extends AbstractEntity {
 
     @Override
     public String toString() {
-        return "Server " + name;
+        return "Server " + getName();
     }
 
     public String getDashboardURL() {

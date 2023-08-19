@@ -4,9 +4,11 @@ package org.comroid.mcsd.core.entity;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.IntegerAttribute;
+import org.comroid.api.Named;
 import org.comroid.api.Rewrapper;
 import org.comroid.util.Bitmask;
 import org.jetbrains.annotations.NotNull;
@@ -21,11 +23,15 @@ import java.util.UUID;
 @Entity
 @Table(name = "entity")
 @Inheritance(strategy = InheritanceType.JOINED)
-public abstract class AbstractEntity {
+public abstract class AbstractEntity implements Named {
     @Id
     @Convert(converter = MinecraftProfile.UuidConverter.class)
     @JsonDeserialize(converter = MinecraftProfile.UuidConverter.class)
     private UUID id = UUID.randomUUID();
+    @Setter
+    @Nullable
+    private String name;
+    @Setter
     @Nullable
     @ManyToOne
     private User owner;

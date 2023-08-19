@@ -16,7 +16,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "user")
 public class User extends AbstractEntity {
-    private String name;
     private boolean guest;
     @Deprecated
     private int permissions;

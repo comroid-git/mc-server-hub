@@ -16,7 +16,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "minecraft_profile")
 public class MinecraftProfile extends AbstractEntity {
-    private String name;
     private @Nullable @JsonIgnore String verification;
     @ElementCollection
     private Map<UUID, String> serverLogins;
