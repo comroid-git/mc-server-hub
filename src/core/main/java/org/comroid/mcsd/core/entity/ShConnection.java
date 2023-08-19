@@ -15,7 +15,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "sh_connection")
 public class ShConnection extends AbstractEntity {
-    private @ManyToOne User owner;
     private String host;
     private int port = 22;
     private String username;

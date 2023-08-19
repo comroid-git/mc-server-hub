@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -18,6 +21,11 @@ public abstract class AbstractEntity {
     @Convert(converter = MinecraftProfile.UuidConverter.class)
     @JsonDeserialize(converter = MinecraftProfile.UuidConverter.class)
     private UUID id = UUID.randomUUID();
+    @Nullable
+    @ManyToOne
+    private User owner;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Map<UUID, @NotNull Long> permissions;
 
     public final boolean equals(Object other) {
         return other instanceof AbstractEntity && id.equals(((AbstractEntity) other).id);

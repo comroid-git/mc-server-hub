@@ -44,7 +44,6 @@ public class Server extends AbstractEntity {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
-    private @ManyToOne User owner;
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
     private @Setter @Nullable String PublicChannelWebhook;
@@ -72,8 +71,6 @@ public class Server extends AbstractEntity {
     private @Setter Instant lastBackup = Instant.ofEpochMilli(0);
     private @Setter Instant lastUpdate = Instant.ofEpochMilli(0);
     private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.Unknown;
-    @JsonIgnore @ElementCollection(fetch = FetchType.EAGER)
-    private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
 
     @JsonIgnore
     public ServerConnection con() {
@@ -102,7 +99,7 @@ public class Server extends AbstractEntity {
 
     public Server requireUserAccess(User user, Permission... permissions) {
         var insufficient = Arrays.stream(permissions)
-                .filter(x -> !x.isFlagSet(userPermissions.getOrDefault(user.getId(), 0)))
+                .filter(x -> !x.isFlagSet(Math.toIntExact(getPermissions().getOrDefault(user.getId(), 0L))))
                 .toArray(Permission[]::new);
         if (insufficient.length > 0)
             throw new InsufficientPermissionsException(user, this, insufficient);
