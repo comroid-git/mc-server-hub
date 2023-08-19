@@ -18,6 +18,7 @@ import java.util.UUID;
 public class User extends AbstractEntity {
     private String name;
     private boolean guest;
+    @Deprecated
     private int permissions;
     private @ManyToOne @Nullable MinecraftProfile minecraft;
     private @Nullable Long discordId;
@@ -41,5 +42,6 @@ public class User extends AbstractEntity {
         return "User " + name;
     }
 
+    @Deprecated
     public enum Perm implements BitmaskAttribute<Perm> {None, ManageServers, ManageShConnections, Admin}
 }
