@@ -1,6 +1,5 @@
 package org.comroid.mcsd.core.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,7 +18,7 @@ public class ShConnection extends AbstractEntity {
     private String host;
     private int port = 22;
     private String username;
-    private @JsonIgnore String password;
+    private String password;
     private String backupsDir = "$HOME/backups";
     private int capabilites = Bitmask.combine(Capability.SSH);
 

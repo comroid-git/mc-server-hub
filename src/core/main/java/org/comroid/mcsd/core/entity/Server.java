@@ -39,7 +39,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Table(name = "server")
 @RequiredArgsConstructor
 public class Server extends AbstractEntity {
-    public @Deprecated enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
+    public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
 
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
@@ -65,7 +65,7 @@ public class Server extends AbstractEntity {
     private @Setter int maxPlayers = 20;
     private @Setter int queryPort = 25565;
     private @Setter int rConPort = Defaults.RCON_PORT;
-    private @Setter @JsonIgnore String rConPassword = UUID.randomUUID().toString();
+    private @Setter String rConPassword = UUID.randomUUID().toString();
     private @Setter Duration backupPeriod = Duration.ofHours(12);
     private @Setter Duration updatePeriod = Duration.ofDays(7);
     private @Setter Instant lastBackup = Instant.ofEpochMilli(0);
