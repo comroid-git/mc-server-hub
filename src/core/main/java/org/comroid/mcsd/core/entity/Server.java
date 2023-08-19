@@ -209,8 +209,8 @@ public class Server extends AbstractEntity {
         prop.setProperty("white-list", String.valueOf(isWhitelist() || isMaintenance()));
 
         // query
-        prop.setProperty("enable-query", String.valueOf(false));
-        //prop.setProperty("enable-query", String.valueOf(true));
+        //prop.setProperty("enable-query", String.valueOf(false));
+        prop.setProperty("enable-query", String.valueOf(true));
         prop.setProperty("query.port", String.valueOf(getQueryPort()));
 
         // rcon
