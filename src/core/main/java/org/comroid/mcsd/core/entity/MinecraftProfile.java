@@ -1,5 +1,6 @@
 package org.comroid.mcsd.core.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.SimpleType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -16,7 +17,7 @@ import java.util.UUID;
 @Table(name = "minecraft_profile")
 public class MinecraftProfile extends AbstractEntity {
     private String name;
-    private @Nullable String verification;
+    private @Nullable @JsonIgnore String verification;
     @ElementCollection
     private Map<UUID, String> serverLogins;
 
