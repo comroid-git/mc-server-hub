@@ -5,9 +5,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.BitmaskAttribute;
+import org.comroid.api.IntegerAttribute;
+import org.comroid.util.Bitmask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,7 +29,12 @@ public abstract class AbstractEntity {
     @ManyToOne
     private User owner;
     @ElementCollection(fetch = FetchType.EAGER)
-    private Map<UUID, @NotNull Long> permissions;
+    private Map<UUID, @NotNull Integer> permissions;
+
+    public final boolean hasPermission(@NotNull User user, Server.Permission... permissions) {
+        final var mask = this.permissions.getOrDefault(user.getId(), 0);
+        return Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag));
+    }
 
     public final boolean equals(Object other) {
         return other instanceof AbstractEntity && id.equals(((AbstractEntity) other).id);
@@ -33,5 +42,12 @@ public abstract class AbstractEntity {
 
     public final int hashCode() {
         return id.hashCode();
+    }
+
+    public enum Permission implements BitmaskAttribute<Permission> {
+        View,
+        Manage,
+        Administrate,
+        Delete
     }
 }

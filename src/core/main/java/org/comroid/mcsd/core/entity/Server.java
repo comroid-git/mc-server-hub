@@ -99,7 +99,7 @@ public class Server extends AbstractEntity {
 
     public Server requireUserAccess(User user, Permission... permissions) {
         var insufficient = Arrays.stream(permissions)
-                .filter(x -> !x.isFlagSet(Math.toIntExact(getPermissions().getOrDefault(user.getId(), 0L))))
+                .filter(x -> !x.isFlagSet(getPermissions().getOrDefault(user.getId(), 0)))
                 .toArray(Permission[]::new);
         if (insufficient.length > 0)
             throw new InsufficientPermissionsException(user, this, insufficient);
@@ -288,6 +288,7 @@ public class Server extends AbstractEntity {
         Vanilla, Paper, Forge, Fabric
     }
 
+    @Deprecated
     public enum Permission implements BitmaskAttribute<Permission> {
         Status, Start, Stop, Console, Backup, Files
     }
