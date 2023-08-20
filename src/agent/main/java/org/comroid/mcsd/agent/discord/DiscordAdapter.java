@@ -147,7 +147,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             if (server.getHomepage() != null)
                 embed.setUrl(server.getHomepage());
             if (stat.getPlayers() != null)
-                embed.addField("Players", "\n- " + String.join("\n- ", stat.getPlayers()), false);
+                if (!stat.getPlayers().isEmpty())
+                    embed.addField("Players", "- " + String.join("\n- ", stat.getPlayers()), false);
+                else embed.addField("Players", "There are no players online", false);
             else
                 embed.addField("Players", "%d out of %d".formatted(stat.getPlayerCount(), server.getMaxPlayers()), false);
             Optional.ofNullable(server.getOwner())
