@@ -40,6 +40,7 @@ import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Markdown;
 import org.comroid.util.Ratelimit;
 import org.comroid.util.Streams;
@@ -137,7 +138,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         return server.status().thenApply(stat -> {
             var embed = new EmbedBuilder()
                     .setTitle(stat.getStatus().toStatusMessage(), server.getHomepage())
-                    .setDescription(stat.getMotd())
+                    .setDescription(Utils.removeAnsiEscapeSequences(stat.getMotd()))
                     .setColor(stat.getStatus().getColor())
                     .setThumbnail(server.getThumbnailURL())
                     .addField("Host", server.getHost(), true)
