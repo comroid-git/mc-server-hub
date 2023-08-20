@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
-import org.comroid.api.IntegerAttribute;
 import org.comroid.api.Named;
 import org.comroid.api.Rewrapper;
 import org.comroid.util.Bitmask;
@@ -58,10 +57,23 @@ public abstract class AbstractEntity implements Named {
         return id.hashCode();
     }
 
+    // todo: ungroup permissions?
     public enum Permission implements BitmaskAttribute<Permission> {
-        View,
-        Manage,
-        Administrate,
-        Delete
+        View(1), // Status
+        Moderate(3), // view + Whitelist, Kick, Mute
+        Manage(7), // moderate + Ban, Start, Stop, Backup, Maintenance, Enable
+        Administrate(15), // manage + Console, Execute, Files, ForceOP
+        Delete(16); // Wipe
+
+        private final int value;
+
+        Permission(int value) {
+            this.value = value;
+        }
+
+        @Override
+        public @NotNull Integer getValue() {
+            return value;
+        }
     }
 }
