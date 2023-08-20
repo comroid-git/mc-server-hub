@@ -144,6 +144,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     .addField("Version", server.getMcVersion(), true)
                     .addField("Game Type", server.getMode().getName(), true)
                     .setTimestamp(stat.getTimestamp());
+            if (server.getHomepage() != null)
+                embed.setUrl(server.getHomepage());
             if (stat.getPlayers() != null)
                 embed.addField("Players", "\n- " + String.join("\n- ", stat.getPlayers()), false);
             else

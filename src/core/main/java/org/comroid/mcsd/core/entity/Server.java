@@ -45,6 +45,7 @@ public class Server extends AbstractEntity {
     public static final Duration statusTimeout = Duration.ofSeconds(10);
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
+    private @Setter @Nullable String homepage;
     private @Setter @Nullable String PublicChannelWebhook;
     private @Setter @Nullable Long PublicChannelId;
     private @Setter @Nullable Long ModerationChannelId;
