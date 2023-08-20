@@ -21,14 +21,15 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
 
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
-            " JOIN ShConnection sh ON sh.id = a.target OR sh.id = s.shConnection")
-    // todo this shit wont work in spring but in mysql its totally fine...
+            " JOIN ShConnection sh" +
+            " WHERE sh.id = a.target AND sh.id = s.shConnection.id")
+        // todo this shit wont work in spring but in mysql its totally fine...
     Iterable<Server> findAllForAgent(@Param("agentId") UUID agentId);
 
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
-            " JOIN ShConnection sh ON sh.id = a.target OR sh.id = s.shConnection" +
-            " WHERE s.name = :name")
+            " JOIN ShConnection sh" +
+            " WHERE (sh.id = a.target AND sh.id = s.shConnection.id) AND s.name = :name")
     Optional<Server> findByAgentAndName(@Param("agentId") UUID agentId, @Param("name") String name);
 
     @Query("SELECT s FROM Server s" +
