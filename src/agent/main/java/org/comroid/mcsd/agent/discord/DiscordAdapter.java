@@ -136,7 +136,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .orElseThrow(() -> new Command.Error("Unable to find server"));
         return server.status().thenApply(stat -> {
             var embed = new EmbedBuilder()
-                    .setTitle(stat.getStatus().toStatusMessage())
+                    .setTitle(stat.getStatus().toStatusMessage(), server.getHomepage())
                     .setDescription(stat.getMotd())
                     .setColor(stat.getStatus().getColor())
                     .setThumbnail(server.getThumbnailURL())
@@ -144,8 +144,6 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     .addField("Version", server.getMcVersion(), true)
                     .addField("Game Type", server.getMode().getName(), true)
                     .setTimestamp(stat.getTimestamp());
-            if (server.getHomepage() != null)
-                embed.setUrl(server.getHomepage());
             if (stat.getPlayers() != null)
                 if (!stat.getPlayers().isEmpty())
                     embed.addField("Players", "- " + String.join("\n- ", stat.getPlayers()), false);
