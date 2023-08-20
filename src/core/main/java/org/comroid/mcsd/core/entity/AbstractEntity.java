@@ -61,8 +61,8 @@ public abstract class AbstractEntity implements Named {
     public enum Permission implements BitmaskAttribute<Permission> {
         View(1), // Status
         Moderate(3), // view + Whitelist, Kick, Mute
-        Manage(7), // moderate + Ban, Start, Stop, Backup, Maintenance, Enable
-        Administrate(15), // manage + Console, Execute, Files, ForceOP
+        Manage(7), // moderate + Ban, Start, Stop, Backup, Update, Maintenance, Enable
+        Administrate(15), // manage + Console, Execute, Enable, Files, ForceOP
         Delete(16); // Wipe
 
         private final int value;
