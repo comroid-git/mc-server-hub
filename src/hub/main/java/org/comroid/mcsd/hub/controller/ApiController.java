@@ -2,9 +2,11 @@ package org.comroid.mcsd.hub.controller;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
+import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
@@ -34,9 +36,12 @@ public class ApiController {
 
     @GetMapping("/server/cron/{serverId}")
     public void triggerCron(HttpSession session, @PathVariable UUID serverId) {
-        users.findBySession(session).require(User.Perm.Admin);
+        final var user = users.findBySession(session);
         servers.findById(serverId)
                 .orElseThrow(() -> new EntityNotFoundException(Server.class, serverId))
+                .verifyPermission(user, AbstractEntity.Permission.Administrate)
+                .flatMap(Server.class)
+                .orElseThrow(() -> new InsufficientPermissionsException(user, null, AbstractEntity.Permission.Administrate))
                 .con()
                 .cron();
     }

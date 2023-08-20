@@ -43,7 +43,6 @@ public class MinecraftServerHub {
     public Map<Runnable, Duration> cronjobs() {
         return Map.of(
                 this::$cronWatchdog, MinecraftServerHubConfig.CronRate_Watchdog,
-                this::$cronManager, MinecraftServerHubConfig.CronRate_Manager,
                 this::$cronBackup, MinecraftServerHubConfig.CronRate_Queue,
                 this::$cronUpdate, MinecraftServerHubConfig.CronRate_Queue
         );

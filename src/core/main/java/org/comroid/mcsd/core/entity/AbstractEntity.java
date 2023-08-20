@@ -41,8 +41,8 @@ public abstract class AbstractEntity implements Named {
         return Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag));
     }
 
-    public final Rewrapper<Object> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
-        return () -> hasPermission(user, permissions) ? new Object() : null;
+    public final Rewrapper<AbstractEntity> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
+        return () -> hasPermission(user, permissions) ? this : null;
     }
 
     public String toString() {
@@ -62,7 +62,7 @@ public abstract class AbstractEntity implements Named {
         View(1), // Status
         Moderate(3), // view + Whitelist, Kick, Mute
         Manage(7), // moderate + Ban, Start, Stop, Backup, Update, Maintenance, Enable
-        Administrate(15), // manage + Console, Execute, Enable, Files, ForceOP
+        Administrate(15), // manage + Console, Execute, Enable, Files, ForceOP, TriggerCron
         Delete(16); // Wipe
 
         private final int value;
