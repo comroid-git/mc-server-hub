@@ -35,6 +35,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Slf4j
 @Getter
+@Setter
 @Entity
 @RequiredArgsConstructor
 public class Server extends AbstractEntity {
@@ -45,31 +46,31 @@ public class Server extends AbstractEntity {
     public static final Duration statusTimeout = Duration.ofSeconds(10);
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
-    private @Setter @Nullable String homepage;
-    private @Setter @Nullable String PublicChannelWebhook;
-    private @Setter @Nullable Long PublicChannelId;
-    private @Setter @Nullable Long ModerationChannelId;
-    private @Setter @Nullable Long ConsoleChannelId;
-    private @Setter @Deprecated ConsoleMode consoleMode = ConsoleMode.Scroll;
-    private @Setter boolean fancyConsole = true;
-    private @Setter String mcVersion = "1.19.4";
-    private @Setter String host;
-    private @Setter int port = 25565;
-    private @Setter String directory = "~/minecraft";
-    private @Setter Mode mode = Mode.Paper;
-    private @Setter byte ramGB = 4;
-    private @Setter boolean enabled = false;
-    private @Setter boolean managed = false;
-    private @Setter boolean whitelist = false;
-    private @Setter boolean maintenance = false;
-    private @Setter int maxPlayers = 20;
-    private @Setter int queryPort = 25565;
-    private @Setter int rConPort = Defaults.RCON_PORT;
-    private @Setter String rConPassword = UUID.randomUUID().toString();
-    private @Setter Duration backupPeriod = Duration.ofHours(12);
-    private @Setter Duration updatePeriod = Duration.ofDays(7);
-    private @Setter Instant lastBackup = Instant.ofEpochMilli(0);
-    private @Setter Instant lastUpdate = Instant.ofEpochMilli(0);
+    private @Nullable String homepage;
+    private @Nullable String PublicChannelWebhook;
+    private @Nullable Long PublicChannelId;
+    private @Nullable Long ModerationChannelId;
+    private @Nullable Long ConsoleChannelId;
+    private @Deprecated ConsoleMode consoleMode = ConsoleMode.Scroll;
+    private boolean fancyConsole = true;
+    private String mcVersion = "1.19.4";
+    private String host;
+    private int port = 25565;
+    private String directory = "~/minecraft";
+    private Mode mode = Mode.Paper;
+    private byte ramGB = 4;
+    private boolean enabled = false;
+    private boolean managed = false;
+    private boolean whitelist = false;
+    private boolean maintenance = false;
+    private int maxPlayers = 20;
+    private int queryPort = 25565;
+    private int rConPort = Defaults.RCON_PORT;
+    private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = UUID.randomUUID().toString();
+    private Duration backupPeriod = Duration.ofHours(12);
+    private Duration updatePeriod = Duration.ofDays(7);
+    private Instant lastBackup = Instant.ofEpochMilli(0);
+    private Instant lastUpdate = Instant.ofEpochMilli(0);
     private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.Unknown;
 
     @JsonIgnore
