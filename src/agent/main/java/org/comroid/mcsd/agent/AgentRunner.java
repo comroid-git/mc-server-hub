@@ -207,7 +207,15 @@ public class AgentRunner implements Command.Handler {
     public Object create(String[] args, ConsoleController.Connection con) {
         if (Arrays.stream(Utils.SuperAdmins).noneMatch(con.getUser().getId()::equals))
             throw new Command.Error("Insufficient permissions");
+        String name = args[0];
+        String version = null;
+        Server.Mode mode = Arrays.stream(Server.Mode.values())
+                .filter(m->m.name().equalsIgnoreCase(args[2]))
+                .findAny()
+                .orElseThrow();
         Server server = Server.builder()
+                .mcVersion(version)
+                .mode(mode)
                 .fancyConsole(true)
                 .port(25565)
                 .ramGB((byte) 4)
@@ -219,7 +227,8 @@ public class AgentRunner implements Command.Handler {
                 .queryPort(25565)
                 .rConPort(25575)
                 .build();
-        server.setOwner(con.getUser());
+        server.setName(name)
+                .setOwner(con.getUser());
         return servers.save(server) + "created";
     }
 
