@@ -37,6 +37,8 @@ public abstract class AbstractEntity implements Named {
     private Map<UUID, @NotNull Integer> permissions;
 
     public final boolean hasPermission(@NotNull User user, AbstractEntity.Permission... permissions) {
+        if (owner != null && user.getId().equals(owner.getId()))
+            return true;
         final var mask = this.permissions.getOrDefault(user.getId(), 0);
         return Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag));
     }
