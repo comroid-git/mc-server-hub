@@ -15,7 +15,7 @@ import java.util.UUID;
 @Entity
 public class MinecraftProfile extends AbstractEntity {
     private @Nullable String verification;
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, String> serverLogins;
 
     public boolean isVerified() {
