@@ -38,6 +38,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Setter
 @Entity
 @Builder
+@AllArgsConstructor
 @RequiredArgsConstructor
 public class Server extends AbstractEntity {
     public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
