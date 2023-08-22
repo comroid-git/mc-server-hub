@@ -203,6 +203,26 @@ public class AgentRunner implements Command.Handler {
         return "Detached";
     }
 
+    @Command(usage = "<name> <version> <mode> [-na]")
+    public Object create(String[] args, ConsoleController.Connection con) {
+        if (Arrays.stream(Utils.SuperAdmins).noneMatch(con.getUser().getId()::equals))
+            throw new Command.Error("Insufficient permissions");
+        Server server = Server.builder()
+                .fancyConsole(true)
+                .port(25565)
+                .ramGB((byte) 4)
+                .enabled(false)
+                .managed(true)
+                .whitelist(false)
+                .maintenance(true)
+                .maxPlayers(20)
+                .queryPort(25565)
+                .rConPort(25575)
+                .build();
+        server.setOwner(con.getUser());
+        return servers.save(server) + "created";
+    }
+
     @Command(usage = "")
     public String shutdown(ConsoleController.Connection con) {
         if (Arrays.stream(Utils.SuperAdmins).noneMatch(con.getUser().getId()::equals))
