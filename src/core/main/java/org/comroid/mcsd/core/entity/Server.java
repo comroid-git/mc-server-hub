@@ -37,7 +37,6 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @Setter
 @Entity
-@Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class Server extends AbstractEntity {
