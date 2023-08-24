@@ -244,7 +244,7 @@ public class Server extends AbstractEntity {
                                 .withStatus(isMaintenance() ? Status.Maintenance : Status.Online)
                                 .withPlayerCount(stat.getOnlinePlayers())
                                 .withPlayerMax(stat.getMaxPlayers())
-                                .withMotd(stat.getMOTD().replaceAll("§\\w", ""))
+                                .withMotd(stat.getMOTD())
                                 .withGameMode(stat.getGameMode())
                                 .withPlayers(stat.getPlayerList())
                                 .withWorldName(stat.getMapName());
@@ -261,7 +261,7 @@ public class Server extends AbstractEntity {
                             .withStatus(stat.isServerUp() ? isMaintenance() ? Status.Maintenance : Status.Online : Status.Offline)
                             .withPlayerCount(stat.getCurrentPlayers())
                             .withPlayerMax(stat.getMaximumPlayers())
-                            .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), "").replaceAll("§\\w", ""))
+                            .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), ""))
                             .withGameMode(stat.getGameMode());
                 })
                 .orTimeout(statusTimeout.toSeconds(), TimeUnit.SECONDS)

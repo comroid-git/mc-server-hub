@@ -40,6 +40,7 @@ import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Markdown;
 import org.comroid.util.Ratelimit;
@@ -138,7 +139,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         return server.status().thenApply(stat -> {
             var embed = new EmbedBuilder()
                     .setTitle(stat.getStatus().toStatusMessage(), server.getHomepage())
-                    .setDescription(Utils.removeAnsiEscapeSequences(stat.getMotd()))
+                    .setDescription(TextDecoration.sanitize(stat.getMotd(), McFormatCode.class, Markdown.class))
                     .setColor(stat.getStatus().getColor())
                     .setThumbnail(server.getThumbnailURL())
                     .addField("Host", server.getHost(), true)
@@ -164,7 +165,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .orElseThrow(() -> new Command.Error("Unable to find server"));
         return server.status().thenApply(stat -> {
             var embed = new EmbedBuilder()
-                    .setDescription(stat.getMotd())
+                    .setDescription(TextDecoration.sanitize(stat.getMotd(), McFormatCode.class, Markdown.class))
                     .setThumbnail(server.getThumbnailURL())
                     .setTimestamp(stat.getTimestamp());
             if (stat.getPlayers() == null)
