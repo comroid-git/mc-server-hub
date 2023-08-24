@@ -10,11 +10,9 @@ import org.comroid.api.Polyfill;
 import org.comroid.mcsd.agent.controller.ConsoleController;
 import org.comroid.mcsd.agent.discord.DiscordAdapter;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.AbstractEntity;
-import org.comroid.mcsd.core.entity.Agent;
-import org.comroid.mcsd.core.entity.DiscordBot;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.StandardValueType;
 import org.comroid.util.Streams;
@@ -24,6 +22,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.PrintStream;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -213,23 +213,39 @@ public class AgentRunner implements Command.Handler {
                 .filter(m->m.name().equalsIgnoreCase(args[2]))
                 .findAny()
                 .orElseThrow();
-        Server server = Server.builder()
-                .mcVersion(version)
-                .mode(mode)
-                .fancyConsole(true)
-                .port(25565)
-                .ramGB((byte) 4)
-                .enabled(false)
-                .managed(true)
-                .whitelist(false)
-                .maintenance(true)
-                .maxPlayers(20)
-                .queryPort(25565)
-                .rConPort(25575)
-                .build();
-        server.setName(name)
-                .setOwner(con.getUser());
-        return servers.save(server) + "created";
+        ShConnection shCon = bean(ShRepo.class).findById(me.getTarget()).orElseThrow();
+        Server server = new Server(
+                shCon,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Server.ConsoleMode.ScrollClean,
+                true,
+                version,
+                shCon.getHost(),
+                25565,
+                "~/mcsd/"+name,
+                mode,
+                (byte)4,
+                false,
+                true,
+                false,
+                true,
+                20,
+                25565,
+                25575,
+                null,
+                Duration.ofHours(12),
+                Duration.ofDays(7),
+                Instant.EPOCH,
+                Instant.EPOCH,
+                Status.Unknown
+        );
+        server.setName(name).setOwner(con.getUser());
+        return servers.save(server) + " created";
     }
 
     @Command(usage = "")
