@@ -206,7 +206,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         .join());
     }
 
-    public Consumer<@NotNull DiscordMessageSource> messageTemplate(final WebhookClient webhook) {
+    public MessagePublisher messageTemplate(final WebhookClient webhook) {
         return new MessagePublisher() {
             @Override
             protected CompletableFuture<@NotNull Long> channelId() {
@@ -241,7 +241,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         };
     }
 
-    public Consumer<@NotNull DiscordMessageSource> messageTemplate(final long channelId) {
+    public MessagePublisher messageTemplate(final long channelId) {
         return new MessagePublisher() {
             private final @NotNull TextChannel channel = Objects.requireNonNull(jda.getTextChannelById(channelId),
                     "Channel " + channelId + " not found");
@@ -281,7 +281,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         };
     }
 
-    private abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {
+    public abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {
         private final AtomicLong lastKnownMessage = new AtomicLong(0);
 
         protected abstract CompletableFuture<@NotNull Long> channelId();
@@ -326,68 +326,6 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         public void accept(DiscordMessageSource msg) {
             msg.send(this);
         }
-    }
-
-    @Deprecated
-    public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(final WebhookClient webhook) {
-        return (mc, txt) -> webhook.send(whMessage(mc)
-                .setContent(txt)
-                .build());
-    }
-
-    @Deprecated
-    public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(long channelId) {
-        final var channel = jda.getTextChannelById(channelId);
-        if (channel == null)
-            throw new NullPointerException("channel not found: " + channelId);
-        return (mc, txt) -> channel.sendMessageEmbeds(embed(mc)
-                .setDescription(txt)
-                .build()).queue();
-    }
-
-    @Deprecated
-    public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(final WebhookClient webhook) {
-        return (embed, mc) -> {
-            final var content = WebhookEmbedBuilder.fromJDA(embed(embed, mc).build()).build();
-            jda.retrieveWebhookById(webhook.getId())
-                    .map(wh -> wh.getChannel().asTextChannel())
-                    .queue(channel -> channel.getHistory().retrievePast(MaxEditBacklog)
-                            .submit()
-                            .thenApply(ls -> ls.stream()
-                                    .filter(msg -> msg.getAuthor().getIdLong() == webhook.getId())
-                                    .filter(msg -> msg.getEmbeds().size() == 1)
-                                    .findFirst())
-                            .thenCompose(related ->
-                                    related.map(ThrowingFunction.fallback(msg -> webhook.edit(msg.getIdLong(), content), () -> null))
-                                            .orElseGet(() -> CompletableFuture.failedFuture(new RuntimeException("Could not find related message to edit"))))
-                            .whenComplete((x, t) -> {
-                                if (t == null)
-                                    return;
-                                webhook.send(whMessage(mc)
-                                                .addEmbeds(content)
-                                                .build())
-                                        .join();
-                            })
-                            .join());
-        };
-    }
-
-    @Deprecated
-    public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(long channelId) {
-        final var channel = jda.getTextChannelById(channelId);
-        if (channel == null)
-            throw new NullPointerException("channel not found: " + channelId);
-        return (embed, mc) -> {
-            final var content = embed(embed, mc).build();
-            channel.getIterableHistory().stream()
-                    .limit(MaxEditBacklog)
-                    .filter(msg -> msg.getAuthor().equals(jda.getSelfUser()))
-                    .filter(msg -> msg.getEmbeds().size() == 1)
-                    .findFirst()
-                    .<RestAction<Message>>map(msg -> msg.editMessageEmbeds(content))
-                    .orElseGet(() -> channel.sendMessageEmbeds(content))
-                    .queue();
-        };
     }
 
     private WebhookMessageBuilder whMessage(@Nullable MinecraftProfile mc) {

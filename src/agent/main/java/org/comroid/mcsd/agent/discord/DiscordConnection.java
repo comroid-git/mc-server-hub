@@ -10,6 +10,7 @@ import org.comroid.api.*;
 import org.comroid.api.Container;
 import org.comroid.api.Event;
 import org.comroid.mcsd.agent.ServerProcess;
+import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
@@ -39,8 +40,7 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 @Log
 @Data
 public class DiscordConnection extends Container.Base {
-    private final BiConsumer<@Nullable MinecraftProfile, @Nullable String> chatTemplate;
-    private final BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate;
+    private final DiscordAdapter.MessagePublisher msgTemplate;
     private final DiscordAdapter adapter;
     private final ServerProcess srv;
 
@@ -62,13 +62,9 @@ public class DiscordConnection extends Container.Base {
                             return url;
                         }))
                 .map(url -> new WebhookClientBuilder(url).buildJDA());
-        this.chatTemplate = webhook
-                .map(adapter::minecraftChatTemplate)
-                .or(() -> publicChannel.map(adapter::minecraftChatTemplate))
-                .orElseThrow();
-        this.embedTemplate = webhook
-                .map(adapter::embedTemplate)
-                .or(() -> publicChannel.map(adapter::embedTemplate))
+        this.msgTemplate = webhook
+                .map(adapter::messageTemplate)
+                .or(() -> publicChannel.map(adapter::messageTemplate))
                 .orElseThrow();
 
         final var consoleChannel = Optional.ofNullable(server.getConsoleChannelId());
@@ -80,13 +76,14 @@ public class DiscordConnection extends Container.Base {
                         .filter(e -> server.getId().toString().equals(e.getKey()))
                         .mapData(message -> {
                             EmbedBuilder builder = new EmbedBuilder();
-                            if (message.getMessage()!=null)
+                            if (message.getMessage() != null)
                                 builder.setDescription(message.getMessage());
                             return builder
                                     .setTitle(message.toStatusMessage())
                                     .setColor(message.getStatus().getColor());
                         })
-                        .subscribeData(embed -> embedTemplate.accept(embed, null))),
+                        .mapData(DiscordMessageSource::new)
+                        .subscribeData(msgTemplate)),
 
                 // public channel -> minecraft
                 publicChannel.map(id -> adapter.flatMap(MessageReceivedEvent.class)
@@ -139,7 +136,9 @@ public class DiscordConnection extends Container.Base {
                                 message = MarkdownUtil.quote(message);
                             }
                             var profile = bean(MinecraftProfileRepo.class).get(username);
-                            chatTemplate.accept(profile, message);
+                            new DiscordMessageSource(message)
+                                    .player(profile)
+                                    .send(msgTemplate);
                         })),
 
                 //todo: moderation channel
