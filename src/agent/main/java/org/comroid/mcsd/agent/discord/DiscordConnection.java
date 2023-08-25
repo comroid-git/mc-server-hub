@@ -127,18 +127,19 @@ public class DiscordConnection extends Container.Base {
                             var username = matcher.group("username");
                             var message = matcher.group("message");
                             if (matcher.groupCount() == 2) {
-                                message = TextDecoration.convert(message, McFormatCode.class, Markdown.class);
+                            var output = new DiscordMessageSource();
+                                // chat message
                                 bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
+                                output.setData(TextDecoration.convert(message, McFormatCode.class, Markdown.class));
                             } else {
+                                // player event
                                 var c = message.charAt(0);
                                 message = message.substring(1);
                                 message = Character.toUpperCase(c) + message;
-                                message = MarkdownUtil.quote(message);
+                                output.setData(Markdown.Quote.apply(message));
                             }
                             var profile = bean(MinecraftProfileRepo.class).get(username);
-                            new DiscordMessageSource(message)
-                                    .player(profile)
-                                    .send(msgTemplate);
+                            output.setPlayer(profile).send(msgTemplate);
                         })),
 
                 //todo: moderation channel
