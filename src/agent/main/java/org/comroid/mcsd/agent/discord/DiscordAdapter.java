@@ -32,7 +32,6 @@ import org.comroid.api.*;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
-import org.comroid.api.ThrowingFunction;
 import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
@@ -55,7 +54,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -229,14 +227,22 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
             @Override
             protected CompletableFuture<@NotNull Long> send(String text) {
-                return webhook.send(text)
+                return webhook.send(whMsg()
+                                .setContent(text)
+                                .build())
                         .thenApply(ReadonlyMessage::getId);
             }
 
             @Override
             protected CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
-                return webhook.send(WebhookEmbedBuilder.fromJDA(embed.build()).build())
+                return webhook.send(whMsg()
+                                .addEmbeds(WebhookEmbedBuilder.fromJDA(embed.build())
+                                        .build()).build())
                         .thenApply(ReadonlyMessage::getId);
+            }
+
+            private WebhookMessageBuilder whMsg() {
+                return new WebhookMessageBuilder();
             }
         };
     }
@@ -324,18 +330,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
         @Override
         public void accept(DiscordMessageSource msg) {
+            // todo: chat webhook cannot access mc player anymore
             msg.send(this);
         }
-    }
-
-    private WebhookMessageBuilder whMessage(@Nullable MinecraftProfile mc) {
-        return new WebhookMessageBuilder()
-                .setAvatarUrl(mc != null ? mc.getHeadURL() : jda.getSelfUser().getEffectiveAvatarUrl())
-                .setUsername(mc != null ? mc.getName() : jda.getSelfUser().getEffectiveName());
-    }
-
-    private EmbedBuilder embed(@Nullable MinecraftProfile mc) {
-        return embed(new EmbedBuilder(), mc);
     }
 
     private EmbedBuilder embed(@NotNull EmbedBuilder builder, @Nullable MinecraftProfile mc) {
