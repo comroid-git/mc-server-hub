@@ -126,8 +126,8 @@ public class DiscordConnection extends Container.Base {
                             }
                             var username = matcher.group("username");
                             var message = matcher.group("message");
-                            if (matcher.groupCount() == 2) {
                             var output = new DiscordMessageSource();
+                            if (matcher.groupCount() == 2) {
                                 // chat message
                                 bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
                                 output.setData(TextDecoration.convert(message, McFormatCode.class, Markdown.class));

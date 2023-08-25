@@ -1,6 +1,6 @@
 package org.comroid.mcsd.agent.util;
 
-import lombok.AllArgsConstructor;
+import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.comroid.api.StreamSupplier;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
@@ -14,9 +14,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-@AllArgsConstructor
+@Data
 public final class DiscordMessageSource implements StreamSupplier<Object> {
     private @Nullable Object data;
+    private @Nullable MinecraftProfile player = null;
+
+    public DiscordMessageSource() {
+    }
+
+    public DiscordMessageSource(@Nullable Object data) {
+        this.data = data;
+    }
 
     @Override
     public Stream<Object> stream() {
@@ -43,7 +51,8 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
         return this;
     }
 
-    public DiscordMessageSource player(MinecraftProfile player) {
+    public DiscordMessageSource setPlayer(MinecraftProfile player) {
+        this.player = player;
         return embed(embed -> embed.setAuthor(player.getName(), player.getNameMcURL(), player.getHeadURL()));
     }
 
