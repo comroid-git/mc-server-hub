@@ -1,6 +1,7 @@
 package org.comroid.mcsd.agent.discord;
 
 import club.minnced.discord.webhook.WebhookClient;
+import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
@@ -32,16 +34,13 @@ import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
 import org.comroid.api.ThrowingFunction;
 import org.comroid.mcsd.agent.AgentRunner;
-import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.util.McFormatCode;
-import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Markdown;
 import org.comroid.util.Ratelimit;
 import org.comroid.util.Streams;
@@ -54,15 +53,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.dv8tion.jda.api.entities.Message.MAX_CONTENT_LENGTH;
-import static org.comroid.api.Polyfill.stream;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
@@ -206,12 +206,136 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         .join());
     }
 
+    public Consumer<@NotNull DiscordMessageSource> messageTemplate(final WebhookClient webhook) {
+        return new MessagePublisher() {
+            @Override
+            protected CompletableFuture<@NotNull Long> channelId() {
+                return jda.retrieveWebhookById(webhook.getId())
+                        .submit()
+                        .thenApply(ISnowflake::getIdLong);
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, String text) {
+                return webhook.edit(messageId, text)
+                        .thenApply(ReadonlyMessage::getId);
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, EmbedBuilder embed) {
+                return webhook.edit(messageId, WebhookEmbedBuilder.fromJDA(embed.build()).build())
+                        .thenApply(ReadonlyMessage::getId);
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull Long> send(String text) {
+                return webhook.send(text)
+                        .thenApply(ReadonlyMessage::getId);
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
+                return webhook.send(WebhookEmbedBuilder.fromJDA(embed.build()).build())
+                        .thenApply(ReadonlyMessage::getId);
+            }
+        };
+    }
+
+    public Consumer<@NotNull DiscordMessageSource> messageTemplate(final long channelId) {
+        return new MessagePublisher() {
+            private final @NotNull TextChannel channel = Objects.requireNonNull(jda.getTextChannelById(channelId),
+                    "Channel " + channelId + " not found");
+
+            @Override
+            protected CompletableFuture<@NotNull Long> channelId() {
+                return CompletableFuture.completedFuture(channelId);
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, String text) {
+                return channel.editMessageById(messageId, text)
+                        .map(ISnowflake::getIdLong)
+                        .submit();
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, EmbedBuilder embed) {
+                return channel.editMessageEmbedsById(messageId, embed.build())
+                        .map(ISnowflake::getIdLong)
+                        .submit();
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull Long> send(String text) {
+                return channel.sendMessage(text)
+                        .map(ISnowflake::getIdLong)
+                        .submit();
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
+                return channel.sendMessageEmbeds(embed.build())
+                        .map(ISnowflake::getIdLong)
+                        .submit();
+            }
+        };
+    }
+
+    private abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {
+        private final AtomicLong lastKnownMessage = new AtomicLong(0);
+
+        protected abstract CompletableFuture<@NotNull Long> channelId();
+
+        protected abstract CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, String text);
+
+        protected abstract CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, EmbedBuilder embed);
+
+        protected abstract CompletableFuture<@NotNull Long> send(String text);
+
+        protected abstract CompletableFuture<@NotNull Long> send(EmbedBuilder embed);
+
+        private <T> CompletableFuture<?> editOrSend(
+                final T it,
+                final BiFunction<@NotNull Long, T, CompletableFuture<@NotNull Long>> edit,
+                final Function<T, CompletableFuture<@NotNull Long>> send) {
+            var action = related().thenCompose(msg -> msg != null ? edit.apply(msg, it) : send.apply(it));
+            action.thenAccept(lastKnownMessage::set);
+            return action;
+        }
+
+        private CompletableFuture<@Nullable Long> related() {
+            return lastKnownMessage.get() == 0
+                    ? CompletableFuture.completedFuture(null)
+                    : channelId()
+                    .thenApply(jda::getTextChannelById)
+                    .thenCompose(chl -> chl.retrieveMessageById(lastKnownMessage.get()).submit())
+                    .thenApply(ISnowflake::getIdLong);
+        }
+
+        @Override
+        public CompletableFuture<?> sendString(String message) {
+            return editOrSend(message, this::edit, this::send);
+        }
+
+        @Override
+        public CompletableFuture<?> sendEmbed(EmbedBuilder embed) {
+            return editOrSend(embed, this::edit, this::send);
+        }
+
+        @Override
+        public void accept(DiscordMessageSource msg) {
+            msg.send(this);
+        }
+    }
+
+    @Deprecated
     public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(final WebhookClient webhook) {
         return (mc, txt) -> webhook.send(whMessage(mc)
                 .setContent(txt)
                 .build());
     }
 
+    @Deprecated
     public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(long channelId) {
         final var channel = jda.getTextChannelById(channelId);
         if (channel == null)
@@ -221,6 +345,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .build()).queue();
     }
 
+    @Deprecated
     public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(final WebhookClient webhook) {
         return (embed, mc) -> {
             final var content = WebhookEmbedBuilder.fromJDA(embed(embed, mc).build()).build();
@@ -247,6 +372,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         };
     }
 
+    @Deprecated
     public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(long channelId) {
         final var channel = jda.getTextChannelById(channelId);
         if (channel == null)
