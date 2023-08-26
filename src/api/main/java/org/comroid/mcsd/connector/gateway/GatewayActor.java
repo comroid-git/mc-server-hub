@@ -23,8 +23,6 @@ import static org.comroid.mcsd.connector.gateway.GatewayPacket.serialize;
 public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements Startable {
     protected final ExecutorService executor = Executors.newFixedThreadPool(8);
 
-    protected abstract GatewayConnectionInfo getConnectionData(UUID handlerId);
-
     protected ConnectionHandler handle(Socket socket) {
         var handler = new ConnectionHandler(socket);
         register(handler);

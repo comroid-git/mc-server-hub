@@ -11,21 +11,23 @@ import java.awt.*;
 
 @Getter
 public enum Status implements IntegerAttribute, IStatusMessage {
-    Unknown     ("❔", McFormatCode.Dark_Gray.getColor()),
-    Offline     ("❌", McFormatCode.Red.getColor()),
-    Starting    ("⏯️", McFormatCode.Aqua.getColor()),
-    Maintenance ("\uD83D\uDD27", McFormatCode.Yellow.getColor()),
-    Backing_Up  ("\uD83D\uDCBE", McFormatCode.Green.getColor()),
-    Updating    ("\uD83D\uDD04️", McFormatCode.Light_Purple.getColor()),
-    In_Trouble  ("⚠️", McFormatCode.Gold.getColor()),
-    Online      ("✅", McFormatCode.Dark_Green.getColor());
+    Unknown     ("❔", McFormatCode.Dark_Gray),
+    Offline     ("❌", McFormatCode.Red),
+    Starting    ("⏯️", McFormatCode.Aqua),
+    Maintenance ("\uD83D\uDD27", McFormatCode.Yellow),
+    Backing_Up  ("\uD83D\uDCBE", McFormatCode.Green),
+    Updating    ("\uD83D\uDD04️", McFormatCode.Light_Purple),
+    In_Trouble  ("⚠️", McFormatCode.Gold),
+    Online      ("✅", McFormatCode.Dark_Green);
 
     private final String emoji;
     private final Color color;
 
-    Status(String emoji, Color color) {
+    Status(String emoji, McFormatCode color) {
+        if (!color.isColor())
+            throw new IllegalArgumentException("Invalid format code; must be color: ");
         this.emoji = emoji;
-        this.color = color;
+        this.color = color.getColor();
     }
 
     @Override

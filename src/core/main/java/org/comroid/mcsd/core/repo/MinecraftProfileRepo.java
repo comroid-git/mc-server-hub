@@ -13,9 +13,6 @@ import java.util.UUID;
 public interface MinecraftProfileRepo extends CrudRepository<MinecraftProfile, UUID> {
     Optional<MinecraftProfile> findByName(String name);
 
-    @Query("SELECT DISTINCT mc FROM MinecraftProfile mc JOIN User u WHERE u.discordId = :userId")
-    Optional<MinecraftProfile> findByDiscordId(long userId);
-
     default MinecraftProfile get(String username) {
         return findByName(username).orElseGet(() -> {
             var profile = new RestTemplate()

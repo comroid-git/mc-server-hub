@@ -10,16 +10,20 @@ import org.comroid.api.Polyfill;
 import org.comroid.mcsd.agent.controller.ConsoleController;
 import org.comroid.mcsd.agent.discord.DiscordAdapter;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.Agent;
-import org.comroid.mcsd.core.entity.DiscordBot;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.ShRepo;
+import org.comroid.mcsd.util.Utils;
 import org.comroid.util.StandardValueType;
+import org.comroid.util.Streams;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.PrintStream;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -46,9 +50,6 @@ public class AgentRunner implements Command.Handler {
     @Lazy
     @Autowired
     private ServerRepo servers;
-    @Lazy
-    @Autowired
-    private AgentRunner agentRunner;
 
     public AgentRunner(@Autowired Agent me) {
         this.me = me;
@@ -58,7 +59,7 @@ public class AgentRunner implements Command.Handler {
         this.cmd = new Command.Manager(this);
     }
 
-    @Command(usage = "")
+    @Command
     public String list() {
         return bean(AgentRunner.class)
                 .streamServerStatusMsgs()
@@ -66,8 +67,11 @@ public class AgentRunner implements Command.Handler {
     }
 
     @Command(usage = "<name>")
-    public String backup(String[] args) {
+    public String backup(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+
         var proc = process(srv);
         var run = proc.runBackup();
         run.exceptionally(Polyfill.exceptionLogger());
@@ -76,22 +80,30 @@ public class AgentRunner implements Command.Handler {
 
     @SneakyThrows
     @Command(usage = "<name> [-r]")
-    public String update(String[] args) {
+    public String update(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+
         var flags = args.length > 1 ? args[1] : "";
         var proc = process(srv);
         return proc.runUpdate(flags) ? srv + " already up to date" : srv + " updated";
     }
 
     @Command(usage = "<name>")
-    public Object status(String[] args) {
+    public Object status(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        return agentRunner.process(srv);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.View)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        return process(srv).getCurrentStatus();
     }
 
     @Command(usage = "<name> [-na]")
     public Object enable(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+
         var flags = args.length > 1 ? args[1] : "";
         servers.setEnabled(srv.getId(), true);
         if (flags.contains("n"))
@@ -102,45 +114,59 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [-nt]")
     public Object disable(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+
         var flags = args.length > 1 ? args[1] : "";
         servers.setEnabled(srv.getId(), false);
         if (flags.contains("n"))
-            return stop(args);
+            return stop(args, con);
         return srv + " is now disabled";
     }
 
     @Command(usage = "<name> [-a]")
     public Object start(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+
         var flags = args.length > 1 ? args[1] : "";
-        agentRunner.process(srv).start();
+        process(srv).start();
         if (flags.contains("a"))
             attach(args, con);
         return srv + " was started";
     }
 
     @Command(usage = "<name> [time]")
-    public Object stop(String[] args) {
+    public Object stop(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+
         var timeout = args.length > 2 ? Integer.parseInt(args[2]) : 10;
-        agentRunner.process(srv).shutdown("Admin shutdown", timeout)
+        process(srv).shutdown("Admin shutdown", timeout)
                 .thenRun(() -> out.println(srv + " was shut down"));
         return srv + " will shut down in " + timeout + " seconds";
     }
 
-    @Command(usage = "<name> [y/n]")
+    @Command(usage = "<name> [true/false]")
     public Object maintenance(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
         var proc = process(srv);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+
         var val = args.length > 1 ? StandardValueType.BOOLEAN.parse(args[2]) : !proc.getServer().isMaintenance();
         return srv + (proc.pushMaintenance(val) ? " was " : " could not be ")
                 + (val ? " put into " : " taken out of ") + " Maintenance mode";
     }
 
     @Command(usage = "<name> <command...>")
-    public String execute(String[] args) {
+    public String execute(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        var proc = agentRunner.process(srv);
+        var proc = process(srv);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         if (proc.getState() != ServerProcess.State.Running)
             throw new Command.MildError("Server is not running");
@@ -154,7 +180,9 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name>")
     public String attach(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        var proc = agentRunner.process(srv);
+        var proc = process(srv);
+        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
+                .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         if (attached != null)
             con.detach();
@@ -175,25 +203,76 @@ public class AgentRunner implements Command.Handler {
         return "Detached";
     }
 
+    @Command(usage = "<name> <version> <mode> [-na]")
+    public Object create(String[] args, ConsoleController.Connection con) {
+        if (Arrays.stream(Utils.SuperAdmins).noneMatch(con.getUser().getId()::equals))
+            throw new Command.Error("Insufficient permissions");
+        String name = args[0];
+        String version = null;
+        Server.Mode mode = Arrays.stream(Server.Mode.values())
+                .filter(m->m.name().equalsIgnoreCase(args[2]))
+                .findAny()
+                .orElseThrow();
+        ShConnection shCon = bean(ShRepo.class).findById(me.getTarget()).orElseThrow();
+        Server server = new Server(
+                shCon,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Server.ConsoleMode.ScrollClean,
+                true,
+                version,
+                shCon.getHost(),
+                25565,
+                "~/mcsd/"+name,
+                mode,
+                (byte)4,
+                false,
+                true,
+                false,
+                true,
+                20,
+                25565,
+                25575,
+                null,
+                Duration.ofHours(12),
+                Duration.ofDays(7),
+                Instant.EPOCH,
+                Instant.EPOCH,
+                Status.Unknown
+        );
+        server.setName(name).setOwner(con.getUser());
+        return servers.save(server) + " created";
+    }
+
     @Command(usage = "")
-    public String shutdown() {
+    public String shutdown(ConsoleController.Connection con) {
+        if (Arrays.stream(Utils.SuperAdmins).noneMatch(con.getUser().getId()::equals))
+            throw new Command.Error("Insufficient permissions");
+        if (Streams.of(servers.findAll())
+                .map(this::process)
+                .anyMatch(srv -> !srv.getCurrentBackup().get().isDone() || srv.getUpdateRunning().get()))
+            throw new Command.MildError("Unable to shutdown while a backup or update is running");
         System.exit(0);
         return "shutting down";
     }
 
     private Server getServer(String[] args) {
-        var srv = servers.findByAgentAndName(agentRunner.getMe().getId(), args[0]).orElse(null);
+        var srv = servers.findByAgentAndName(getMe().getId(), args[0]).orElse(null);
         if (srv == null) throw new Command.ArgumentError("name", "Server not found");
         return srv;
     }
 
     @Override
-    public void handleResponse(Command.Delegate cmd, Object response, Object... args) {
+    public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
         out.println(response);
     }
 
     public Stream<Server> streamServers() {
-        return Polyfill.stream(bean(ServerRepo.class).findAllForAgent(getMe().getId()));
+        return Streams.of(bean(ServerRepo.class).findAllForAgent(getMe().getId()));
     }
 
     public Stream<String> streamServerStatusMsgs() {

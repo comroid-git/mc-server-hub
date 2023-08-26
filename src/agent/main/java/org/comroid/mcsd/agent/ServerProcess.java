@@ -91,6 +91,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (getState() == State.Running)
             return;
 
+        final var stopwatch = Stopwatch.start("startup-" + server.getId());
+
         var exec = PathUtil.findExec("java").orElseThrow();
         process = Runtime.getRuntime().exec(new String[]{
                         exec.getAbsolutePath(),
@@ -114,23 +116,9 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 .mapData(m -> m.group("time"))
                 .mapData(Double::parseDouble)
                 .mapData(x -> Duration.ofMillis((long) (x * 1000)))
-                .listen().once().thenApply(Event::getData);
+                .listen().once().thenApply($ -> stopwatch.stop());
         done.thenAccept(d -> {
-            long seconds = d.getSeconds();
-            long absSeconds = Math.abs(seconds);
-            var t = "";
-            if (absSeconds > 60 * 60) {
-                var diff = absSeconds / (60 * 60);
-                t += diff + "h";
-                absSeconds -= diff*60*60;
-            }
-            if (absSeconds > 60) {
-                var diff = absSeconds / 60;
-                t += diff + "min";
-                absSeconds -= diff*60;
-            }
-            if (absSeconds > 0)
-                t += (absSeconds) + "sec";
+            var t = Polyfill.durationString(d);
             var msg = "Took " + t + " to start";
             pushStatus((server.isMaintenance() ? Status.Maintenance : Status.Online).new Message(msg));
             log.info(server + " " + msg);
@@ -149,6 +137,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         }
 
         pushStatus(Status.Backing_Up);
+        final var stopwatch = Stopwatch.start("backup-" + server.getId());
+
         var backupDir = new FileHandle(server.shCon().orElseThrow().getBackupsDir()).createSubDir(server.getName());
         if (!backupDir.exists() && !backupDir.mkdirs())
             return CompletableFuture.failedFuture(new RuntimeException("Could not create backup directory"));
@@ -158,6 +148,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         in.println("save-off");
         in.println("save-all");
 
+        var backup = Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(Instant.now())).toFile();
         return saveComplete
                 // wait for save to finish
                 .thenCompose($ -> Archiver.find(Archiver.ReadOnly).zip()
@@ -167,17 +158,19 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .excludePattern("**libraries/**")
                         .excludePattern("**versions/**")
                         .excludePattern("**.lock")
-                        .outputPath(Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(Instant.now())))
+                        .outputPath(backup.getAbsolutePath())
                         .execute()
                         //.orTimeout(30, TimeUnit.SECONDS) // dev variant
                         .orTimeout(1, TimeUnit.HOURS)
                         .whenComplete((r, t) -> {
                             var stat = Status.Online;
-                            var msg = "Backup finished";
+                            var msg = "Backup finished; took %s; size: %1.2fGB".formatted(
+                                    Polyfill.durationString(stopwatch.stop()),
+                                    (double) backup.length() / (1024 * 1024 * 1024));
                             if (t != null) {
                                 stat = Status.In_Trouble;
-                                msg = "Unable to complete Backup: " + t;
-                                log.error(msg+" for " + server, t);
+                                msg = "Unable to complete Backup";
+                                log.error(msg + " for " + server, t);
                             }
                             in.println("save-on");
                             pushStatus(stat.new Message(msg));

@@ -73,15 +73,6 @@ public class GatewayServer extends GatewayActor implements Runnable {
         }
     }
 
-    @Override
-    public GatewayConnectionInfo getConnectionData(UUID handlerId) {
-        return connections.values().stream()
-                .filter(con -> Objects.equals(con.handler.getUuid(), handlerId))
-                .findAny()
-                .map(Connection::getConnectionData)
-                .orElseThrow();
-    }
-
     @Data
     @EqualsAndHashCode(callSuper = true)
     private class Connection extends Container.Base {

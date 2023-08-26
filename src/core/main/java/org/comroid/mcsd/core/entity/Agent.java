@@ -26,12 +26,11 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Getter
 @Entity
-@Table(name = "agent")
 public class Agent extends AbstractEntity {
     public static final int TokenLength = 64;
     private @Setter @Basic UUID target;
     private @Setter @Basic HubConnector.Role role;
-    private @JsonIgnore @Basic @ToString.Exclude String token = generateToken();
+    private @Getter(onMethod = @__(@JsonIgnore)) @Basic @ToString.Exclude String token = generateToken();
 
     public Agent setToken(String token) {
         this.token = token;
