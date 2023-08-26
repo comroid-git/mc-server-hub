@@ -88,6 +88,7 @@ public class MinecraftServerHubAgent {
     public Map<Runnable, Duration> cronjobs() {
         return Map.of(
                 this::$cronWatchdog, MinecraftServerHubConfig.CronRate_Watchdog,
+                this::$cronUptime, MinecraftServerHubConfig.CronRate_Uptime,
                 this::$cronInternal, MinecraftServerHubConfig.CronRate_Internal,
                 this::$cronBackup, MinecraftServerHubConfig.CronRate_Queue,
                 this::$cronUpdate, MinecraftServerHubConfig.CronRate_Queue
@@ -132,22 +133,22 @@ public class MinecraftServerHubAgent {
 
     @Synchronized
     private void $cronUptime() {
-        cronLog.log(Level.FINEST, "Running Uptime");
+        cronLog.log(Level.FINEST, "Running Uptime job");
         agentRunner.streamServers()
                 .filter(Server::isEnabled)
                 .map(agentRunner::process)
                 .forEach(ServerProcess::pushUptime);
-        cronLog.log(Level.FINER, "Uptime finished");
+        cronLog.log(Level.FINER, "Uptime job finished");
     }
   
     @Synchronized
     private void $cronInternal() {
-        cronLog.log(Level.FINEST, "Running Watchdog");
+        cronLog.log(Level.FINEST, "Running Internal jobs");
         agentRunner.streamServers()
                 .filter(Server::isEnabled)
                 .map(agentRunner::process)
                 .forEach(ServerProcess::runTicker);
-        cronLog.log(Level.FINER, "Watchdog finished");
+        cronLog.log(Level.FINER, "Internal jobs finished");
     }
 
     @SneakyThrows
