@@ -332,7 +332,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 Ratelimit.run(txt, Duration.ofSeconds(scroll ? 3 : 1), msg, (msg, queue) -> {
                     var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
                     var add = "";
-                    log.fine("length of raw = " + raw.length());
+                    log.finer("length of raw = " + raw.length());
                     boolean hasSpace = false;
                     while (!queue.isEmpty() && (scroll || (hasSpace = (raw + add + queue.peek()).length() < MaxLength))) {
                         var poll = queue.poll();
@@ -369,7 +369,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 int size = 0;
                 while (index >= 0 && (size = rev.stream().mapToInt(s -> s.length() + 1).sum() + lines[index].length()) < MaxLength)
                     rev.add(lines[index--]);
-                log.fine("size after scroll = " + (index < 0 ? size : (size - lines[index].length())));
+                log.finer("size after scroll = " + (index < 0 ? size : (size - lines[index].length())));
                 Collections.reverse(rev);
                 return String.join("\n", rev) + '\n';
             }
