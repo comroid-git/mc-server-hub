@@ -11,9 +11,12 @@ import org.comroid.mcsd.agent.discord.DiscordConnection;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.ServerUptimeEntry;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.ServerUptimeRepo;
 import org.comroid.util.*;
 import org.intellij.lang.annotations.Language;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -66,6 +69,20 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         currentStatus = message;
         bean(ServerRepo.class).setStatus(server.getId(), message.getStatus());
         bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), message);
+    }
+
+    public void pushUptime() {
+        server.status()
+                .thenCombine(getState() == State.Running
+                                ? OS.current.getRamUsage(process.pid())
+                                : CompletableFuture.completedFuture(0L),
+                        (stat, ram) -> new ServerUptimeEntry(server,
+                                currentStatus.getStatus(),
+                                stat.getPlayers() != null ? stat.getPlayers().size() : stat.getPlayerCount(),
+                                ram,
+                                currentStatus.getMessage()))
+                .thenAccept(bean(ServerUptimeRepo.class)::save)
+                .join();
     }
 
     public boolean pushMaintenance(boolean val) { //todo
