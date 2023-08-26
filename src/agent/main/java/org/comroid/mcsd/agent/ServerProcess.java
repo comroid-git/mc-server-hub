@@ -40,7 +40,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server\\r?\\n?");
     public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: " +
             //"([(\\[{<](?<prefix>[\\w\\s-_]+)[>}\\])]\\s?)*" +
-            "([(\\[{<](?<username>[\\w\\S-_]+)[>}\\])]\\s?)\\s?" +
+            //"([(\\[{<]" +
+            "<" +
+            "(?<username>[\\w\\S-_]+)" +
+            ">\\s?" +
+            //"[>}\\])]\\s?)\\s?" +
             //"([(\[{<](?<suffix>[\\w\\s-_]+)[>}\\])]\\s?)*" +
             "(?<message>.+)\\r?\\n?.*");
     public static final Pattern BroadcastPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w-_]+) issued server command: /(?<command>(broadcast)|(say)) (?<message>.+)\\r?\\n?.*");
