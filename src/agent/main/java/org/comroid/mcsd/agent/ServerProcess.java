@@ -14,6 +14,8 @@ import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.ServerUptimeEntry;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ServerUptimeRepo;
+import org.comroid.mcsd.util.McFormatCode;
+import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.*;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Contract;
@@ -24,9 +26,11 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
@@ -40,12 +44,23 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 public class ServerProcess extends Event.Bus<String> implements Startable {
     // todo: improve these
     public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
-    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\r?\\n?.*");
+    public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server\\r?\\n?");
+    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: " +
+            "([(\\[{<](?<prefix>[\\w\\s-_]+)[>}\\])]\\s?)*" +
+            //"([(\\[{<]" +
+            "<" +
+            "(?<username>[\\w\\S-_]+)" +
+            ">\\s?" +
+            //"[>}\\])]\\s?)\\s?" +
+            "([(\\[{<](?<suffix>[\\w\\s-_]+)[>}\\])]\\s?)*" +
+            "(?<message>.+)\\r?\\n?.*");
+    public static final Pattern BroadcastPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w-_]+) issued server command: /(?<command>(broadcast)|(say)) (?<message>.+)\\r?\\n?.*");
     public static final Pattern CrashPattern_Vanilla = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
     public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
             ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
     private final AtomicReference<CompletableFuture<@Nullable File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
+    private final AtomicInteger lastTicker = new AtomicInteger(0);
     private final AgentRunner runner;
     private final Server server;
     private @Nullable Process process;
@@ -53,6 +68,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     private DelegateStream.IO oe;
     private DiscordConnection discord;
     private CompletableFuture<Duration> done;
+    private CompletableFuture<Void> stop;
     private IStatusMessage previousStatus;
     private IStatusMessage currentStatus;
 
@@ -140,10 +156,29 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             pushStatus((server.isMaintenance() ? Status.Maintenance : Status.Online).new Message(msg));
             log.info(server + " " + msg);
         });
+        this.stop = listenForPattern(StopPattern_Vanilla)
+                .listen().once()
+                .thenRun(() -> pushStatus(Status.Offline));
 
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
             oe.redirectToSystem();
+    }
+
+    public synchronized void runTicker() {
+        var messages = server.getTickerMessages();
+        if (messages == null || messages.isEmpty())
+            return;
+        if (lastTicker.get()>=messages.size())
+            lastTicker.set(0);
+        var msg = messages.get(lastTicker.getAndIncrement());
+        var cmd = Tellraw.Command.builder()
+                .selector(Tellraw.Selector.Base.ALL_PLAYERS)
+                .component(McFormatCode.Gray.text("<").build())
+                .component(McFormatCode.Light_Purple.text(msg).build())
+                .component(McFormatCode.Gray.text("> ").build())
+                .build().toString();
+        in.println(cmd);
     }
 
     @SneakyThrows

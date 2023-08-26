@@ -24,9 +24,7 @@ import org.springframework.stereotype.Service;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -242,7 +240,8 @@ public class AgentRunner implements Command.Handler {
                 Duration.ofDays(7),
                 Instant.EPOCH,
                 Instant.EPOCH,
-                Status.Unknown
+                Status.Unknown,
+                new ArrayList<>()
         );
         server.setName(name).setOwner(con.getUser());
         return servers.save(server) + " created";
