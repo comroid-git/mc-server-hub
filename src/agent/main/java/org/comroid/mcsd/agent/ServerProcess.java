@@ -38,7 +38,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     // todo: improve these
     public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
     public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server\\r?\\n?");
-    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: ([(\\[{<](?<prefix>[\\w\\s]+[>}\\])]\\s?)*<(?<username>[\\S\\w-_]+)>\\s?([(\\[{<](?<suffix>[\\w\\s]+[>}\\])]\\s?)*(?<message>.+)\\r?\\n?.*");
+    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: ([(\\[{<](?<prefix>[\\w\\s]+)[>}\\])]\\s?)*<(?<username>[\\S\\w-_]+)>\\s?([(\\[{<](?<suffix>[\\w\\s]+)[>}\\])]\\s?)*(?<message>.+)\\r?\\n?.*");
     public static final Pattern BroadcastPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w-_]+) issued server command: /(?<command>(broadcast)|(say)) (?<message>.+)\\r?\\n?.*");
     public static final Pattern CrashPattern_Vanilla = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
     public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
