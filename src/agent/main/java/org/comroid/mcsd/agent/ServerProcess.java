@@ -188,7 +188,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             return currentBackup.get();
         }
 
-        pushStatus(Status.Backing_Up);
+        pushStatus(Status.Running_Backup);
         final var stopwatch = Stopwatch.start("backup-" + server.getId());
 
         var backupDir = new FileHandle(server.shCon().orElseThrow().getBackupsDir()).createSubDir(server.getName());
