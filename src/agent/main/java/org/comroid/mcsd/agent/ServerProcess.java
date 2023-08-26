@@ -295,6 +295,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     @SneakyThrows
     public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
         return CompletableFuture.supplyAsync(() -> {
+            pushStatus(Status.Shutting_Down.new Message(reason));
             final var msg = (IntFunction<String>) t -> "say Server will shut down in %d seconds (%s)".formatted(t, reason);
             int time = warnSeconds;
 
@@ -323,6 +324,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     public void closeSelf() {
         if (process == null || getState() != State.Running)
             return;
+
+        pushStatus(Status.Offline);
 
         // try shut down gracefully
         in.println("stop");

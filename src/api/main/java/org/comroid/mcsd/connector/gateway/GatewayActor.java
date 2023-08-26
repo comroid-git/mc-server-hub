@@ -47,7 +47,7 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
                             .setEndlMode(DelegateStream.EndlMode.OnNewLine)
                             .subscribe(str -> {
                                 var packet = parsePacket(str).setReceived(true);
-                                publish(packet.getTopic(), packet, (long)packet.getOpCode().getAsInt());
+                                publish(packet.getTopic(), (long)packet.getOpCode().getAsInt(), packet);
                             }).activate(executor),
                     // Tx
                     listen().setPredicate(e -> !Objects.requireNonNull(e.getData()).isReceived())
