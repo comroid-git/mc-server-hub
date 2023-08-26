@@ -242,7 +242,7 @@ public class AgentRunner implements Command.Handler {
                 Duration.ofDays(7),
                 Instant.EPOCH,
                 Instant.EPOCH,
-                Status.Unknown,
+                Status.unknown_status,
                 new ArrayList<>()
         );
         server.setName(name).setOwner(con.getUser());
@@ -304,7 +304,7 @@ public class AgentRunner implements Command.Handler {
     @PreDestroy
     public void close() {
         CompletableFuture.allOf(processes.values().stream()
-                        .peek(proc -> proc.pushStatus(Status.Offline))
+                        .peek(proc -> proc.pushStatus(Status.offline))
                         .map(proc -> proc.shutdown("Host shutdown", 5))
                         .toArray(CompletableFuture[]::new))
                 .join();

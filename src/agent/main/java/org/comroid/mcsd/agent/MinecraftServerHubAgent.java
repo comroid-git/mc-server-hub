@@ -166,7 +166,7 @@ public class MinecraftServerHubAgent {
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(agentRunner::process)
-                .flatMap(Streams.yield(srv -> srv.getCurrentStatus().getStatus() == Status.Online,
+                .flatMap(Streams.yield(srv -> srv.getCurrentStatus().getStatus() == Status.online,
                         srv -> cronLog.warning("Not running backup job for " + srv)))
                 .peek(serverProcess -> serverProcess.runBackup().join())
                 .peek(srv -> cronLog.info("Successfully created backup of " + srv))
@@ -190,7 +190,7 @@ public class MinecraftServerHubAgent {
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastUpdate().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(agentRunner::process)
-                .flatMap(Streams.yield(srv -> srv.getCurrentStatus().getStatus() == Status.Online,
+                .flatMap(Streams.yield(srv -> srv.getCurrentStatus().getStatus() == Status.online,
                         srv -> cronLog.warning("Not running backup job for " + srv)))
                 .filter(ServerProcess::startUpdate)
                 .peek(serverProcess -> serverProcess.shutdown("Server Update", 60).join())

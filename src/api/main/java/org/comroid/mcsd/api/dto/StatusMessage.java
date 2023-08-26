@@ -16,9 +16,9 @@ import java.util.UUID;
 public class StatusMessage {
     private final Instant timestamp = Instant.now();
     private final @NotNull UUID targetId;
-    private @With @lombok.Builder.Default Status status = Status.Unknown;
-    private @With @lombok.Builder.Default @Nullable Status rcon = Status.Unknown;
-    private @With @lombok.Builder.Default @Nullable Status ssh = Status.Unknown;
+    private @With @lombok.Builder.Default Status status = Status.unknown_status;
+    private @With @lombok.Builder.Default @Nullable Status rcon = Status.unknown_status;
+    private @With @lombok.Builder.Default @Nullable Status ssh = Status.unknown_status;
     private @With @lombok.Builder.Default int playerCount = 0;
     private @With @lombok.Builder.Default int playerMax = 0;
     private @With @Nullable String motd;

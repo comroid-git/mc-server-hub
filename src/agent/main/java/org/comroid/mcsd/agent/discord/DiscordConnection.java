@@ -26,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
@@ -169,7 +168,7 @@ public class DiscordConnection extends Container.Base {
                 }).stream(),
                 // console -> console channel
                 consoleStream.map(target -> srv.getOe()
-                        .rewireOE(oe -> oe.filter($ -> server.getLastStatus().getAsInt() > Status.Starting.getAsInt()))
+                        .rewireOE(oe -> oe.filter($ -> server.getLastStatus().getAsInt() > Status.starting.getAsInt()))
                         .redirect(target, target)).stream()
         ).forEach(this::addChildren);
     }

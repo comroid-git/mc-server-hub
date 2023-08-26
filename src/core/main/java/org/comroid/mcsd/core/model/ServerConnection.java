@@ -18,16 +18,13 @@ import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.impl.DefaultSftpClientFactory;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.ThrowingFunction;
-import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.ShConnection;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
-import org.comroid.mcsd.core.repo.DiscordBotRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.entity.Server;
 import org.intellij.lang.annotations.Language;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
@@ -35,7 +32,6 @@ import java.io.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -117,7 +113,7 @@ public final class ServerConnection implements Closeable, ServerHolder {
         //    log.warn("Unable to upload managed server properties to %s".formatted(server));
 
         // is it offline?
-        if (con.server.status().join().getStatus() == Status.Offline) {
+        if (con.server.status().join().getStatus() == Status.offline) {
             // then start server
             if (!con.sendSh(server.cmdStart()))
                 log.log(Level.WARNING, "Auto-Starting %s did not finish successfully".formatted(server));
