@@ -18,6 +18,7 @@ import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.hibernate.annotations.ManyToAny;
 import org.intellij.lang.annotations.Language;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -73,6 +74,7 @@ public class Server extends AbstractEntity {
     private Instant lastBackup = Instant.ofEpochMilli(0);
     private Instant lastUpdate = Instant.ofEpochMilli(0);
     private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.Unknown;
+    private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
 
     @JsonIgnore
     public ServerConnection con() {
