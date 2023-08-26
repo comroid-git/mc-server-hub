@@ -22,9 +22,8 @@ public class ServerUptimeEntry {
     private Status status;
     private int players;
     private long ramKB;
-    private @Nullable String message;
 
-    public ServerUptimeEntry(Server server, Status status, int players, long ramKB, @Nullable String message) {
+    public ServerUptimeEntry(Server server, Status status, int players, long ramKB) {
         synchronized (lock) {
             timestamp = Instant.now();
         }
@@ -32,6 +31,5 @@ public class ServerUptimeEntry {
         this.status = status;
         this.players = players;
         this.ramKB = ramKB;
-        this.message = message;
     }
 }

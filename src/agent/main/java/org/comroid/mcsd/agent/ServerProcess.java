@@ -95,8 +95,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         (stat, ram) -> new ServerUptimeEntry(server,
                                 currentStatus.getStatus(),
                                 stat.getPlayers() != null ? stat.getPlayers().size() : stat.getPlayerCount(),
-                                ram,
-                                currentStatus.getMessage()))
+                                ram))
                 .thenAccept(bean(ServerUptimeRepo.class)::save)
                 .join();
     }
