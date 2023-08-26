@@ -12,6 +12,8 @@ import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.util.McFormatCode;
+import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.*;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
@@ -21,9 +23,11 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
@@ -53,6 +57,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
     private final AtomicReference<CompletableFuture<@Nullable File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
+    private final AtomicInteger lastTicker = new AtomicInteger(0);
     private final AgentRunner runner;
     private final Server server;
     private @Nullable Process process;
@@ -141,6 +146,22 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
             oe.redirectToSystem();
+    }
+
+    public synchronized void runTicker() {
+        var messages = server.getTickerMessages();
+        if (messages.isEmpty())
+            return;
+        if (lastTicker.get()>=messages.size())
+            lastTicker.set(0);
+        var msg = messages.get(lastTicker.getAndIncrement());
+        var cmd = Tellraw.Command.builder()
+                .selector(Tellraw.Selector.Base.ALL_PLAYERS)
+                .component(McFormatCode.Gray.text("<").build())
+                .component(McFormatCode.Light_Purple.text(msg).build())
+                .component(McFormatCode.Gray.text("> ").build())
+                .build().toString();
+        in.println(cmd);
     }
 
     @SneakyThrows
