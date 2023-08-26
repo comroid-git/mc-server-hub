@@ -318,6 +318,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 log.error("Could not wait for shutdown timeout", e);
             }
 
+            in.println("stop");
             stop.join();
             close();
             return null;
