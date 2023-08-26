@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,6 +82,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     }
 
     public void pushStatus(IStatusMessage message) {
+        if (currentStatus.getStatus() == message.getStatus() && Objects.equals(currentStatus.getMessage(), message.getMessage()))
+            return; // do not push same status twice
         previousStatus = currentStatus;
         currentStatus = message;
         bean(ServerRepo.class).setStatus(server.getId(), message.getStatus());
@@ -314,6 +317,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 log.error("Could not wait for shutdown timeout", e);
             }
 
+            stop.join();
             close();
             return null;
         });
