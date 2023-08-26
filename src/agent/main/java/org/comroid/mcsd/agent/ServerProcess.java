@@ -150,7 +150,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
 
     public synchronized void runTicker() {
         var messages = server.getTickerMessages();
-        if (messages.isEmpty())
+        if (messages == null || messages.isEmpty())
             return;
         if (lastTicker.get()>=messages.size())
             lastTicker.set(0);
