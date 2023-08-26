@@ -3,6 +3,7 @@ package org.comroid.mcsd.agent;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.java.Log;
 import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
@@ -32,6 +33,7 @@ import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
+@Log
 @Getter
 @Service
 public class AgentRunner implements Command.Handler {
@@ -255,6 +257,7 @@ public class AgentRunner implements Command.Handler {
                 .map(this::process)
                 .anyMatch(srv -> !srv.getCurrentBackup().get().isDone() || srv.getUpdateRunning().get()))
             throw new Command.MildError("Unable to shutdown while a backup or update is running");
+        log.info("Shutting down agent");
         CompletableFuture.allOf(Streams.of(servers.findAll())
                 .map(this::process)
                 .filter(proc -> proc.getState() == ServerProcess.State.Running)
