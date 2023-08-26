@@ -131,6 +131,16 @@ public class MinecraftServerHubAgent {
     }
 
     @Synchronized
+    private void $cronUptime() {
+        cronLog.log(Level.FINEST, "Running Uptime");
+        agentRunner.streamServers()
+                .filter(Server::isEnabled)
+                .map(agentRunner::process)
+                .forEach(ServerProcess::pushUptime);
+        cronLog.log(Level.FINER, "Uptime finished");
+    }
+  
+    @Synchronized
     private void $cronInternal() {
         cronLog.log(Level.FINEST, "Running Watchdog");
         agentRunner.streamServers()

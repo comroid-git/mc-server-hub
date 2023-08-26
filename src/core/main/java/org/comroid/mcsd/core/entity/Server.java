@@ -234,7 +234,8 @@ public class Server extends AbstractEntity {
                         return null;
                     return v;
                 }), "Status cache outdated"))
-                .exceptionally(t -> {
+                .exceptionally(t ->
+                {
                     log.debug("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
                     log.trace("Exception was", t);
                     try (var query = new MCQuery(host, getQueryPort())) {
@@ -280,7 +281,7 @@ public class Server extends AbstractEntity {
                     statusCache.put(getId(), msg);
                     return msg;
                 })
-                .orTimeout(statusTimeout.toSeconds() + 1, TimeUnit.SECONDS);
+                .completeOnTimeout(new StatusMessage(getId()), (long) (statusTimeout.toSeconds() * 1.5), TimeUnit.SECONDS);
     }
 
     public Optional<ShConnection> shCon() {
