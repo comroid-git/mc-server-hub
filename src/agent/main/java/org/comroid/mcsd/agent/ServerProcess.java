@@ -43,7 +43,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 public class ServerProcess extends Event.Bus<String> implements Startable {
     // todo: improve these
     public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
-    public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server\\r?\\n?");
+    public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server.*\\r?\\n?");
     public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: " +
             "([(\\[{<](?<prefix>[\\w\\s-_]+)[>}\\])]\\s?)*" +
             //"([(\\[{<]" +
