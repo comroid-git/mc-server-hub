@@ -82,7 +82,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     }
 
     public void pushStatus(IStatusMessage message) {
-        if (currentStatus.getStatus() == message.getStatus() && Objects.equals(currentStatus.getMessage(), message.getMessage()))
+        if (currentStatus != null && currentStatus.getStatus() == message.getStatus()
+                && Objects.equals(currentStatus.getMessage(), message.getMessage()))
             return; // do not push same status twice
         previousStatus = currentStatus;
         currentStatus = message;
