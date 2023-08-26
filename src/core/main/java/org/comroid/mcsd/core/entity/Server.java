@@ -228,7 +228,7 @@ public class Server extends AbstractEntity {
 
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
-        log.debug("Getting status of Server %s".formatted(this));
+        log.trace("Getting status of Server %s".formatted(this));
         return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(statusCache.computeIfPresent(getId(), (k, v) -> {
                     if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
                         return null;
@@ -236,7 +236,7 @@ public class Server extends AbstractEntity {
                 }), "Status cache outdated"))
                 .exceptionally(t ->
                 {
-                    log.debug("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
+                    log.trace("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
                     log.trace("Exception was", t);
                     try (var query = new MCQuery(host, getQueryPort())) {
                         var stat = query.fullStat();
@@ -254,7 +254,7 @@ public class Server extends AbstractEntity {
                     }
                 })
                 .exceptionally(t -> {
-                    log.debug("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
+                    log.trace("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
                     log.trace("Exception was", t);
                     var stat = new MineStat(host, getPort());
                     return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
