@@ -37,7 +37,9 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 public class ServerProcess extends Event.Bus<String> implements Startable {
     // todo: improve these
     public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
-    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\r?\\n?.*");
+    public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server\\r?\\n?");
+    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: ([(\\[{<](?<prefix>[\\w\\s]+[>}\\])] ?)*<(?<username>[\\S\\w-_]+)> ?([(\\[{<](?<suffix>[\\w\\s]+[>}\\])] ?)*(?<message>.+)\\r?\\n?.*");
+    public static final Pattern BroadcastPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w-_]+) issued server command: /(?<command>(broadcast)|(say)) (?<message>.+)\\r?\\n?.*");
     public static final Pattern CrashPattern_Vanilla = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
     public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
             ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
@@ -50,6 +52,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     private DelegateStream.IO oe;
     private DiscordConnection discord;
     private CompletableFuture<Duration> done;
+    private CompletableFuture<Void> stop;
     private IStatusMessage previousStatus;
     private IStatusMessage currentStatus;
 
@@ -123,6 +126,9 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             pushStatus((server.isMaintenance() ? Status.Maintenance : Status.Online).new Message(msg));
             log.info(server + " " + msg);
         });
+        this.stop = listenForPattern(StopPattern_Vanilla)
+                .listen().once()
+                .thenRun(() -> pushStatus(Status.Offline));
 
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
