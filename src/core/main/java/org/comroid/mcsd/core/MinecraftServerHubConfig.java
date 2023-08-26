@@ -31,6 +31,7 @@ import java.util.logging.Logger;
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
 public class MinecraftServerHubConfig {
     public static final Duration CronRate_Watchdog = Duration.ofSeconds(10);
+    public static final Duration CronRate_Uptime = Duration.ofMinutes(1);
     public static final Duration CronRate_Queue = Duration.ofHours(1);
     public static final Logger cronLog = Logger.getLogger("cron");
 
