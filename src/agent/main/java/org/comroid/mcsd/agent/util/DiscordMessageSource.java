@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 public final class DiscordMessageSource implements StreamSupplier<Object> {
     private @Nullable Object data;
     private @Nullable MinecraftProfile player = null;
+    private boolean append = false;
 
     public DiscordMessageSource() {
     }
@@ -48,11 +49,11 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
     }
 
     public DiscordMessageSource embed(final Consumer<EmbedBuilder> embedModifier) {
-        data = embed().map(embed -> {
+        data = embed().<Object>map(embed -> {
                     embedModifier.accept(embed);
                     return embed;
                 })
-                .orElse(null);
+                .orElse(data);
         return this;
     }
 

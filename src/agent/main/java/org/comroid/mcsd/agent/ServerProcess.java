@@ -143,7 +143,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 new DelegateStream.Input(this, DelegateStream.EndlMode.OnDelegate, DelegateStream.IO.EventKey_Output),
                 new DelegateStream.Output(this, DelegateStream.Capability.Output),
                 new DelegateStream.Output(this, DelegateStream.Capability.Error));
-        oe = DelegateStream.IO.process(process).redirect(redir);
+        var base = DelegateStream.IO.process(process);
+        oe = base.redirect(redir);
 
         var botConId = server.getDiscordBot();
         if (botConId != null)
@@ -161,7 +162,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             pushStatus((server.isMaintenance() ? Status.maintenance : Status.online).new Message(msg));
             log.info(server + " " + msg);
         });
-        this.stop = process.onExit().thenRun(redir::close);
+        this.stop = process.onExit().thenRun(this::close);
 
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
@@ -325,7 +326,6 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
 
             in.println("stop");
             stop.join();
-            close();
             return null;
         });
     }

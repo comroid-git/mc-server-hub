@@ -134,8 +134,10 @@ public class DiscordConnection extends Container.Base {
                                 // chat message
                                 message = TextDecoration.convert(message, McFormatCode.class, Markdown.class);
                                 bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
-                                output.setData(TextDecoration.convert(message, McFormatCode.class, Markdown.class));
-                                msgTemplate.send(output.setPlayer(profile)).join();
+                                output.setData(TextDecoration.convert(message, McFormatCode.class, Markdown.class))
+                                        .setPlayer(profile)
+                                        .setAppend(true);
+                                msgTemplate.send(output).join();
                                 return;
                             } else {
                                 // player event
@@ -144,7 +146,10 @@ public class DiscordConnection extends Container.Base {
                                 message = Character.toUpperCase(c) + message;
                                 output.setData(Markdown.Quote.apply(message));
                             }
-                            output.setPlayer(profile).send(msgTemplate).join();
+                            output.setPlayer(profile)
+                                    .setAppend(true)
+                                    .send(msgTemplate)
+                                    .join();
                         })),
 
                 //todo: moderation channel

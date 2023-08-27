@@ -204,16 +204,20 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         .join());
     }
 
-    public MessagePublisher messageTemplate(final WebhookClient webhook) {
+    public MessagePublisher messageTemplate(final WebhookClient sender) {
         return new MessagePublisher() {
-            private final OnDemand<@NotNull Long> channelId = new OnDemand<>(jda
-                    .retrieveWebhookById(webhook.getId())
-                    .submit()
-                    .thenApply(ISnowflake::getIdLong));
+            private final CompletableFuture<Webhook> webhook = jda
+                    .retrieveWebhookById(sender.getId())
+                    .submit();
 
             @Override
             protected CompletableFuture<@NotNull Long> channelId() {
-                return channelId.get();
+                return webhook.thenApply(Webhook::getChannel).thenApply(ISnowflake::getIdLong);
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull String> defaultAuthorName() {
+                return webhook.thenApply(Webhook::getName);
             }
 
             @Override
@@ -222,11 +226,11 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             }
 
             private @NotNull CompletableFuture<ReadonlyMessage> edit(@NotNull Long messageId, String text) {
-                return webhook.edit(messageId, text);
+                return sender.edit(messageId, text);
             }
 
             private @NotNull CompletableFuture<ReadonlyMessage> edit(@NotNull Long messageId, EmbedBuilder embed) {
-                return webhook.edit(messageId, WebhookEmbedBuilder.fromJDA(embed.build()).build());
+                return sender.edit(messageId, WebhookEmbedBuilder.fromJDA(embed.build()).build());
             }
 
             @Override
@@ -236,7 +240,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
             private CompletableFuture<@NotNull Long> send(DiscordMessageSource msg, String text) {
                 var player = msg.getPlayer();
-                return webhook.send(whMsg()
+                return sender.send(whMsg()
                                 .setContent(text)
                                 .setAvatarUrl(player != null ? player.getHeadURL() : null)
                                 .setUsername(player != null ? player.getName() : null)
@@ -245,7 +249,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             }
 
             private CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
-                return webhook.send(whMsg()
+                return sender.send(whMsg()
                                 .addEmbeds(WebhookEmbedBuilder.fromJDA(embed.build())
                                         .build()).build())
                         .thenApply(ReadonlyMessage::getId);
@@ -265,6 +269,11 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             @Override
             protected CompletableFuture<@NotNull Long> channelId() {
                 return CompletableFuture.completedFuture(channelId);
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull String> defaultAuthorName() {
+                return CompletableFuture.completedFuture(jda.getSelfUser().getEffectiveName());
             }
 
             @Override
@@ -307,26 +316,34 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         private final AtomicLong lastKnownMessage = new AtomicLong(0);
 
         protected abstract CompletableFuture<@NotNull Long> channelId();
+        protected abstract CompletableFuture<@NotNull String> defaultAuthorName();
 
         public abstract CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, DiscordMessageSource msg);
         public abstract CompletableFuture<@NotNull Long> send(DiscordMessageSource msg);
 
         private CompletableFuture<@NotNull Long> editOrSend(
-                final DiscordMessageSource it,
+                final DiscordMessageSource msg,
                 final BiFunction<@NotNull Long, DiscordMessageSource, CompletableFuture<@NotNull Long>> edit,
                 final Function<DiscordMessageSource, CompletableFuture<@NotNull Long>> send) {
-            var action = related().thenCompose(msg -> msg != null ? edit.apply(msg, it) : send.apply(it));
-            action.thenAccept(lastKnownMessage::set);
+            var action = related().thenCompose(editMsg -> {
+                if (editMsg != null && !msg.isAppend())
+                    return edit.apply(editMsg, msg);
+                return send.apply(msg);
+            });
+            if (!msg.isAppend())
+                action.thenAccept(lastKnownMessage::set);
             return action;
         }
 
         private CompletableFuture<@Nullable Long> related() {
-            return lastKnownMessage.get() == 0
-                    ? CompletableFuture.completedFuture(null)
-                    : channelId()
+            return lastKnownMessage.get() != 0 ? CompletableFuture.completedFuture(lastKnownMessage.get()) : channelId()
                     .thenApply(jda::getTextChannelById)
-                    .thenCompose(chl -> chl.retrieveMessageById(lastKnownMessage.get()).submit())
-                    .thenApply(ISnowflake::getIdLong);
+                    .thenCombine(defaultAuthorName(), (chl, name) -> chl.getIterableHistory().stream()
+                            .limit(MaxEditBacklog)
+                            .filter(msg -> msg.getAuthor().getEffectiveName().equals(name))
+                            .findAny()
+                            .orElse(null))
+                    .thenApply((OptionalFunction<Message, Long>)Message::getIdLong);
         }
 
         @Override
