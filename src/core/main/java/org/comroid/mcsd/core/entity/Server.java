@@ -169,6 +169,10 @@ public class Server extends AbstractEntity {
         return "https://mc.comroid.org/server/" + getId();
     }
 
+    public String getViewURL() {
+        return "https://mc.comroid.org/server/view/" + getId();
+    }
+
     public String getAddress() {
         return host + ":" + port;
     }

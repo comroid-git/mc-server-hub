@@ -128,9 +128,7 @@ public class DiscordConnection extends Container.Base {
                             var message = matcher.group("message");
                             var output = new DiscordMessageSource();
                             var profile = bean(MinecraftProfileRepo.class).get(username);
-                            if (matcher.pattern().toString().contains("command")) {
-                                // broadcast command executed
-                            } else if (matcher.pattern().toString().contains("prefix")) {
+                            if (matcher.pattern().toString().contains("prefix")) {
                                 // chat message
                                 message = TextDecoration.convert(message, McFormatCode.class, Markdown.class);
                                 bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
@@ -140,11 +138,18 @@ public class DiscordConnection extends Container.Base {
                                 msgTemplate.send(output).join();
                                 return;
                             } else {
-                                // player event
+                                // player event or
                                 var c = message.charAt(0);
                                 message = message.substring(1);
                                 message = Character.toUpperCase(c) + message;
-                                output.setData(Markdown.Quote.apply(message));
+                                // broadcast command executed
+                                if (matcher.pattern().toString().contains("command")
+                                        && matcher.group("command").equals("broadcast")) {
+                                    output.setData(new EmbedBuilder()
+                                            .setAuthor("Broadcast", server.getViewURL(), server.getThumbnailURL())
+                                            .setColor(Gold.getColor())
+                                            .setDescription(message));
+                                } else output.setData(Markdown.Quote.apply(message));
                             }
                             output.setPlayer(profile)
                                     .setAppend(true)
