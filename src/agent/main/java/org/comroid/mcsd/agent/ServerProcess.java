@@ -11,15 +11,18 @@ import org.comroid.mcsd.agent.discord.DiscordConnection;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Backup;
+import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.ServerUptimeEntry;
 import org.comroid.mcsd.core.repo.BackupRepo;
+import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ServerUptimeRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.*;
 import org.intellij.lang.annotations.Language;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -27,6 +30,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.*;
@@ -42,11 +46,11 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Slf4j
 @Getter
 @RequiredArgsConstructor
-public class ServerProcess extends Event.Bus<String> implements Startable {
+public class ServerProcess extends Event.Bus<String> implements Startable, Command.Handler {
     // todo: improve these
     public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
     public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server.*\\r?\\n?");
-    public static final Pattern McsdPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w_-]+) issued server command: /mcsd(\\s(?<command>\\w+))(\\s(?<arg>\\w+))?\\r?\\n?.*");
+    public static final Pattern McsdPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w_-]+) issued server command: /mcsd (?<command>[\\w\\s_-]+)\\r?\\n?.*");
     public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: " +
             "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
             //"([(\\[{<]" +
@@ -68,6 +72,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     private @Nullable Process process;
     private PrintStream in;
     private DelegateStream.IO oe;
+    private Command.Manager cmdr;
     private DiscordConnection discord;
     private CompletableFuture<Duration> done;
     private CompletableFuture<Void> stop;
@@ -164,10 +169,50 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         });
         this.stop = process.onExit().thenRun(this::close);
 
+        this.cmdr = new Command.Manager(this);
+        addChildren(cmdr);
+        listenForPattern(McsdPattern_Vanilla).subscribeData(this::runCommand);
+
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
             oe.redirectToSystem();
     }
+
+    //region Commands
+    private void runCommand(Matcher matcher) {
+        var username = matcher.group("username");
+        var profile = bean(MinecraftProfileRepo.class).get(username);
+        var command = matcher.group("command");
+        cmdr.execute(command, profile);
+    }
+
+    @Override
+    public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
+        try {
+            var profile = Arrays.stream(args)
+                    .flatMap(Streams.cast(MinecraftProfile.class))
+                    .findAny()
+                    .orElseThrow();
+            var tellraw = Tellraw.Command.builder()
+                    .selector(profile.getName())
+                    .component(McFormatCode.Gray.text("<").build())
+                    .component(McFormatCode.Light_Purple.text("mcsd").build())
+                    .component(McFormatCode.Gray.text("> ").build())
+                    .component(McFormatCode.Reset.text(response.toString()).build())
+                    .build()
+                    .toString();
+            in.println(tellraw);
+            in.flush();
+        } catch (Throwable t) {
+            log.warn("An error occurred handling response: " + response, t);
+        }
+    }
+
+    @Command
+    public void verify(MinecraftProfile profile, String[] args) {
+
+    }
+    //endregion
 
     public synchronized void runTicker() {
         var messages = server.getTickerMessages();

@@ -18,7 +18,7 @@ public interface Tellraw {
     @Value
     @Builder
     class Command implements Tellraw {
-        ISelector selector;
+        Object selector;
         @Singular
         List<Component> components;
 
@@ -31,14 +31,12 @@ public interface Tellraw {
         }
     }
 
-    interface ISelector extends Tellraw {}
-
     @With
     @Value
     @Builder
-    class Selector implements ISelector {
+    class Selector {
         @Getter
-        public enum Base implements ISelector {
+        public enum Base {
             NEAREST_PLAYER("@p"),
             RANDOM_PLAYER("@r"),
             ALL_PLAYERS("@a"),
