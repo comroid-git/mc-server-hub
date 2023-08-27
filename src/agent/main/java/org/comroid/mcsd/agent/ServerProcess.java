@@ -46,19 +46,20 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     // todo: improve these
     public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
     public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server.*\\r?\\n?");
+    public static final Pattern McsdPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w_-]+) issued server command: /mcsd(\\s(?<command>\\w+))(\\s(?<arg>\\w+))?\\r?\\n?.*");
     public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: " +
-            "([(\\[{<](?<prefix>[\\w\\s-_]+)[>}\\])]\\s?)*" +
+            "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
             //"([(\\[{<]" +
             "<" +
-            "(?<username>[\\w\\S-_]+)" +
+            "(?<username>[\\w\\S_-]+)" +
             ">\\s?" +
             //"[>}\\])]\\s?)\\s?" +
-            "([(\\[{<](?<suffix>[\\w\\s-_]+)[>}\\])]\\s?)*" +
+            "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
             "(?<message>.+)\\r?\\n?.*");
-    public static final Pattern BroadcastPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w-_]+) issued server command: /(?<command>(broadcast)|(say)) (?<message>.+)\\r?\\n?.*");
+    public static final Pattern BroadcastPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w_-]+) issued server command: /(?<command>(broadcast)|(say)) (?<message>.+)\\r?\\n?.*");
     public static final Pattern CrashPattern_Vanilla = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
     public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
-            ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
+            ".*INFO]: (?<username>[\\S\\w_-]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
     private final AtomicReference<CompletableFuture<@Nullable File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AtomicInteger lastTicker = new AtomicInteger(0);
@@ -142,7 +143,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 new DelegateStream.Input(this, DelegateStream.EndlMode.OnDelegate, DelegateStream.IO.EventKey_Output),
                 new DelegateStream.Output(this, DelegateStream.Capability.Output),
                 new DelegateStream.Output(this, DelegateStream.Capability.Error));
-        oe = DelegateStream.IO.process(process).redirect(redir);
+        var base = DelegateStream.IO.process(process);
+        oe = base.redirect(redir);
 
         var botConId = server.getDiscordBot();
         if (botConId != null)
@@ -160,9 +162,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             pushStatus((server.isMaintenance() ? Status.maintenance : Status.online).new Message(msg));
             log.info(server + " " + msg);
         });
-        this.stop = listenForPattern(StopPattern_Vanilla)
-                .listen().once()
-                .thenRun(() -> pushStatus(Status.offline));
+        this.stop = process.onExit().thenRun(this::close);
 
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
@@ -326,7 +326,6 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
 
             in.println("stop");
             stop.join();
-            close();
             return null;
         });
     }
@@ -373,7 +372,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     }
 
     public Event.Bus<Matcher> listenForPattern(Pattern pattern) {
-        return mapData(input -> pattern.matcher(input)).filterData(matcher -> matcher.matches());
+        return mapData(input -> pattern.matcher(input))
+                .filterData(matcher -> matcher.matches());
     }
 
     public enum State implements Named {NotStarted, Exited, Running;}

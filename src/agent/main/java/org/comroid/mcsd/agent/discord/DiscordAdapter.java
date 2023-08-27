@@ -1,6 +1,7 @@
 package org.comroid.mcsd.agent.discord;
 
 import club.minnced.discord.webhook.WebhookClient;
+import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
@@ -30,18 +32,14 @@ import org.comroid.api.*;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
-import org.comroid.api.ThrowingFunction;
 import org.comroid.mcsd.agent.AgentRunner;
-import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.util.McFormatCode;
-import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Markdown;
 import org.comroid.util.Ratelimit;
 import org.comroid.util.Streams;
@@ -54,15 +52,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.dv8tion.jda.api.entities.Message.MAX_CONTENT_LENGTH;
-import static org.comroid.api.Polyfill.stream;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
@@ -206,72 +204,163 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         .join());
     }
 
-    public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(final WebhookClient webhook) {
-        return (mc, txt) -> webhook.send(whMessage(mc)
-                .setContent(txt)
-                .build());
-    }
+    public MessagePublisher messageTemplate(final WebhookClient sender) {
+        return new MessagePublisher() {
+            private final CompletableFuture<Webhook> webhook = jda
+                    .retrieveWebhookById(sender.getId())
+                    .submit();
 
-    public BiConsumer<MinecraftProfile, String> minecraftChatTemplate(long channelId) {
-        final var channel = jda.getTextChannelById(channelId);
-        if (channel == null)
-            throw new NullPointerException("channel not found: " + channelId);
-        return (mc, txt) -> channel.sendMessageEmbeds(embed(mc)
-                .setDescription(txt)
-                .build()).queue();
-    }
+            @Override
+            protected CompletableFuture<@NotNull Long> channelId() {
+                return webhook.thenApply(Webhook::getChannel).thenApply(ISnowflake::getIdLong);
+            }
 
-    public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(final WebhookClient webhook) {
-        return (embed, mc) -> {
-            final var content = WebhookEmbedBuilder.fromJDA(embed(embed, mc).build()).build();
-            jda.retrieveWebhookById(webhook.getId())
-                    .map(wh -> wh.getChannel().asTextChannel())
-                    .queue(channel -> channel.getHistory().retrievePast(MaxEditBacklog)
-                            .submit()
-                            .thenApply(ls -> ls.stream()
-                                    .filter(msg -> msg.getAuthor().getIdLong() == webhook.getId())
-                                    .filter(msg -> msg.getEmbeds().size() == 1)
-                                    .findFirst())
-                            .thenCompose(related ->
-                                    related.map(ThrowingFunction.fallback(msg -> webhook.edit(msg.getIdLong(), content), () -> null))
-                                            .orElseGet(() -> CompletableFuture.failedFuture(new RuntimeException("Could not find related message to edit"))))
-                            .whenComplete((x, t) -> {
-                                if (t == null)
-                                    return;
-                                webhook.send(whMessage(mc)
-                                                .addEmbeds(content)
-                                                .build())
-                                        .join();
-                            })
-                            .join());
+            @Override
+            protected CompletableFuture<@NotNull String> defaultAuthorName() {
+                return webhook.thenApply(Webhook::getName);
+            }
+
+            @Override
+            public CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, DiscordMessageSource msg) {
+                return msg.execEdit(messageId, this::edit, this::edit).thenApply(ReadonlyMessage::getId);
+            }
+
+            private @NotNull CompletableFuture<ReadonlyMessage> edit(@NotNull Long messageId, String text) {
+                return sender.edit(messageId, text);
+            }
+
+            private @NotNull CompletableFuture<ReadonlyMessage> edit(@NotNull Long messageId, EmbedBuilder embed) {
+                return sender.edit(messageId, WebhookEmbedBuilder.fromJDA(embed.build()).build());
+            }
+
+            @Override
+            public CompletableFuture<@NotNull Long> send(final DiscordMessageSource msg) {
+                return msg.execSend(text -> send(msg, text), this::send);
+            }
+
+            private CompletableFuture<@NotNull Long> send(DiscordMessageSource msg, String text) {
+                var player = msg.getPlayer();
+                return sender.send(whMsg()
+                                .setContent(text)
+                                .setAvatarUrl(player != null ? player.getHeadURL() : null)
+                                .setUsername(player != null ? player.getName() : null)
+                                .build())
+                        .thenApply(ReadonlyMessage::getId);
+            }
+
+            private CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
+                return sender.send(whMsg()
+                                .addEmbeds(WebhookEmbedBuilder.fromJDA(embed.build())
+                                        .build()).build())
+                        .thenApply(ReadonlyMessage::getId);
+            }
+
+            private WebhookMessageBuilder whMsg() {
+                return new WebhookMessageBuilder();
+            }
         };
     }
 
-    public BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate(long channelId) {
-        final var channel = jda.getTextChannelById(channelId);
-        if (channel == null)
-            throw new NullPointerException("channel not found: " + channelId);
-        return (embed, mc) -> {
-            final var content = embed(embed, mc).build();
-            channel.getIterableHistory().stream()
-                    .limit(MaxEditBacklog)
-                    .filter(msg -> msg.getAuthor().equals(jda.getSelfUser()))
-                    .filter(msg -> msg.getEmbeds().size() == 1)
-                    .findFirst()
-                    .<RestAction<Message>>map(msg -> msg.editMessageEmbeds(content))
-                    .orElseGet(() -> channel.sendMessageEmbeds(content))
-                    .queue();
+    public MessagePublisher messageTemplate(final long channelId) {
+        return new MessagePublisher() {
+            private final @NotNull TextChannel channel = Objects.requireNonNull(jda.getTextChannelById(channelId),
+                    "Channel " + channelId + " not found");
+
+            @Override
+            protected CompletableFuture<@NotNull Long> channelId() {
+                return CompletableFuture.completedFuture(channelId);
+            }
+
+            @Override
+            protected CompletableFuture<@NotNull String> defaultAuthorName() {
+                return CompletableFuture.completedFuture(jda.getSelfUser().getEffectiveName());
+            }
+
+            @Override
+            public CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, DiscordMessageSource msg) {
+                return msg.execEdit(messageId, this::edit, this::edit);
+            }
+
+            private CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, String text) {
+                return channel.editMessageById(messageId, text)
+                        .map(ISnowflake::getIdLong)
+                        .submit();
+            }
+
+            private CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, EmbedBuilder embed) {
+                return channel.editMessageEmbedsById(messageId, embed.build())
+                        .map(ISnowflake::getIdLong)
+                        .submit();
+            }
+
+            @Override
+            public CompletableFuture<@NotNull Long> send(DiscordMessageSource msg) {
+                return msg.execSend(this::send, this::send);
+            }
+
+            private CompletableFuture<@NotNull Long> send(String text) {
+                return channel.sendMessage(text)
+                        .map(ISnowflake::getIdLong)
+                        .submit();
+            }
+
+            private CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
+                return channel.sendMessageEmbeds(embed.build())
+                        .map(ISnowflake::getIdLong)
+                        .submit();
+            }
         };
     }
 
-    private WebhookMessageBuilder whMessage(@Nullable MinecraftProfile mc) {
-        return new WebhookMessageBuilder()
-                .setAvatarUrl(mc != null ? mc.getHeadURL() : jda.getSelfUser().getEffectiveAvatarUrl())
-                .setUsername(mc != null ? mc.getName() : jda.getSelfUser().getEffectiveName());
-    }
+    public abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {
+        private final AtomicLong lastKnownMessage = new AtomicLong(0);
 
-    private EmbedBuilder embed(@Nullable MinecraftProfile mc) {
-        return embed(new EmbedBuilder(), mc);
+        protected abstract CompletableFuture<@NotNull Long> channelId();
+        protected abstract CompletableFuture<@NotNull String> defaultAuthorName();
+
+        public abstract CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, DiscordMessageSource msg);
+        public abstract CompletableFuture<@NotNull Long> send(DiscordMessageSource msg);
+
+        private CompletableFuture<@NotNull Long> editOrSend(
+                final DiscordMessageSource msg,
+                final BiFunction<@NotNull Long, DiscordMessageSource, CompletableFuture<@NotNull Long>> edit,
+                final Function<DiscordMessageSource, CompletableFuture<@NotNull Long>> send) {
+            var action = related().thenCompose(editMsg -> {
+                if (editMsg != null && !msg.isAppend())
+                    return edit.apply(editMsg, msg);
+                return send.apply(msg);
+            });
+            if (!msg.isAppend())
+                action.thenAccept(lastKnownMessage::set);
+            return action;
+        }
+
+        private CompletableFuture<@Nullable Long> related() {
+            return lastKnownMessage.get() != 0 ? CompletableFuture.completedFuture(lastKnownMessage.get()) : channelId()
+                    .thenApply(jda::getTextChannelById)
+                    .thenCombine(defaultAuthorName(), (chl, name) -> chl.getIterableHistory().stream()
+                            .limit(MaxEditBacklog)
+                            .filter(msg -> msg.getAuthor().getEffectiveName().equals(name))
+                            .findAny()
+                            .orElse(null))
+                    .thenApply((OptionalFunction<Message, Long>)Message::getIdLong);
+        }
+
+        @Override
+        public CompletableFuture<@NotNull Long> sendString(DiscordMessageSource string) {
+            return editOrSend(string, this::edit, this::send);
+        }
+
+        @Override
+        public CompletableFuture<@NotNull Long> sendEmbed(DiscordMessageSource embed) {
+            return editOrSend(embed, this::edit, this::send);
+        }
+
+        @Override
+        public void accept(DiscordMessageSource msg) {
+            // todo: chat webhook cannot access mc player anymore
+            msg.send(this);
+        }
     }
 
     private EmbedBuilder embed(@NotNull EmbedBuilder builder, @Nullable MinecraftProfile mc) {

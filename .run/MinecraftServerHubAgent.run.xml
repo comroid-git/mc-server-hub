@@ -3,7 +3,7 @@
     <envs>
       <env name="DEBUG" value="true" />
     </envs>
-    <module name="mcsd.agent.main" />
+    <module name="org.comroid.mcsd.mcsd.agent.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="org.comroid.mcsd.agent.MinecraftServerHubAgent" />
     <method v="2">
       <option name="Make" enabled="true" />

@@ -10,6 +10,7 @@ import org.comroid.api.*;
 import org.comroid.api.Container;
 import org.comroid.api.Event;
 import org.comroid.mcsd.agent.ServerProcess;
+import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
@@ -38,8 +39,7 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 @Log
 @Data
 public class DiscordConnection extends Container.Base {
-    private final BiConsumer<@Nullable MinecraftProfile, @Nullable String> chatTemplate;
-    private final BiConsumer<@NotNull EmbedBuilder, @Nullable MinecraftProfile> embedTemplate;
+    private final DiscordAdapter.MessagePublisher msgTemplate;
     private final DiscordAdapter adapter;
     private final ServerProcess srv;
 
@@ -61,13 +61,9 @@ public class DiscordConnection extends Container.Base {
                             return url;
                         }))
                 .map(url -> new WebhookClientBuilder(url).buildJDA());
-        this.chatTemplate = webhook
-                .map(adapter::minecraftChatTemplate)
-                .or(() -> publicChannel.map(adapter::minecraftChatTemplate))
-                .orElseThrow();
-        this.embedTemplate = webhook
-                .map(adapter::embedTemplate)
-                .or(() -> publicChannel.map(adapter::embedTemplate))
+        this.msgTemplate = webhook
+                .map(adapter::messageTemplate)
+                .or(() -> publicChannel.map(adapter::messageTemplate))
                 .orElseThrow();
 
         final var consoleChannel = Optional.ofNullable(server.getConsoleChannelId());
@@ -79,13 +75,14 @@ public class DiscordConnection extends Container.Base {
                         .filter(e -> server.getId().toString().equals(e.getKey()))
                         .mapData(message -> {
                             EmbedBuilder builder = new EmbedBuilder();
-                            if (message.getMessage()!=null)
+                            if (message.getMessage() != null)
                                 builder.setDescription(message.getMessage());
                             return builder
                                     .setTitle(message.toStatusMessage())
                                     .setColor(message.getStatus().getColor());
                         })
-                        .subscribeData(embed -> embedTemplate.accept(embed, null))),
+                        .mapData(DiscordMessageSource::new)
+                        .subscribeData(msgTemplate)),
 
                 // public channel -> minecraft
                 publicChannel.map(id -> adapter.flatMap(MessageReceivedEvent.class)
@@ -110,6 +107,7 @@ public class DiscordConnection extends Container.Base {
                 Stream.of(srv.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                         .mapData(str -> Stream.of(ServerProcess.ChatPattern_Vanilla,
                                         ServerProcess.PlayerEventPattern_Vanilla,
+                                        ServerProcess.BroadcastPattern_Vanilla,
                                         ServerProcess.CrashPattern_Vanilla)
                                 .map(rgx -> rgx.matcher(str))
                                 .filter(Matcher::matches)
@@ -128,19 +126,30 @@ public class DiscordConnection extends Container.Base {
                             }
                             var username = matcher.group("username");
                             var message = matcher.group("message");
-                            if (matcher.pattern().toString().contains("prefix")) {
+                            var output = new DiscordMessageSource();
+                            var profile = bean(MinecraftProfileRepo.class).get(username);
+                            if (matcher.pattern().toString().contains("command")) {
+                                // broadcast command executed
+                            } else if (matcher.pattern().toString().contains("prefix")) {
                                 // chat message
                                 message = TextDecoration.convert(message, McFormatCode.class, Markdown.class);
                                 bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
+                                output.setData(TextDecoration.convert(message, McFormatCode.class, Markdown.class))
+                                        .setPlayer(profile)
+                                        .setAppend(true);
+                                msgTemplate.send(output).join();
+                                return;
                             } else {
                                 // player event
                                 var c = message.charAt(0);
                                 message = message.substring(1);
                                 message = Character.toUpperCase(c) + message;
-                                message = MarkdownUtil.quote(message);
+                                output.setData(Markdown.Quote.apply(message));
                             }
-                            var profile = bean(MinecraftProfileRepo.class).get(username);
-                            chatTemplate.accept(profile, message);
+                            output.setPlayer(profile)
+                                    .setAppend(true)
+                                    .send(msgTemplate)
+                                    .join();
                         })),
 
                 //todo: moderation channel
