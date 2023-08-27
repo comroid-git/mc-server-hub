@@ -161,9 +161,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             pushStatus((server.isMaintenance() ? Status.maintenance : Status.online).new Message(msg));
             log.info(server + " " + msg);
         });
-        this.stop = listenForPattern(StopPattern_Vanilla)
-                .listen().once()
-                .thenRun(() -> pushStatus(Status.offline));
+        this.stop = process.onExit().thenRun(redir::close);
 
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
