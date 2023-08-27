@@ -175,7 +175,7 @@ public class DiscordConnection extends Container.Base {
                                 //noinspection RedundantCast //ide error
                                 return (String) raw;
                             })
-                            .filterData(cmd -> cmd.startsWith(">"))
+                            //.filterData(cmd -> cmd.startsWith(">"))
                             .peekData(out::println)
                             .mapData(cmd -> cmd.substring(1))
                             .subscribeData(srv.getIn()::println));
