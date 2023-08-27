@@ -17,9 +17,11 @@ import org.comroid.mcsd.connector.gateway.GatewayPacket;
 import org.comroid.mcsd.core.MinecraftServerHubConfig;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -49,6 +51,8 @@ public class MinecraftServerHubAgent {
     private ServerRepo servers;
     @Lazy @Autowired
     private AgentRunner agentRunner;
+    @Lazy @Autowired
+    private UserRepo users;
 
     public static void main(String[] args) {
         if (!Debug.isDebug() && !OS.isUnix)
@@ -117,6 +121,7 @@ public class MinecraftServerHubAgent {
     @Synchronized
     private void $cronWatchdog() {
         cronLog.log(Level.FINEST, "Running Watchdog");
+        users.findAll().forEach(User::migrate);
         agentRunner.streamServers()
                 .filter(Server::isEnabled)
                 .map(agentRunner::process)

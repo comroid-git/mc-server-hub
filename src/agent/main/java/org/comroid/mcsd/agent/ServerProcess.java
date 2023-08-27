@@ -183,34 +183,38 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
         var username = matcher.group("username");
         var profile = bean(MinecraftProfileRepo.class).get(username);
         var command = matcher.group("command");
-        cmdr.execute(command, profile);
+        cmdr.execute(command.replaceAll("\r?\n", ""), profile);
     }
 
     @Override
     public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
-        try {
-            var profile = Arrays.stream(args)
-                    .flatMap(Streams.cast(MinecraftProfile.class))
-                    .findAny()
-                    .orElseThrow();
-            var tellraw = Tellraw.Command.builder()
-                    .selector(profile.getName())
-                    .component(McFormatCode.Gray.text("<").build())
-                    .component(McFormatCode.Light_Purple.text("mcsd").build())
-                    .component(McFormatCode.Gray.text("> ").build())
-                    .component(McFormatCode.Reset.text(response.toString()).build())
-                    .build()
-                    .toString();
-            in.println(tellraw);
-            in.flush();
-        } catch (Throwable t) {
-            log.warn("An error occurred handling response: " + response, t);
-        }
+        var profile = Arrays.stream(args)
+                .flatMap(Streams.cast(MinecraftProfile.class))
+                .findAny()
+                .orElseThrow();
+        var tellraw = Tellraw.Command.builder()
+                .selector(profile.getName())
+                .component(McFormatCode.Gray.text("<").build())
+                .component(McFormatCode.Light_Purple.text("mcsd").build())
+                .component(McFormatCode.Gray.text("> ").build())
+                .component(McFormatCode.Reset.text(response.toString()).build())
+                .build()
+                .toString();
+        in.println(tellraw); // todo: tellraw data often too long
+        log.trace(tellraw);
+        in.flush();
     }
 
     @Command
-    public void verify(MinecraftProfile profile, String[] args) {
-
+    public String link(MinecraftProfile profile) {
+        final var profiles = bean(MinecraftProfileRepo.class);
+        String code;
+        do {
+            code = Token.random(6, false);
+        } while (profiles.findByVerification(code).isPresent());
+        profile.setVerification(code);
+        profiles.save(profile);
+        return "Please run this command on discord: /link " + code;
     }
     //endregion
 

@@ -36,7 +36,10 @@ import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.UserData;
+import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.UserDataRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.util.McFormatCode;
@@ -88,6 +91,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                 .setGuildOnly(true),
                         Commands.slash("list", "Shows list of online players")
                                 .setGuildOnly(true),
+                        Commands.slash("verify", "Verify Minecraft Account linkage")
+                                .addOption(OptionType.STRING, "code", "Your verification code", true)
+                                .setGuildOnly(true),
                         Commands.slash("execute", "Run a command on the server")
                                 .addOption(OptionType.STRING, "command", "The command to run", true)
                                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
@@ -105,9 +111,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .flatMap(Streams.cast(SlashCommandInteractionEvent.class))
                 .findAny()
                 .orElseThrow();
-        final var mc = bean(UserRepo.class)
+        final var mc = bean(UserDataRepo.class)
                 .findByDiscordId(e.getUser().getIdLong())
-                .map(org.comroid.mcsd.core.entity.User::getMinecraft)
+                .map(UserData::getMinecraft)
                 .orElse(null);
         if (response instanceof CompletableFuture)
             e.deferReply().setEphemeral(cmd.ephemeral())
@@ -151,7 +157,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             else
                 embed.addField("Players", "%d out of %d".formatted(stat.getPlayerCount(), server.getMaxPlayers()), false);
             Optional.ofNullable(server.getOwner())
-                    .map(org.comroid.mcsd.core.entity.User::getMinecraft)
+                    .map(org.comroid.mcsd.core.entity.User::getUserData)
+                    .map(UserData::getMinecraft)
                     .ifPresent(owner -> embed.setAuthor("Owner: " + owner.getName(), owner.getNameMcURL(), owner.getHeadURL()));
             return embed;
         });
@@ -168,7 +175,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     .setTimestamp(stat.getTimestamp());
             if (stat.getPlayers() == null)
                 return embed.setDescription("There are no players online");
-            final var users = bean(UserRepo.class);
+            final var users = bean(UserDataRepo.class);
             stat.getPlayers().forEach(playerName -> embed.addField(
                     playerName,
                     users.findByMinecraftName(playerName).map(user -> user.getDiscordId() == null
@@ -179,6 +186,16 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     true));
             return embed;
         });
+    }
+
+    @Command(ephemeral = true)
+    public String verify(SlashCommandInteractionEvent e) {
+        final var code = Objects.requireNonNull(e.getOption("code")).getAsString();
+        var profile = bean(MinecraftProfileRepo.class).findByVerification(code)
+                .orElseThrow(() -> new Command.MildError("Invalid code"));
+        final var userdata = bean(UserDataRepo.class);
+        userdata.get(e.getUser()).complete(user -> user.setMinecraft(profile));
+        return "Minecraft account " + profile.getName() + " has been linked";
     }
 
     @Command(ephemeral = true)
