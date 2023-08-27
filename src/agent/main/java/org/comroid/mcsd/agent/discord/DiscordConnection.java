@@ -39,7 +39,7 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 @Log
 @Data
 public class DiscordConnection extends Container.Base {
-    private final DiscordAdapter.MessagePublisher msgTemplate;
+    private final DiscordAdapter.MessagePublisher msgTemplate, botTemplate;
     private final DiscordAdapter adapter;
     private final ServerProcess srv;
 
@@ -65,6 +65,8 @@ public class DiscordConnection extends Container.Base {
                 .map(adapter::messageTemplate)
                 .or(() -> publicChannel.map(adapter::messageTemplate))
                 .orElseThrow();
+        this.botTemplate = publicChannel.map(adapter::messageTemplate)
+                .orElseThrow();
 
         final var consoleChannel = Optional.ofNullable(server.getConsoleChannelId());
         final var consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, srv.getServer().getConsoleMode()));
@@ -82,7 +84,7 @@ public class DiscordConnection extends Container.Base {
                                     .setColor(message.getStatus().getColor());
                         })
                         .mapData(DiscordMessageSource::new)
-                        .subscribeData(msgTemplate)),
+                        .subscribeData(botTemplate)),
 
                 // public channel -> minecraft
                 publicChannel.map(id -> adapter.flatMap(MessageReceivedEvent.class)
