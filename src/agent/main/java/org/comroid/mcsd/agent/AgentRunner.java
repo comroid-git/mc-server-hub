@@ -3,6 +3,7 @@ package org.comroid.mcsd.agent;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.java.Log;
 import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
@@ -24,9 +25,7 @@ import org.springframework.stereotype.Service;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -34,6 +33,7 @@ import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
+@Log
 @Getter
 @Service
 public class AgentRunner implements Command.Handler {
@@ -73,7 +73,7 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var proc = process(srv);
-        var run = proc.runBackup();
+        var run = proc.runBackup(true);
         run.exceptionally(Polyfill.exceptionLogger());
         return "Backup of "+srv+" started";
     }
@@ -242,7 +242,8 @@ public class AgentRunner implements Command.Handler {
                 Duration.ofDays(7),
                 Instant.EPOCH,
                 Instant.EPOCH,
-                Status.Unknown
+                Status.unknown_status,
+                new ArrayList<>()
         );
         server.setName(name).setOwner(con.getUser());
         return servers.save(server) + " created";
@@ -256,6 +257,13 @@ public class AgentRunner implements Command.Handler {
                 .map(this::process)
                 .anyMatch(srv -> !srv.getCurrentBackup().get().isDone() || srv.getUpdateRunning().get()))
             throw new Command.MildError("Unable to shutdown while a backup or update is running");
+        log.info("Shutting down agent");
+        CompletableFuture.allOf(Streams.of(servers.findAll())
+                .map(this::process)
+                .filter(proc -> proc.getState() == ServerProcess.State.Running)
+                .map(proc -> proc.shutdown("Host shutdown", 10))
+                .toArray(CompletableFuture[]::new))
+                .join();
         System.exit(0);
         return "shutting down";
     }
@@ -296,7 +304,7 @@ public class AgentRunner implements Command.Handler {
     @PreDestroy
     public void close() {
         CompletableFuture.allOf(processes.values().stream()
-                        .peek(proc -> proc.pushStatus(Status.Offline))
+                        .peek(proc -> proc.pushStatus(Status.offline))
                         .map(proc -> proc.shutdown("Host shutdown", 5))
                         .toArray(CompletableFuture[]::new))
                 .join();

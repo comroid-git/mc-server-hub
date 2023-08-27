@@ -13,14 +13,17 @@ import java.time.Instant;
 public class ServerUptimeEntry {
     private static final Object lock = new Object();
 
+    // todo
+    // this might be an issue with multiple agents
+    // although only in rare cases they should be interfering with each other
+    // as in: have the VERY SAME timestamp
     private @Id Instant timestamp;
     private @ManyToOne Server server;
     private Status status;
     private int players;
     private long ramKB;
-    private @Nullable String message;
 
-    public ServerUptimeEntry(Server server, Status status, int players, long ramKB, @Nullable String message) {
+    public ServerUptimeEntry(Server server, Status status, int players, long ramKB) {
         synchronized (lock) {
             timestamp = Instant.now();
         }
@@ -28,6 +31,5 @@ public class ServerUptimeEntry {
         this.status = status;
         this.players = players;
         this.ramKB = ramKB;
-        this.message = message;
     }
 }

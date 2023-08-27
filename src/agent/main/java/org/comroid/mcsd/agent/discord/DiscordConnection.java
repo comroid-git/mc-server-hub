@@ -27,7 +27,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
@@ -127,8 +126,9 @@ public class DiscordConnection extends Container.Base {
                             var username = matcher.group("username");
                             var message = matcher.group("message");
                             var output = new DiscordMessageSource();
-                            if (matcher.groupCount() == 2) {
+                            if (matcher.pattern().toString().contains("prefix")) {
                                 // chat message
+                                message = TextDecoration.convert(message, McFormatCode.class, Markdown.class);
                                 bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
                                 output.setData(TextDecoration.convert(message, McFormatCode.class, Markdown.class));
                             } else {
@@ -157,7 +157,8 @@ public class DiscordConnection extends Container.Base {
                                 if (server.getConsoleMode() == Server.ConsoleMode.ScrollClean
                                         && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
                                     msg.delete().queue();
-                                return raw;
+                                //noinspection RedundantCast //ide error
+                                return (String) raw;
                             })
                             .filterData(cmd -> cmd.startsWith(">"))
                             .peekData(out::println)
@@ -166,7 +167,7 @@ public class DiscordConnection extends Container.Base {
                 }).stream(),
                 // console -> console channel
                 consoleStream.map(target -> srv.getOe()
-                        .rewireOE(oe -> oe.filter($ -> server.getLastStatus().getAsInt() > Status.Starting.getAsInt()))
+                        .rewireOE(oe -> oe.filter($ -> server.getLastStatus().getAsInt() > Status.starting.getAsInt()))
                         .redirect(target, target)).stream()
         ).forEach(this::addChildren);
     }

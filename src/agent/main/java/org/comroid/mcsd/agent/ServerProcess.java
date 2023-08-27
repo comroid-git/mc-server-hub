@@ -10,13 +10,16 @@ import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.discord.DiscordConnection;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
+import org.comroid.mcsd.core.entity.Backup;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.ServerUptimeEntry;
+import org.comroid.mcsd.core.repo.BackupRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ServerUptimeRepo;
+import org.comroid.mcsd.util.McFormatCode;
+import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.*;
 import org.intellij.lang.annotations.Language;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -24,9 +27,11 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
@@ -40,12 +45,23 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 public class ServerProcess extends Event.Bus<String> implements Startable {
     // todo: improve these
     public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
-    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: <(?<username>[\\S\\w-_]+)> (?<message>.+)\\r?\\n?.*");
+    public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server.*\\r?\\n?");
+    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: " +
+            "([(\\[{<](?<prefix>[\\w\\s-_]+)[>}\\])]\\s?)*" +
+            //"([(\\[{<]" +
+            "<" +
+            "(?<username>[\\w\\S-_]+)" +
+            ">\\s?" +
+            //"[>}\\])]\\s?)\\s?" +
+            "([(\\[{<](?<suffix>[\\w\\s-_]+)[>}\\])]\\s?)*" +
+            "(?<message>.+)\\r?\\n?.*");
+    public static final Pattern BroadcastPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w-_]+) issued server command: /(?<command>(broadcast)|(say)) (?<message>.+)\\r?\\n?.*");
     public static final Pattern CrashPattern_Vanilla = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
     public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
             ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
     private final AtomicReference<CompletableFuture<@Nullable File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
+    private final AtomicInteger lastTicker = new AtomicInteger(0);
     private final AgentRunner runner;
     private final Server server;
     private @Nullable Process process;
@@ -53,6 +69,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     private DelegateStream.IO oe;
     private DiscordConnection discord;
     private CompletableFuture<Duration> done;
+    private CompletableFuture<Void> stop;
     private IStatusMessage previousStatus;
     private IStatusMessage currentStatus;
 
@@ -65,10 +82,14 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     }
 
     public void pushStatus(IStatusMessage message) {
+        if (currentStatus != null && currentStatus.getStatus() == message.getStatus()
+                && Objects.equals(currentStatus.getMessage(), message.getMessage()))
+            return; // do not push same status twice
         previousStatus = currentStatus;
         currentStatus = message;
         bean(ServerRepo.class).setStatus(server.getId(), message.getStatus());
         bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), message);
+        pushUptime();
     }
 
     public void pushUptime() {
@@ -79,8 +100,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         (stat, ram) -> new ServerUptimeEntry(server,
                                 currentStatus.getStatus(),
                                 stat.getPlayers() != null ? stat.getPlayers().size() : stat.getPlayerCount(),
-                                ram,
-                                currentStatus.getMessage()))
+                                ram))
                 .thenAccept(bean(ServerUptimeRepo.class)::save)
                 .join();
     }
@@ -91,11 +111,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (is && !val) {
             // disable maintenance
             in.println("whitelist off");
-            pushStatus(Status.Maintenance.new Message("Maintenance has been turned off"));
+            pushStatus(Status.maintenance.new Message("Maintenance has been turned off"));
         } else if (!is && val) {
             // enable maintenance
             in.println("whitelist on");
-            pushStatus(Status.Maintenance);
+            pushStatus(Status.maintenance);
         }
         return is != val;
     }
@@ -127,7 +147,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         var botConId = server.getDiscordBot();
         if (botConId != null)
             addChildren(discord = new DiscordConnection(this));
-        pushStatus(Status.Starting);
+        pushStatus(Status.starting);
 
         this.done = listenForPattern(DonePattern_Vanilla)
                 .mapData(m -> m.group("time"))
@@ -137,23 +157,42 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         done.thenAccept(d -> {
             var t = Polyfill.durationString(d);
             var msg = "Took " + t + " to start";
-            pushStatus((server.isMaintenance() ? Status.Maintenance : Status.Online).new Message(msg));
+            pushStatus((server.isMaintenance() ? Status.maintenance : Status.online).new Message(msg));
             log.info(server + " " + msg);
         });
+        this.stop = listenForPattern(StopPattern_Vanilla)
+                .listen().once()
+                .thenRun(() -> pushStatus(Status.offline));
 
         if (Debug.isDebug())
             //oe.redirectToLogger(log);
             oe.redirectToSystem();
     }
 
+    public synchronized void runTicker() {
+        var messages = server.getTickerMessages();
+        if (messages == null || messages.isEmpty())
+            return;
+        if (lastTicker.get()>=messages.size())
+            lastTicker.set(0);
+        var msg = messages.get(lastTicker.getAndIncrement());
+        var cmd = Tellraw.Command.builder()
+                .selector(Tellraw.Selector.Base.ALL_PLAYERS)
+                .component(McFormatCode.Gray.text("<").build())
+                .component(McFormatCode.Light_Purple.text(msg).build())
+                .component(McFormatCode.Gray.text("> ").build())
+                .build().toString();
+        in.println(cmd);
+    }
+
     @SneakyThrows
-    public CompletableFuture<File> runBackup() {
+    public CompletableFuture<File> runBackup(final boolean important) {
         if (!currentBackup.get().isDone()) {
             log.warn("A backup on server %s is already running".formatted(server));
             return currentBackup.get();
         }
 
-        pushStatus(Status.Backing_Up);
+        pushStatus(Status.running_backup);
         final var stopwatch = Stopwatch.start("backup-" + server.getId());
 
         var backupDir = new FileHandle(server.shCon().orElseThrow().getBackupsDir()).createSubDir(server.getName());
@@ -165,7 +204,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         in.println("save-off");
         in.println("save-all");
 
-        var backup = Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(Instant.now())).toFile();
+        final var time = Instant.now();
         return saveComplete
                 // wait for save to finish
                 .thenCompose($ -> Archiver.find(Archiver.ReadOnly).zip()
@@ -174,18 +213,24 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .excludePattern("**cache/**")
                         .excludePattern("**libraries/**")
                         .excludePattern("**versions/**")
+                        .excludePattern("**dynmap/web/**") // do not backup dynmap
                         .excludePattern("**.lock")
-                        .outputPath(backup.getAbsolutePath())
+                        .outputPath(Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(time)).toAbsolutePath())
                         .execute()
                         //.orTimeout(30, TimeUnit.SECONDS) // dev variant
                         .orTimeout(1, TimeUnit.HOURS)
                         .whenComplete((r, t) -> {
-                            var stat = Status.Online;
+                            var stat = Status.online;
+                            var duration = stopwatch.stop();
+                            var sizeKb = r != null ? (r.length() / (1024)) : 0;
                             var msg = "Backup finished; took %s; size: %1.2fGB".formatted(
-                                    Polyfill.durationString(stopwatch.stop()),
-                                    (double) backup.length() / (1024 * 1024 * 1024));
+                                    Polyfill.durationString(duration),
+                                    (double) sizeKb / (1024 * 1024));
+                            if (r != null)
+                                bean(BackupRepo.class)
+                                        .save(new Backup(time, server, sizeKb, duration, r.getAbsolutePath(), important));
                             if (t != null) {
-                                stat = Status.In_Trouble;
+                                stat = Status.in_Trouble;
                                 msg = "Unable to complete Backup";
                                 log.error(msg + " for " + server, t);
                             }
@@ -214,7 +259,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     @SneakyThrows
     public boolean runUpdate(String... args) {
         var flags = String.join("", args);
-        pushStatus(Status.Updating);
+        pushStatus(Status.updating);
 
         // modify server.properties
         Properties prop;
@@ -253,13 +298,14 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             in.transferTo(out);
         }
 
-        pushStatus(Status.Online.new Message("Update done"));
+        pushStatus(Status.online.new Message("Update done"));
         return true;
     }
 
     @SneakyThrows
     public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
         return CompletableFuture.supplyAsync(() -> {
+            pushStatus(Status.shutting_down.new Message(reason));
             final var msg = (IntFunction<String>) t -> "say Server will shut down in %d seconds (%s)".formatted(t, reason);
             int time = warnSeconds;
 
@@ -278,6 +324,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                 log.error("Could not wait for shutdown timeout", e);
             }
 
+            in.println("stop");
+            stop.join();
             close();
             return null;
         });
@@ -289,6 +337,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         if (process == null || getState() != State.Running)
             return;
 
+        pushStatus(Status.offline);
+
         // try shut down gracefully
         in.println("stop");
         process.onExit().orTimeout(30, TimeUnit.SECONDS).join();
@@ -298,7 +348,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
             process.destroy();
         }
 
-        runner.eventBus.publish(getServer().getId().toString(), Status.Offline);
+        runner.eventBus.publish(getServer().getId().toString(), Status.offline);
     }
 
     @Override

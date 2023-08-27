@@ -16,7 +16,6 @@ import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.model.ServerConnection;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
-import org.hibernate.annotations.ManyToAny;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
@@ -72,7 +71,8 @@ public class Server extends AbstractEntity {
     private Duration updatePeriod = Duration.ofDays(7);
     private Instant lastBackup = Instant.ofEpochMilli(0);
     private Instant lastUpdate = Instant.ofEpochMilli(0);
-    private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.Unknown;
+    private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.unknown_status;
+    private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
 
     @JsonIgnore
     public ServerConnection con() {
@@ -226,7 +226,7 @@ public class Server extends AbstractEntity {
 
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
-        log.debug("Getting status of Server %s".formatted(this));
+        log.trace("Getting status of Server %s".formatted(this));
         return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(statusCache.computeIfPresent(getId(), (k, v) -> {
                     if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
                         return null;
@@ -234,7 +234,7 @@ public class Server extends AbstractEntity {
                 }), "Status cache outdated"))
                 .exceptionally(t ->
                 {
-                    log.debug("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
+                    log.trace("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
                     log.trace("Exception was", t);
                     try (var query = new MCQuery(host, getQueryPort())) {
                         var stat = query.fullStat();
@@ -242,7 +242,7 @@ public class Server extends AbstractEntity {
                                 //todo
                                 //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
                                 //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
-                                .withStatus(isMaintenance() ? Status.Maintenance : Status.Online)
+                                .withStatus(isMaintenance() ? Status.maintenance : Status.online)
                                 .withPlayerCount(stat.getOnlinePlayers())
                                 .withPlayerMax(stat.getMaxPlayers())
                                 .withMotd(stat.getMOTD())
@@ -252,14 +252,14 @@ public class Server extends AbstractEntity {
                     }
                 })
                 .exceptionally(t -> {
-                    log.debug("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
+                    log.trace("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
                     log.trace("Exception was", t);
                     var stat = new MineStat(host, getPort());
                     return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             //todo
                             //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
                             //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
-                            .withStatus(stat.isServerUp() ? isMaintenance() ? Status.Maintenance : Status.Online : Status.Offline)
+                            .withStatus(stat.isServerUp() ? isMaintenance() ? Status.maintenance : Status.online : Status.offline)
                             .withPlayerCount(stat.getCurrentPlayers())
                             .withPlayerMax(stat.getMaximumPlayers())
                             .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), ""))

@@ -1,6 +1,5 @@
 package org.comroid.mcsd.api.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Value;
 import org.comroid.api.IntegerAttribute;
@@ -11,14 +10,15 @@ import java.awt.*;
 
 @Getter
 public enum Status implements IntegerAttribute, IStatusMessage {
-    Unknown     ("❔", McFormatCode.Dark_Gray),
-    Offline     ("❌", McFormatCode.Red),
-    Starting    ("⏯️", McFormatCode.Aqua),
-    Maintenance ("\uD83D\uDD27", McFormatCode.Yellow),
-    Backing_Up  ("\uD83D\uDCBE", McFormatCode.Green),
-    Updating    ("\uD83D\uDD04️", McFormatCode.Light_Purple),
-    In_Trouble  ("⚠️", McFormatCode.Gold),
-    Online      ("✅", McFormatCode.Dark_Green);
+    unknown_status  ("❔", McFormatCode.Dark_Gray),
+    offline         ("❌", McFormatCode.Dark_Red),
+    starting        ("⏯️", McFormatCode.Aqua),
+    maintenance     ("\uD83D\uDD27", McFormatCode.Yellow),
+    running_backup  ("\uD83D\uDCBE", McFormatCode.Green),
+    updating        ("\uD83D\uDD04️", McFormatCode.Light_Purple),
+    in_Trouble      ("⚠️", McFormatCode.Gold),
+    online          ("✅", McFormatCode.Dark_Green),
+    shutting_down   ("\uD83D\uDED1", McFormatCode.Red);
 
     private final String emoji;
     private final Color color;
