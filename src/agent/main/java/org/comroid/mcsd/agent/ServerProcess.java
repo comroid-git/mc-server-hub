@@ -220,7 +220,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                             var stat = Status.online;
                             var msg = "Backup finished; took %s; size: %1.2fGB".formatted(
                                     Polyfill.durationString(stopwatch.stop()),
-                                    (double) backup.length() / (1024 * 1024 * 1024));
+                                    (double) new File(backup.getAbsolutePath()+".tar.gz").length() / (1024 * 1024 * 1024));
                             if (t != null) {
                                 stat = Status.in_Trouble;
                                 msg = "Unable to complete Backup";
