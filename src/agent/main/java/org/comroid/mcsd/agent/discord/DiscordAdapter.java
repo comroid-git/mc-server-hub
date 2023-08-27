@@ -206,35 +206,45 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
     public MessagePublisher messageTemplate(final WebhookClient webhook) {
         return new MessagePublisher() {
+            private final OnDemand<@NotNull Long> channelId = new OnDemand<>(jda
+                    .retrieveWebhookById(webhook.getId())
+                    .submit()
+                    .thenApply(ISnowflake::getIdLong));
+
             @Override
             protected CompletableFuture<@NotNull Long> channelId() {
-                return jda.retrieveWebhookById(webhook.getId())
-                        .submit()
-                        .thenApply(ISnowflake::getIdLong);
+                return channelId.get();
             }
 
             @Override
-            protected CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, String text) {
-                return webhook.edit(messageId, text)
-                        .thenApply(ReadonlyMessage::getId);
+            public CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, DiscordMessageSource msg) {
+                return msg.execEdit(messageId, this::edit, this::edit).thenApply(ReadonlyMessage::getId);
+            }
+
+            private @NotNull CompletableFuture<ReadonlyMessage> edit(@NotNull Long messageId, String text) {
+                return webhook.edit(messageId, text);
+            }
+
+            private @NotNull CompletableFuture<ReadonlyMessage> edit(@NotNull Long messageId, EmbedBuilder embed) {
+                return webhook.edit(messageId, WebhookEmbedBuilder.fromJDA(embed.build()).build());
             }
 
             @Override
-            protected CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, EmbedBuilder embed) {
-                return webhook.edit(messageId, WebhookEmbedBuilder.fromJDA(embed.build()).build())
-                        .thenApply(ReadonlyMessage::getId);
+            public CompletableFuture<@NotNull Long> send(final DiscordMessageSource msg) {
+                return msg.execSend(text -> send(msg, text), this::send);
             }
 
-            @Override
-            protected CompletableFuture<@NotNull Long> send(String text) {
+            private CompletableFuture<@NotNull Long> send(DiscordMessageSource msg, String text) {
+                var player = msg.getPlayer();
                 return webhook.send(whMsg()
                                 .setContent(text)
+                                .setAvatarUrl(player != null ? player.getHeadURL() : null)
+                                .setUsername(player != null ? player.getName() : null)
                                 .build())
                         .thenApply(ReadonlyMessage::getId);
             }
 
-            @Override
-            protected CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
+            private CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
                 return webhook.send(whMsg()
                                 .addEmbeds(WebhookEmbedBuilder.fromJDA(embed.build())
                                         .build()).build())
@@ -258,28 +268,34 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             }
 
             @Override
-            protected CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, String text) {
+            public CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, DiscordMessageSource msg) {
+                return msg.execEdit(messageId, this::edit, this::edit);
+            }
+
+            private CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, String text) {
                 return channel.editMessageById(messageId, text)
                         .map(ISnowflake::getIdLong)
                         .submit();
             }
 
-            @Override
-            protected CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, EmbedBuilder embed) {
+            private CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, EmbedBuilder embed) {
                 return channel.editMessageEmbedsById(messageId, embed.build())
                         .map(ISnowflake::getIdLong)
                         .submit();
             }
 
             @Override
-            protected CompletableFuture<@NotNull Long> send(String text) {
+            public CompletableFuture<@NotNull Long> send(DiscordMessageSource msg) {
+                return msg.execSend(this::send, this::send);
+            }
+
+            private CompletableFuture<@NotNull Long> send(String text) {
                 return channel.sendMessage(text)
                         .map(ISnowflake::getIdLong)
                         .submit();
             }
 
-            @Override
-            protected CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
+            private CompletableFuture<@NotNull Long> send(EmbedBuilder embed) {
                 return channel.sendMessageEmbeds(embed.build())
                         .map(ISnowflake::getIdLong)
                         .submit();
@@ -292,18 +308,13 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
         protected abstract CompletableFuture<@NotNull Long> channelId();
 
-        protected abstract CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, String text);
+        public abstract CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, DiscordMessageSource msg);
+        public abstract CompletableFuture<@NotNull Long> send(DiscordMessageSource msg);
 
-        protected abstract CompletableFuture<@NotNull Long> edit(@NotNull Long messageId, EmbedBuilder embed);
-
-        protected abstract CompletableFuture<@NotNull Long> send(String text);
-
-        protected abstract CompletableFuture<@NotNull Long> send(EmbedBuilder embed);
-
-        private <T> CompletableFuture<?> editOrSend(
-                final T it,
-                final BiFunction<@NotNull Long, T, CompletableFuture<@NotNull Long>> edit,
-                final Function<T, CompletableFuture<@NotNull Long>> send) {
+        private CompletableFuture<@NotNull Long> editOrSend(
+                final DiscordMessageSource it,
+                final BiFunction<@NotNull Long, DiscordMessageSource, CompletableFuture<@NotNull Long>> edit,
+                final Function<DiscordMessageSource, CompletableFuture<@NotNull Long>> send) {
             var action = related().thenCompose(msg -> msg != null ? edit.apply(msg, it) : send.apply(it));
             action.thenAccept(lastKnownMessage::set);
             return action;
@@ -319,12 +330,12 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         }
 
         @Override
-        public CompletableFuture<?> sendString(String message) {
-            return editOrSend(message, this::edit, this::send);
+        public CompletableFuture<@NotNull Long> sendString(DiscordMessageSource string) {
+            return editOrSend(string, this::edit, this::send);
         }
 
         @Override
-        public CompletableFuture<?> sendEmbed(EmbedBuilder embed) {
+        public CompletableFuture<@NotNull Long> sendEmbed(DiscordMessageSource embed) {
             return editOrSend(embed, this::edit, this::send);
         }
 

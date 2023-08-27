@@ -107,6 +107,7 @@ public class DiscordConnection extends Container.Base {
                 Stream.of(srv.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                         .mapData(str -> Stream.of(ServerProcess.ChatPattern_Vanilla,
                                         ServerProcess.PlayerEventPattern_Vanilla,
+                                        ServerProcess.BroadcastPattern_Vanilla,
                                         ServerProcess.CrashPattern_Vanilla)
                                 .map(rgx -> rgx.matcher(str))
                                 .filter(Matcher::matches)
@@ -126,11 +127,16 @@ public class DiscordConnection extends Container.Base {
                             var username = matcher.group("username");
                             var message = matcher.group("message");
                             var output = new DiscordMessageSource();
-                            if (matcher.pattern().toString().contains("prefix")) {
+                            var profile = bean(MinecraftProfileRepo.class).get(username);
+                            if (matcher.pattern().toString().contains("command")) {
+                                // broadcast command executed
+                            } else if (matcher.pattern().toString().contains("prefix")) {
                                 // chat message
                                 message = TextDecoration.convert(message, McFormatCode.class, Markdown.class);
                                 bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
                                 output.setData(TextDecoration.convert(message, McFormatCode.class, Markdown.class));
+                                msgTemplate.send(output.setPlayer(profile)).join();
+                                return;
                             } else {
                                 // player event
                                 var c = message.charAt(0);
@@ -138,8 +144,7 @@ public class DiscordConnection extends Container.Base {
                                 message = Character.toUpperCase(c) + message;
                                 output.setData(Markdown.Quote.apply(message));
                             }
-                            var profile = bean(MinecraftProfileRepo.class).get(username);
-                            output.setPlayer(profile).send(msgTemplate);
+                            output.setPlayer(profile).send(msgTemplate).join();
                         })),
 
                 //todo: moderation channel

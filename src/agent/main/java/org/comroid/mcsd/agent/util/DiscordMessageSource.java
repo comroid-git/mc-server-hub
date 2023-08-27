@@ -1,15 +1,17 @@
 package org.comroid.mcsd.agent.util;
 
+import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.comroid.api.StreamSupplier;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.util.Streams;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -25,6 +27,9 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
     public DiscordMessageSource(@Nullable Object data) {
         this.data = data;
     }
+
+    public boolean isEmbed() {return embed().isPresent();}
+    public boolean isString() {return string().isPresent();}
 
     @Override
     public Stream<Object> stream() {
@@ -61,18 +66,37 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
     }
 
     public CompletableFuture<?> send(
-            final Function<String, CompletableFuture<?>> string,
-            final Function<EmbedBuilder, CompletableFuture<?>> embed
+            final Function<DiscordMessageSource, CompletableFuture<?>> string,
+            final Function<DiscordMessageSource, CompletableFuture<?>> embed
     ) {
-        return embed(e -> e.setTimestamp(Instant.now()))
-                .embed()
-                .map(embed)
-                .or(()->string().map(string))
+        if (isEmbed())
+            return embed.apply(this);
+        if (isString())
+            return string.apply(this);
+        throw new RuntimeException("invalid state");
+    }
+
+    public <T> CompletableFuture<T> execEdit(
+            final long messageId,
+            final BiFunction<@NotNull Long, String, CompletableFuture<T>> string,
+            final BiFunction<@NotNull Long, EmbedBuilder, CompletableFuture<T>> embed
+    ) {
+        return embed().map(e -> embed.apply(messageId, e))
+                .or(() -> string().map(s -> string.apply(messageId, s)))
+                .orElseThrow();
+    }
+
+    public <T> CompletableFuture<T> execSend(
+            final Function<String, CompletableFuture<T>> string,
+            final Function<EmbedBuilder, CompletableFuture<T>> embed
+    ) {
+        return embed().map(embed)
+                .or(() -> string().map(string))
                 .orElseThrow();
     }
 
     public interface Sender {
-        CompletableFuture<?> sendString(String message);
-        CompletableFuture<?> sendEmbed(EmbedBuilder builder);
+        CompletableFuture<@NotNull Long> sendString(DiscordMessageSource source);
+        CompletableFuture<@NotNull Long> sendEmbed(DiscordMessageSource source);
     }
 }
