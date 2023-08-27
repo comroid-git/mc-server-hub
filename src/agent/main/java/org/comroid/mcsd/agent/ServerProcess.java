@@ -10,8 +10,10 @@ import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.discord.DiscordConnection;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
+import org.comroid.mcsd.core.entity.Backup;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.ServerUptimeEntry;
+import org.comroid.mcsd.core.repo.BackupRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ServerUptimeRepo;
 import org.comroid.mcsd.util.McFormatCode;
@@ -184,7 +186,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
     }
 
     @SneakyThrows
-    public CompletableFuture<File> runBackup() {
+    public CompletableFuture<File> runBackup(final boolean important) {
         if (!currentBackup.get().isDone()) {
             log.warn("A backup on server %s is already running".formatted(server));
             return currentBackup.get();
@@ -202,7 +204,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
         in.println("save-off");
         in.println("save-all");
 
-        var backup = Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(Instant.now())).toFile();
+        final var time = Instant.now();
         return saveComplete
                 // wait for save to finish
                 .thenCompose($ -> Archiver.find(Archiver.ReadOnly).zip()
@@ -212,15 +214,20 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .excludePattern("**libraries/**")
                         .excludePattern("**versions/**")
                         .excludePattern("**.lock")
-                        .outputPath(backup.getAbsolutePath())
+                        .outputPath(Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(time)).toAbsolutePath())
                         .execute()
                         //.orTimeout(30, TimeUnit.SECONDS) // dev variant
                         .orTimeout(1, TimeUnit.HOURS)
                         .whenComplete((r, t) -> {
                             var stat = Status.online;
+                            var duration = stopwatch.stop();
+                            var sizeGb = r != null ? (double) r.length() / (1024 * 1024 * 1024) : 0;
                             var msg = "Backup finished; took %s; size: %1.2fGB".formatted(
-                                    Polyfill.durationString(stopwatch.stop()),
-                                    (double) new File(backup.getAbsolutePath()+".tar.gz").length() / (1024 * 1024 * 1024));
+                                    Polyfill.durationString(duration),
+                                    sizeGb);
+                            if (r != null)
+                                bean(BackupRepo.class)
+                                        .save(new Backup(time, server, sizeGb, duration, r.getAbsolutePath(), important));
                             if (t != null) {
                                 stat = Status.in_Trouble;
                                 msg = "Unable to complete Backup";

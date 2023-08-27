@@ -73,7 +73,7 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var proc = process(srv);
-        var run = proc.runBackup();
+        var run = proc.runBackup(true);
         run.exceptionally(Polyfill.exceptionLogger());
         return "Backup of "+srv+" started";
     }
