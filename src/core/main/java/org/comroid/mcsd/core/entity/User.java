@@ -19,10 +19,11 @@ public class User extends AbstractEntity {
     private @Deprecated @Nullable Long discordId;
 
     public void migrate() {
-        if (userData == null || minecraft != null || discordId != null) {
+        if (userData == null || userData.getUser() == null || minecraft != null || discordId != null) {
             var users = ApplicationContextProvider.bean(UserRepo.class);
             var data = ApplicationContextProvider.bean(UserDataRepo.class);
             data.save(userData = data.findByUserId(getId()).orElseGet(UserData::new)
+                    .setUser(this)
                     .setMinecraft(minecraft)
                     .setDiscordId(discordId));
             minecraft = null;
