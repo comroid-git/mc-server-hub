@@ -214,7 +214,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
         } while (profiles.findByVerification(code).isPresent());
         profile.setVerification(code);
         profiles.save(profile);
-        return "Please run this command on discord: /link " + code;
+        return "Please run this command on discord: /verify " + code;
     }
     //endregion
 
