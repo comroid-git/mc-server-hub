@@ -15,7 +15,7 @@ import java.time.Instant;
 public class Backup extends AbstractEntity {
     private Instant timestamp;
     private @ManyToOne Server server;
-    private double sizeGB;
+    private long sizeKb;
     private Duration duration;
     private String file;
     private boolean important;

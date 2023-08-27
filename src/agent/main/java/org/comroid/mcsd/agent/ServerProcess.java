@@ -213,6 +213,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .excludePattern("**cache/**")
                         .excludePattern("**libraries/**")
                         .excludePattern("**versions/**")
+                        .excludePattern("**dynmap/web/**") // do not backup dynmap
                         .excludePattern("**.lock")
                         .outputPath(Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(time)).toAbsolutePath())
                         .execute()
@@ -221,13 +222,13 @@ public class ServerProcess extends Event.Bus<String> implements Startable {
                         .whenComplete((r, t) -> {
                             var stat = Status.online;
                             var duration = stopwatch.stop();
-                            var sizeGb = r != null ? (double) r.length() / (1024 * 1024 * 1024) : 0;
+                            var sizeKb = r != null ? (r.length() / (1024)) : 0;
                             var msg = "Backup finished; took %s; size: %1.2fGB".formatted(
                                     Polyfill.durationString(duration),
-                                    sizeGb);
+                                    (double) sizeKb / (1024 * 1024));
                             if (r != null)
                                 bean(BackupRepo.class)
-                                        .save(new Backup(time, server, sizeGb, duration, r.getAbsolutePath(), important));
+                                        .save(new Backup(time, server, sizeKb, duration, r.getAbsolutePath(), important));
                             if (t != null) {
                                 stat = Status.in_Trouble;
                                 msg = "Unable to complete Backup";
