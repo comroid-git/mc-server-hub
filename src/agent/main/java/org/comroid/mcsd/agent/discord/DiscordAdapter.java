@@ -91,7 +91,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                 .setGuildOnly(true),
                         Commands.slash("list", "Shows list of online players")
                                 .setGuildOnly(true),
-                        Commands.slash("verify", "Verify Minecraft Account linkage")
+                        Commands.slash("verify", "Verify Minecraft Account linkage. Used after running /mcsd link ingame")
                                 .addOption(OptionType.STRING, "code", "Your verification code", true)
                                 .setGuildOnly(true),
                         Commands.slash("execute", "Run a command on the server")
