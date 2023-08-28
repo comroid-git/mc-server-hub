@@ -179,7 +179,7 @@ public class DiscordConnection extends Container.Base {
                             })
                             //.filterData(cmd -> cmd.startsWith(">"))
                             .peekData(out::println)
-                            .mapData(cmd -> cmd.substring(1))
+                            //.mapData(cmd -> cmd.substring(1))
                             .subscribeData(srv.getIn()::println));
                 }).stream(),
                 // console -> console channel
