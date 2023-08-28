@@ -10,8 +10,9 @@ import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.entity.UserData;
 import org.comroid.mcsd.core.model.ServerConnection;
-import org.comroid.mcsd.core.repo.UserRepo;
+import org.comroid.mcsd.core.repo.UserDataRepo;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
@@ -31,19 +32,19 @@ public class ConsoleController {
     @Autowired
     private SimpMessagingTemplate respond;
     @Autowired
-    private UserRepo userRepo;
+    private UserDataRepo userRepo;
     @Autowired
     private AgentRunner agentRunner;
 
     public Connection con(Map<String, Object> attr) {
         return con(user(attr));
     }
-    public Connection con(final User user) {
+    public Connection con(final UserData user) {
         return connections.computeIfAbsent(user.getId(), $->new Connection(user));
     }
-    public User user(Map<String, Object> attr) {
+    public UserData user(Map<String, Object> attr) {
         var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
-        return userRepo.findBySession(session);
+        return userRepo.get(session);
     }
 
     @MessageMapping("/console/connect")
@@ -70,10 +71,10 @@ public class ConsoleController {
 
     @Getter
     public class Connection extends Event.Bus<String> {
-        private final User user;
+        private final UserData user;
         private @Nullable ServerProcess process;
 
-        private Connection(User user) {
+        private Connection(UserData user) {
             this.user = user;
 
             agentRunner.oe.redirectToEventBus(this);

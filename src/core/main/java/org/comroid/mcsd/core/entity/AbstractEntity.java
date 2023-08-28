@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Named;
 import org.comroid.api.Rewrapper;
+import org.comroid.mcsd.core.model.IUser;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Bitmask;
 import org.jetbrains.annotations.NotNull;
@@ -34,19 +35,19 @@ public abstract class AbstractEntity implements Named {
     @Setter
     @Nullable
     @ManyToOne
-    private User owner;
+    private UserData owner;
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, @NotNull Integer> permissions;
 
-    public final boolean hasPermission(@NotNull User user, AbstractEntity.Permission... permissions) {
-        if (owner != null && user.getId().equals(owner.getId())
-                || Arrays.asList(Utils.SuperAdmins).contains(user.getId()))
+    public final boolean hasPermission(@NotNull IUser user, AbstractEntity.Permission... permissions) {
+        if (owner != null && user.getUserId().equals(owner.getId())
+                || Arrays.asList(Utils.SuperAdmins).contains(user.getUserId()))
             return true;
-        final var mask = this.permissions.getOrDefault(user.getId(), 0);
+        final var mask = this.permissions.getOrDefault(user.getUserId(), 0);
         return Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag));
     }
 
-    public final Rewrapper<AbstractEntity> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
+    public final Rewrapper<AbstractEntity> verifyPermission(final @NotNull IUser user, final AbstractEntity.Permission... permissions) {
         return () -> hasPermission(user, permissions) ? this : null;
     }
 
