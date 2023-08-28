@@ -35,7 +35,7 @@ public abstract class AbstractEntity implements Named {
     @Setter
     @Nullable
     @ManyToOne
-    private UserData owner;
+    private User owner;
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, @NotNull Integer> permissions;
 
