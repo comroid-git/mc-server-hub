@@ -8,6 +8,7 @@ import org.comroid.mcsd.core.model.IUser;
 import org.comroid.mcsd.core.repo.UserDataRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -17,11 +18,12 @@ import java.util.UUID;
 @Entity
 public class User extends AbstractEntity implements IUser {
     private boolean guest;
-    private @OneToOne @Nullable UserData userData;
+    private @OneToOne @NotNull UserData userData = new UserData();
     private @Deprecated @OneToOne @Nullable MinecraftProfile minecraft;
     private @Deprecated @Nullable Long discordId;
 
     public void migrate() {
+        //noinspection ConstantValue
         if (userData == null || userData.getUser() == null || minecraft != null || discordId != null) {
             var users = ApplicationContextProvider.bean(UserRepo.class);
             var data = ApplicationContextProvider.bean(UserDataRepo.class);
@@ -42,7 +44,7 @@ public class User extends AbstractEntity implements IUser {
 
     @Override
     public UUID getUserId() {
-        return userData == null ? getId() : userData.getId();
+        return getId();
     }
 
     @Deprecated
