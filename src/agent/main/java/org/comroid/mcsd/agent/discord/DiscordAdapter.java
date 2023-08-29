@@ -157,7 +157,6 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             else
                 embed.addField("Players", "%d out of %d".formatted(stat.getPlayerCount(), server.getMaxPlayers()), false);
             Optional.ofNullable(server.getOwner())
-                    .map(org.comroid.mcsd.core.entity.User::getUserData)
                     .map(UserData::getMinecraft)
                     .ifPresent(owner -> embed.setAuthor("Owner: " + owner.getName(), owner.getNameMcURL(), owner.getHeadURL()));
             return embed;
