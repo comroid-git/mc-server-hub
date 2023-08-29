@@ -4,15 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.api.Command;
-import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
-import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
-import org.comroid.mcsd.agent.controller.ConsoleController;
+import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.mcsd.connector.gateway.GatewayClient;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
@@ -23,10 +20,7 @@ import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.util.Debug;
-import org.comroid.util.JSON;
-import org.comroid.util.MD5;
-import org.comroid.util.StackTraceUtils;
+import org.comroid.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -36,19 +30,12 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.TaskScheduler;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.StringReader;
 import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Predicate;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 import static org.comroid.mcsd.core.MinecraftServerHubConfig.cronLog;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -101,6 +88,8 @@ public class MinecraftServerHubAgent {
     public Map<Runnable, Duration> cronjobs() {
         return Map.of(
                 this::$cronWatchdog, MinecraftServerHubConfig.CronRate_Watchdog,
+                this::$cronUptime, MinecraftServerHubConfig.CronRate_Uptime,
+                this::$cronInternal, MinecraftServerHubConfig.CronRate_Internal,
                 this::$cronBackup, MinecraftServerHubConfig.CronRate_Queue,
                 this::$cronUpdate, MinecraftServerHubConfig.CronRate_Queue
         );
@@ -111,7 +100,13 @@ public class MinecraftServerHubAgent {
     public Map<Runnable, Duration> startCronjobs(@Autowired TaskScheduler scheduler, @Autowired Map<Runnable, Duration> cronjobs) {
         cronjobs.forEach((task, delay) -> {
             try {
-                scheduler.scheduleWithFixedDelay(task, Instant.now().plus(delay), delay);
+                scheduler.scheduleWithFixedDelay(()->{
+                    try {
+                        task.run();
+                    } catch (Exception e) {
+                        cronLog.log(Level.SEVERE, "An error occurred during cronjob", e);
+                    }
+                }, Instant.now().plus(delay), delay);
             } catch (Throwable t) {
                 cronLog.log(Level.SEVERE, "Cronjob %s failed".formatted(StackTraceUtils.lessSimpleName(task.getClass())), t);
             }
@@ -136,6 +131,26 @@ public class MinecraftServerHubAgent {
         cronLog.log(Level.FINER, "Watchdog finished");
     }
 
+    @Synchronized
+    private void $cronUptime() {
+        cronLog.log(Level.FINEST, "Running Uptime job");
+        agentRunner.streamServers()
+                .filter(Server::isEnabled)
+                .map(agentRunner::process)
+                .forEach(ServerProcess::pushUptime);
+        cronLog.log(Level.FINER, "Uptime job finished");
+    }
+  
+    @Synchronized
+    private void $cronInternal() {
+        cronLog.log(Level.FINEST, "Running Internal jobs");
+        agentRunner.streamServers()
+                .filter(Server::isEnabled)
+                .map(agentRunner::process)
+                .forEach(ServerProcess::runTicker);
+        cronLog.log(Level.FINER, "Internal jobs finished");
+    }
+
     @SneakyThrows
     @Synchronized
     private void $cronBackup() {
@@ -151,7 +166,9 @@ public class MinecraftServerHubAgent {
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastBackup().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(agentRunner::process)
-                .filter(ServerProcess::runBackup)
+                .flatMap(Streams.yield(srv -> srv.getCurrentStatus().getStatus() == Status.online,
+                        srv -> cronLog.warning("Not running backup job for " + srv)))
+                .peek(serverProcess -> serverProcess.runBackup(false).join())
                 .peek(srv -> cronLog.info("Successfully created backup of " + srv))
                 .map(ServerProcess::getServer)
                 .forEach(servers::bumpLastBackup);
@@ -173,6 +190,8 @@ public class MinecraftServerHubAgent {
                 .filter(Server::isManaged)
                 .filter(srv -> srv.getLastUpdate().plus(srv.getBackupPeriod()).isBefore(Instant.now()))
                 .map(agentRunner::process)
+                .flatMap(Streams.yield(srv -> srv.getCurrentStatus().getStatus() == Status.online,
+                        srv -> cronLog.warning("Not running backup job for " + srv)))
                 .filter(ServerProcess::startUpdate)
                 .peek(serverProcess -> serverProcess.shutdown("Server Update", 60).join())
                 .peek(proc-> {

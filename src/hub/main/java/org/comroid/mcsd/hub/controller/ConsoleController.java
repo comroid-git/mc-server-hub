@@ -48,7 +48,7 @@ public class ConsoleController {
         server.requireUserAccess(user, Server.Permission.Console);
         Connection connection = new Connection(server, user);
         connections.put(user.getId(), connection);
-        respond.convertAndSendToUser(user.getName(), "/console/handshake", connection.con.server.status(connection.con).join().withUserId(user.getId()));
+        respond.convertAndSendToUser(user.getName(), "/console/handshake", connection.con.server.status().join().withUserId(user.getId()));
     }
 
     @MessageMapping("/console/input")
@@ -69,7 +69,7 @@ public class ConsoleController {
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
             throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        return res.con.runBackup();
+        return res.con;//.runBackup(); // todo: send backup command to agent if agent is available
     }
 
     @MessageMapping("/console/disconnect")

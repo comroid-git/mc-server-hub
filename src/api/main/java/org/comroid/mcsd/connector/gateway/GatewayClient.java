@@ -12,6 +12,8 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
@@ -22,21 +24,17 @@ import java.util.function.IntUnaryOperator;
 @EqualsAndHashCode(callSuper = true)
 public class GatewayClient extends GatewayActor {
     private static final IntUnaryOperator retryDelayFunc = x -> Math.min(x * 2, 300);
-    private final HubConnector connector;
+    private final GatewayConnectionInfo connectionData;
+    private final ScheduledExecutorService executor;
     private ConnectionHandler handler;
     private Socket socket;
     private InetSocketAddress endpoint;
     private int retryAttempt;
 
     @Override
-    public GatewayConnectionInfo getConnectionData(UUID $) {
-        return connector.getConnectionData();
-    }
-
-    @Override
     @SneakyThrows
     public void start() {
-        var hubBaseUrl = connector.getConnectionData().getHubBaseUrl();
+        var hubBaseUrl = connectionData.getHubBaseUrl();
         if (hubBaseUrl == null) hubBaseUrl = HubConnector.DefaultBaseUrl;
         this.socket = new Socket(hubBaseUrl, HubConnector.Port);
         this.endpoint = InetSocketAddress.createUnresolved(hubBaseUrl, HubConnector.Port);
@@ -54,12 +52,12 @@ public class GatewayClient extends GatewayActor {
             addChildren(socket);
 
             listen().setKey("close").once().thenRun(this::close);
-            publish("connect", handler.connect(connector.getConnectionData()).build());
+            publish("connect", handler.connect(connectionData).build());
             retryAttempt = 0;
         } catch (Throwable t) {
             var delay = retryDelayFunc.applyAsInt(retryAttempt);
             log.warning("Unable to connect; retrying in %d seconds".formatted(delay));
-            connector.getExecutor().schedule(this::tryConnect, delay, TimeUnit.SECONDS);
+            executor.schedule(this::tryConnect, delay, TimeUnit.SECONDS);
         }
     }
 

@@ -23,8 +23,6 @@ import static org.comroid.mcsd.connector.gateway.GatewayPacket.serialize;
 public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements Startable {
     protected final ExecutorService executor = Executors.newFixedThreadPool(8);
 
-    protected abstract GatewayConnectionInfo getConnectionData(UUID handlerId);
-
     protected ConnectionHandler handle(Socket socket) {
         var handler = new ConnectionHandler(socket);
         register(handler);
@@ -49,7 +47,7 @@ public abstract class GatewayActor extends Event.Bus<GatewayPacket> implements S
                             .setEndlMode(DelegateStream.EndlMode.OnNewLine)
                             .subscribe(str -> {
                                 var packet = parsePacket(str).setReceived(true);
-                                publish(packet.getTopic(), packet, (long)packet.getOpCode().getAsInt());
+                                publish(packet.getTopic(), (long)packet.getOpCode().getAsInt(), packet);
                             }).activate(executor),
                     // Tx
                     listen().setPredicate(e -> !Objects.requireNonNull(e.getData()).isReceived())

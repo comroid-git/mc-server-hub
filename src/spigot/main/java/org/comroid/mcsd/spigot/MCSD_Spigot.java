@@ -46,14 +46,12 @@ public final class MCSD_Spigot extends JavaPlugin {
 
         // connect to hub
         var connectionData = GatewayConnectionInfo.builder()
-                .role(HubConnector.Role.Server)
                 .agent(UUID.fromString(Objects.requireNonNull(config.getString("mcsd.agent.id"))))
                 .target(UUID.fromString(Objects.requireNonNull(config.getString("mcsd.agent.serverId"))))
                 .token(Objects.requireNonNull(config.getString("mcsd.agent.token")))
                 .hubBaseUrl(config.getString("mcsd.agent.hubBaseUrl"))
                 .build();
         assert connectionData != null;
-        connectionData.setRole(HubConnector.Role.Server);
         this.connector = new HubConnector(connectionData, Executors.newSingleThreadScheduledExecutor());
         this.gateway = connector.getGateway();
         gateway.register(this);

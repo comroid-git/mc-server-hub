@@ -33,7 +33,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
         return findById(id).orElseGet(() -> {
             var usr = new User();
             usr.setId(id);
-            usr.setName(oAuth2User.getAttribute("login"));
+            usr.setName(oAuth2User.getAttribute("login")); // todo: this will cause issues; should use username attribute value as key
             usr.setGuest(Boolean.TRUE.equals(oAuth2User.getAttribute("guest")));
             save(usr);
             return usr;

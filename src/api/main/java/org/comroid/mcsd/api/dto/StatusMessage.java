@@ -14,18 +14,18 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Builder(toBuilder = true)
 public class StatusMessage {
-    public final Instant timestamp = Instant.now();
-    public final @NotNull UUID targetId;
-    public @With @lombok.Builder.Default Status status = Status.Offline;
-    public @With @lombok.Builder.Default @Nullable Status rcon = Status.Offline;
-    public @With @lombok.Builder.Default @Nullable Status ssh = Status.Offline;
-    public @With @lombok.Builder.Default int playerCount = 0;
-    public @With @lombok.Builder.Default int playerMax = 0;
-    public @With @Nullable String motd;
-    public @With @Nullable List<String> players;
-    public @With @Nullable String gameMode;
-    public @With @Nullable String worldName;
-    public @With @Nullable UUID userId;
+    private final Instant timestamp = Instant.now();
+    private final @NotNull UUID targetId;
+    private @With @lombok.Builder.Default Status status = Status.unknown_status;
+    private @With @lombok.Builder.Default @Nullable Status rcon = Status.unknown_status;
+    private @With @lombok.Builder.Default @Nullable Status ssh = Status.unknown_status;
+    private @With @lombok.Builder.Default int playerCount = 0;
+    private @With @lombok.Builder.Default int playerMax = 0;
+    private @With @Nullable String motd;
+    private @With @Nullable List<String> players;
+    private @With @Nullable String gameMode;
+    private @With @Nullable String worldName;
+    private @With @Nullable UUID userId;
 
     public StatusMessage combine(@Nullable StatusMessage other) {
         if (other == null)

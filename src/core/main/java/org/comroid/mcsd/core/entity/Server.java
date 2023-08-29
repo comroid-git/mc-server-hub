@@ -16,7 +16,6 @@ import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.model.ServerConnection;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
-import org.hibernate.annotations.ManyToAny;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,8 +34,9 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Slf4j
 @Getter
+@Setter
 @Entity
-@Table(name = "server")
+@AllArgsConstructor
 @RequiredArgsConstructor
 public class Server extends AbstractEntity {
     public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
@@ -44,36 +44,35 @@ public class Server extends AbstractEntity {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
-    private @ManyToOne User owner;
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
-    private @Setter @Nullable String PublicChannelWebhook;
-    private @Setter @Nullable Long PublicChannelId;
-    private @Setter @Nullable Long ModerationChannelId;
-    private @Setter @Nullable Long ConsoleChannelId;
-    private @Setter ConsoleMode consoleMode = ConsoleMode.Scroll;
-    private @Setter String name;
-    private @Setter String mcVersion = "1.19.4";
-    private @Setter String host;
-    private @Setter int port = 25565;
-    private @Setter String directory = "~/minecraft";
-    private @Setter Mode mode = Mode.Paper;
-    private @Setter byte ramGB = 4;
-    private @Setter boolean enabled = false;
-    private @Setter boolean managed = false;
-    private @Setter boolean whitelist = false;
-    private @Setter boolean maintenance = false;
-    private @Setter int maxPlayers = 20;
-    private @Setter int queryPort = 25565;
-    private @Setter int rConPort = Defaults.RCON_PORT;
-    private @Setter String rConPassword = UUID.randomUUID().toString();
-    private @Setter Duration backupPeriod = Duration.ofHours(12);
-    private @Setter Duration updatePeriod = Duration.ofDays(7);
-    private @Setter Instant lastBackup = Instant.ofEpochMilli(0);
-    private @Setter Instant lastUpdate = Instant.ofEpochMilli(0);
-    private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.Unknown;
-    @JsonIgnore @ElementCollection(fetch = FetchType.EAGER)
-    private Map<UUID, Integer> userPermissions = new ConcurrentHashMap<>();
+    private @Nullable String homepage;
+    private @Nullable String PublicChannelWebhook;
+    private @Nullable Long PublicChannelId;
+    private @Nullable Long ModerationChannelId;
+    private @Nullable Long ConsoleChannelId;
+    private @Deprecated ConsoleMode consoleMode = ConsoleMode.Scroll;
+    private boolean fancyConsole = true;
+    private String mcVersion = "1.19.4";
+    private String host;
+    private int port = 25565;
+    private String directory = "~/minecraft";
+    private Mode mode = Mode.Paper;
+    private byte ramGB = 4;
+    private boolean enabled = false;
+    private boolean managed = false;
+    private boolean whitelist = false;
+    private boolean maintenance = false;
+    private int maxPlayers = 20;
+    private int queryPort = 25565;
+    private int rConPort = Defaults.RCON_PORT;
+    private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = UUID.randomUUID().toString();
+    private Duration backupPeriod = Duration.ofHours(12);
+    private Duration updatePeriod = Duration.ofDays(7);
+    private Instant lastBackup = Instant.ofEpochMilli(0);
+    private Instant lastUpdate = Instant.ofEpochMilli(0);
+    private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.unknown_status;
+    private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
 
     @JsonIgnore
     public ServerConnection con() {
@@ -102,7 +101,7 @@ public class Server extends AbstractEntity {
 
     public Server requireUserAccess(User user, Permission... permissions) {
         var insufficient = Arrays.stream(permissions)
-                .filter(x -> !x.isFlagSet(userPermissions.getOrDefault(user.getId(), 0)))
+                .filter(x -> !x.isFlagSet(getPermissions().getOrDefault(user.getId(), 0)))
                 .toArray(Permission[]::new);
         if (insufficient.length > 0)
             throw new InsufficientPermissionsException(user, this, insufficient);
@@ -163,7 +162,7 @@ public class Server extends AbstractEntity {
 
     @Override
     public String toString() {
-        return "Server " + name;
+        return "Server " + getName();
     }
 
     public String getDashboardURL() {
@@ -213,8 +212,7 @@ public class Server extends AbstractEntity {
         prop.setProperty("white-list", String.valueOf(isWhitelist() || isMaintenance()));
 
         // query
-        prop.setProperty("enable-query", String.valueOf(false));
-        //prop.setProperty("enable-query", String.valueOf(true));
+        prop.setProperty("enable-query", String.valueOf(true));
         prop.setProperty("query.port", String.valueOf(getQueryPort()));
 
         // rcon
@@ -228,14 +226,15 @@ public class Server extends AbstractEntity {
 
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
-        log.debug("Getting status of Server %s".formatted(this));
+        log.trace("Getting status of Server %s".formatted(this));
         return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(statusCache.computeIfPresent(getId(), (k, v) -> {
                     if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
                         return null;
                     return v;
                 }), "Status cache outdated"))
-                .exceptionally(t -> {
-                    log.debug("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
+                .exceptionally(t ->
+                {
+                    log.trace("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
                     log.trace("Exception was", t);
                     try (var query = new MCQuery(host, getQueryPort())) {
                         var stat = query.fullStat();
@@ -243,27 +242,27 @@ public class Server extends AbstractEntity {
                                 //todo
                                 //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
                                 //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
-                                .withStatus(isMaintenance() ? Status.Maintenance : Status.Online)
+                                .withStatus(isMaintenance() ? Status.maintenance : Status.online)
                                 .withPlayerCount(stat.getOnlinePlayers())
                                 .withPlayerMax(stat.getMaxPlayers())
-                                .withMotd(stat.getMOTD().replaceAll("§\\w", ""))
+                                .withMotd(stat.getMOTD())
                                 .withGameMode(stat.getGameMode())
                                 .withPlayers(stat.getPlayerList())
                                 .withWorldName(stat.getMapName());
                     }
                 })
                 .exceptionally(t -> {
-                    log.debug("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
+                    log.trace("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
                     log.trace("Exception was", t);
                     var stat = new MineStat(host, getPort());
                     return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             //todo
                             //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
                             //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
-                            .withStatus(stat.isServerUp() ? isMaintenance() ? Status.Maintenance : Status.Online : Status.Offline)
+                            .withStatus(stat.isServerUp() ? isMaintenance() ? Status.maintenance : Status.online : Status.offline)
                             .withPlayerCount(stat.getCurrentPlayers())
                             .withPlayerMax(stat.getMaximumPlayers())
-                            .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), "").replaceAll("§\\w", ""))
+                            .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), ""))
                             .withGameMode(stat.getGameMode());
                 })
                 .orTimeout(statusTimeout.toSeconds(), TimeUnit.SECONDS)
@@ -280,7 +279,7 @@ public class Server extends AbstractEntity {
                     statusCache.put(getId(), msg);
                     return msg;
                 })
-                .orTimeout(statusTimeout.toSeconds() + 1, TimeUnit.SECONDS);
+                .completeOnTimeout(new StatusMessage(getId()), (long) (statusTimeout.toSeconds() * 1.5), TimeUnit.SECONDS);
     }
 
     public Optional<ShConnection> shCon() {
@@ -291,6 +290,7 @@ public class Server extends AbstractEntity {
         Vanilla, Paper, Forge, Fabric
     }
 
+    @Deprecated
     public enum Permission implements BitmaskAttribute<Permission> {
         Status, Start, Stop, Console, Backup, Files
     }
