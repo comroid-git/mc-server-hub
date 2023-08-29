@@ -1,5 +1,6 @@
 package org.comroid.mcsd.core.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,7 +19,7 @@ import java.util.UUID;
 @Entity
 public class User extends AbstractEntity implements IUser {
     private boolean guest;
-    private @OneToOne @NotNull UserData userData = new UserData();
+    private @OneToOne @NotNull @Getter(onMethod = @__(@JsonIgnore)) UserData userData = new UserData();
     private @Deprecated @OneToOne @Nullable MinecraftProfile minecraft;
     private @Deprecated @Nullable Long discordId;
 
