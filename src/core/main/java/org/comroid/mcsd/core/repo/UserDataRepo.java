@@ -46,7 +46,7 @@ public interface UserDataRepo extends CrudRepository<UserData, UUID> {
         UUID id = UUID.fromString(Objects.requireNonNull(oAuth2User.getAttribute("id"), "User ID cannot be null"));
         return findById(id).orElseGet(() -> {
             var usr = new UserData();
-            usr.setId(id);
+            //usr.setId(id);
             usr.setName(oAuth2User.getAttribute("login")); // todo: this will cause issues; should use username attribute value as key
             save(usr);
             return usr;
