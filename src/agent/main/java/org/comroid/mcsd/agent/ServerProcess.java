@@ -40,8 +40,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
+import static org.comroid.util.Streams.append;
 
 @Slf4j
 @Getter
@@ -137,10 +140,13 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
         final var stopwatch = Stopwatch.start("startup-" + server.getId());
 
         var exec = PathUtil.findExec("java").orElseThrow();
-        process = Runtime.getRuntime().exec(new String[]{
-                        exec.getAbsolutePath(),
-                        "-Xmx%dG".formatted(server.getRamGB()),
-                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"},
+        var cmds = Stream.of(exec.getAbsolutePath(), "-Xmx%dG".formatted(server.getRamGB()))
+                .collect(append(server.getCustomJvmArgs() == null ? new String[0] : server.getCustomJvmArgs().split(" ")))
+                .collect(append("-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"))
+                .collect(append(server.getCustomArgs() == null ? new String[0] : server.getCustomArgs().split(" ")))
+                .toArray(String[]::new);
+        log.debug("Executing server command: " + String.join(" ", cmds));
+        process = Runtime.getRuntime().exec(cmds,
                 new String[0],
                 new FileHandle(server.getDirectory(), true));
         in = new PrintStream(process.getOutputStream(), true);
