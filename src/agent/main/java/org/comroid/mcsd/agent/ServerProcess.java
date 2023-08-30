@@ -305,50 +305,56 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
         return !isJarUpToDate() && updateRunning.compareAndSet(false, true);
     }
 
-    @SneakyThrows
-    public boolean runUpdate(String... args) {
+    public CompletableFuture<Boolean> runUpdate(String... args) {
         var flags = String.join("", args);
         pushStatus(Status.updating);
 
-        // modify server.properties
-        Properties prop;
-        var serverProperties = new FileHandle(server.path("server.properties").toFile());
-        if (!serverProperties.exists()) {
-            serverProperties.mkdirs();
-            serverProperties.createNewFile();
-        }
-        try (var in = new FileInputStream(serverProperties)) {
-            prop = server.updateProperties(in);
-        }
-        try (var out = new FileOutputStream(serverProperties, false)) {
-            prop.store(out, "Managed Server Properties by MCSD");
-        }
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // modify server.properties
+                Properties prop;
+                var serverProperties = new FileHandle(server.path("server.properties").toFile());
+                if (!serverProperties.exists()) {
+                    serverProperties.mkdirs();
+                    serverProperties.createNewFile();
+                }
+                try (var in = new FileInputStream(serverProperties)) {
+                    prop = server.updateProperties(in);
+                }
+                try (var out = new FileOutputStream(serverProperties, false)) {
+                    prop.store(out, "Managed Server Properties by MCSD");
+                }
 
-        // download server.jar
-        var serverJar = new FileHandle(server.path("server.jar").toFile());
-        if (!serverJar.exists()) {
-            serverJar.mkdirs();
-            serverJar.createNewFile();
-        } else if (!flags.contains("r") && isJarUpToDate())
-            return false;
-        try (var in = new URL(server.getJarUrl()).openStream();
-             var out = new FileOutputStream(serverJar, false)) {
-            in.transferTo(out);
-        }
+                // download server.jar
+                var serverJar = new FileHandle(server.path("server.jar").toFile());
+                if (!serverJar.exists()) {
+                    serverJar.mkdirs();
+                    serverJar.createNewFile();
+                } else if (!flags.contains("r") && isJarUpToDate())
+                    return false;
+                try (var in = new URL(server.getJarUrl()).openStream();
+                     var out = new FileOutputStream(serverJar, false)) {
+                    in.transferTo(out);
+                }
 
-        // eula.txt
-        var eulaTxt = new FileHandle(server.path("eula.txt").toFile());
-        if (!eulaTxt.exists()) {
-            eulaTxt.mkdirs();
-            eulaTxt.createNewFile();
-        }
-        try (var in = new DelegateStream.Input(new StringReader("eula=true\n"));
-             var out = new FileOutputStream(eulaTxt, false)) {
-            in.transferTo(out);
-        }
+                // eula.txt
+                var eulaTxt = new FileHandle(server.path("eula.txt").toFile());
+                if (!eulaTxt.exists()) {
+                    eulaTxt.mkdirs();
+                    eulaTxt.createNewFile();
+                }
+                try (var in = new DelegateStream.Input(new StringReader("eula=true\n"));
+                     var out = new FileOutputStream(eulaTxt, false)) {
+                    in.transferTo(out);
+                }
 
-        pushStatus(Status.online.new Message("Update done"));
-        return true;
+                pushStatus(Status.online.new Message("Update done"));
+                return true;
+            } catch (Throwable t) {
+                log.error("An error occurred while updating", t);
+                return false;
+            }
+        });
     }
 
     @SneakyThrows

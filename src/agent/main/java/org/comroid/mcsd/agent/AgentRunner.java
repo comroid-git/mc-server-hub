@@ -87,7 +87,7 @@ public class AgentRunner implements Command.Handler {
 
         var flags = args.length > 1 ? args[1] : "";
         var proc = process(srv);
-        return proc.runUpdate(flags) ? srv + " already up to date" : srv + " updated";
+        return proc.runUpdate(flags).join() ? srv + " already up to date" : srv + " updated";
     }
 
     @Command(usage = "<name>")
