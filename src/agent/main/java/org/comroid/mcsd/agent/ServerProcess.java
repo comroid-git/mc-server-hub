@@ -140,13 +140,10 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
         final var stopwatch = Stopwatch.start("startup-" + server.getId());
 
         var exec = PathUtil.findExec("java").orElseThrow();
-        var cmds = Stream.of(exec.getAbsolutePath(), "-Xmx%dG".formatted(server.getRamGB()))
-                .collect(append(server.getCustomJvmArgs() == null ? new String[0] : server.getCustomJvmArgs().split(" ")))
-                .collect(append("-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"))
-                .collect(append(server.getCustomArgs() == null ? new String[0] : server.getCustomArgs().split(" ")))
-                .toArray(String[]::new);
-        log.debug("Executing server command: " + String.join(" ", cmds));
-        process = Runtime.getRuntime().exec(cmds,
+        process = Runtime.getRuntime().exec(server.getCustomCommand() == null ? new String[]{
+                        exec.getAbsolutePath(),
+                        "-Xmx%dG".formatted(server.getRamGB()),
+                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : server.getCustomCommand().split(" "),
                 new String[0],
                 new FileHandle(server.getDirectory(), true));
         in = new PrintStream(process.getOutputStream(), true);

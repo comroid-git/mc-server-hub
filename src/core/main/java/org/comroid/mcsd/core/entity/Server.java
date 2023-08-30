@@ -54,8 +54,7 @@ public class Server extends AbstractEntity {
     private @Deprecated ConsoleMode consoleMode = ConsoleMode.Scroll;
     private boolean fancyConsole = true;
     private boolean forceCustomJar = false;
-    private @Nullable @Column(columnDefinition = "TEXT") String customJvmArgs = null;
-    private @Nullable @Column(columnDefinition = "TEXT") String customArgs = null;
+    private @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
     private String mcVersion = "1.19.4";
     private String host;
     private int port = 25565;

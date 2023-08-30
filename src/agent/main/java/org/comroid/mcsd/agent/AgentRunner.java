@@ -226,7 +226,6 @@ public class AgentRunner implements Command.Handler {
                 true,
                 true,
                 null,
-                null,
                 version,
                 shCon.getHost(),
                 25565,
