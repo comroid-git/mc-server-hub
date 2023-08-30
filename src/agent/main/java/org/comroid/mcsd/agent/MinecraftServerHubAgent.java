@@ -130,7 +130,7 @@ public class MinecraftServerHubAgent {
                 .peek(proc->{
                     if (proc.isJarUpToDate()) return;
                     cronLog.warning(proc.getServer()+" is outdated; updating...");
-                    proc.runUpdate();
+                    proc.runUpdate().join();
                 })
                 .forEach(ServerProcess::start);
         cronLog.log(Level.FINER, "Watchdog finished");
@@ -203,7 +203,7 @@ public class MinecraftServerHubAgent {
                     assert proc.getProcess() != null;
                     proc.getProcess().onExit().join();
                 })
-                .filter(ServerProcess::runUpdate)
+                .filter(proc -> proc.runUpdate().join())
                 .peek(ServerProcess::start)
                 .map(ServerProcess::getServer)
                 .peek(srv -> cronLog.info("Successfully updated " + srv))
