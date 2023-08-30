@@ -207,7 +207,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
                 .map(bean(AgentRunner.class)::process)
                 .orElseThrow(() -> new Command.Error("Unable to find server"));
-        return proc.runBackup(true).thenApply($->"Backup complete");
+        return proc.runBackup(true).thenApply(f->"Backup complete (%1.2fGB)"
+                .formatted((double)f.length()/(1024*1024*1024)));
     }
 
     @Command(ephemeral = true)
