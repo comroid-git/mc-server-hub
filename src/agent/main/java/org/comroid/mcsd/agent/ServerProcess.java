@@ -290,6 +290,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
 
     @SneakyThrows
     public boolean isJarUpToDate() {
+        if (server.isForceCustomJar())
+            return true;
         var serverJar = new FileHandle(server.path("server.jar").toFile());
         if (!serverJar.exists())
             return false;

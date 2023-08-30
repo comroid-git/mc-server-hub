@@ -53,6 +53,7 @@ public class Server extends AbstractEntity {
     private @Nullable Long ConsoleChannelId;
     private @Deprecated ConsoleMode consoleMode = ConsoleMode.Scroll;
     private boolean fancyConsole = true;
+    private boolean forceCustomJar = false;
     private String mcVersion = "1.19.4";
     private String host;
     private int port = 25565;
