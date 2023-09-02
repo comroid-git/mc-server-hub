@@ -51,7 +51,7 @@ public class Server extends AbstractEntity {
     private @Nullable Long PublicChannelId;
     private @Nullable Long ModerationChannelId;
     private @Nullable Long ConsoleChannelId;
-    private @Deprecated ConsoleMode consoleMode = ConsoleMode.Scroll;
+    private @Nullable String ConsoleChannelPrefix;
     private boolean fancyConsole = true;
     private boolean forceCustomJar = false;
     private @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;

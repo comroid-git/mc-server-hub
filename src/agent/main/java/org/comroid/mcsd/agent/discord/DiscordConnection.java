@@ -171,15 +171,14 @@ public class DiscordConnection extends Container.Base {
                             .filterData(msg -> !msg.getAuthor().isBot())
                             .mapData(msg -> {
                                 var raw = msg.getContentRaw();
-                                if (server.getConsoleMode() == Server.ConsoleMode.ScrollClean
-                                        && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                if (server.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
                                     msg.delete().queue();
                                 //noinspection RedundantCast //ide error
                                 return (String) raw;
                             })
-                            //.filterData(cmd -> cmd.startsWith(">"))
+                            .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
                             .peekData(out::println)
-                            //.mapData(cmd -> cmd.substring(1))
+                            .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
                             .subscribeData(srv.getIn()::println));
                 }).stream(),
                 // console -> console channel
