@@ -118,11 +118,11 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
         if (is && !val) {
             // disable maintenance
             in.println("whitelist off");
-            pushStatus(Status.maintenance.new Message("Maintenance has been turned off"));
+            pushStatus(Status.in_maintenance_mode.new Message("Maintenance has been turned off"));
         } else if (!is && val) {
             // enable maintenance
             in.println("whitelist on");
-            pushStatus(Status.maintenance);
+            pushStatus(Status.in_maintenance_mode);
         }
         return is != val;
     }
@@ -165,7 +165,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
         done.thenAccept(d -> {
             var t = Polyfill.durationString(d);
             var msg = "Took " + t + " to start";
-            pushStatus((server.isMaintenance() ? Status.maintenance : Status.online).new Message(msg));
+            pushStatus((server.isMaintenance() ? Status.in_maintenance_mode : Status.online).new Message(msg));
             log.info(server + " " + msg);
         });
         this.stop = process.onExit().thenRun(this::close);

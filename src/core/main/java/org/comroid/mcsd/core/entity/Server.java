@@ -248,7 +248,7 @@ public class Server extends AbstractEntity {
                                 //todo
                                 //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
                                 //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
-                                .withStatus(isMaintenance() ? Status.maintenance : Status.online)
+                                .withStatus(isMaintenance() ? Status.in_maintenance_mode : Status.online)
                                 .withPlayerCount(stat.getOnlinePlayers())
                                 .withPlayerMax(stat.getMaxPlayers())
                                 .withMotd(stat.getMOTD())
@@ -265,7 +265,7 @@ public class Server extends AbstractEntity {
                             //todo
                             //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
                             //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
-                            .withStatus(stat.isServerUp() ? isMaintenance() ? Status.maintenance : Status.online : Status.offline)
+                            .withStatus(stat.isServerUp() ? isMaintenance() ? Status.in_maintenance_mode : Status.online : Status.offline)
                             .withPlayerCount(stat.getCurrentPlayers())
                             .withPlayerMax(stat.getMaximumPlayers())
                             .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), ""))
