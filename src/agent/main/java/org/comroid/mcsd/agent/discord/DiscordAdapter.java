@@ -40,7 +40,6 @@ import org.comroid.mcsd.core.entity.UserData;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserDataRepo;
-import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.util.Markdown;
@@ -93,6 +92,12 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                 .setGuildOnly(true),
                         Commands.slash("verify", "Verify Minecraft Account linkage. Used after running /mcsd link ingame")
                                 .addOption(OptionType.STRING, "code", "Your verification code", true)
+                                .setGuildOnly(true),
+                        Commands.slash("backup", "Create a backup of the server")
+                                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
+                                .setGuildOnly(true),
+                        Commands.slash("update", "Update the server")
+                                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                 .setGuildOnly(true),
                         Commands.slash("execute", "Run a command on the server")
                                 .addOption(OptionType.STRING, "command", "The command to run", true)
@@ -195,6 +200,22 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         final var userdata = bean(UserDataRepo.class);
         userdata.get(e.getUser()).complete(user -> user.setMinecraft(profile));
         return "Minecraft account " + profile.getName() + " has been linked";
+    }
+
+    @Command(ephemeral = true)
+    public CompletableFuture<String> backup(SlashCommandInteractionEvent e) {
+        var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .map(bean(AgentRunner.class)::process)
+                .orElseThrow(() -> new Command.Error("Unable to find server"));
+        return proc.runBackup(true).thenApply($->"Backup complete");
+    }
+
+    @Command(ephemeral = true)
+    public CompletableFuture<String> update(SlashCommandInteractionEvent e) {
+        var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .map(bean(AgentRunner.class)::process)
+                .orElseThrow(() -> new Command.Error("Unable to find server"));
+        return proc.runUpdate().thenApply($->$?"Update complete":"Update skipped");
     }
 
     @Command(ephemeral = true)

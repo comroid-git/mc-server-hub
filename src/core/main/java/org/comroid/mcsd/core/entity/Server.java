@@ -52,8 +52,10 @@ public class Server extends AbstractEntity implements Container {
     private @Nullable Long PublicChannelId;
     private @Nullable Long ModerationChannelId;
     private @Nullable Long ConsoleChannelId;
-    private @Deprecated ConsoleMode consoleMode = ConsoleMode.Scroll;
+    private @Nullable String ConsoleChannelPrefix;
     private boolean fancyConsole = true;
+    private boolean forceCustomJar = false;
+    private @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
     private String mcVersion = "1.19.4";
     private String host;
     private int port = 25565;
