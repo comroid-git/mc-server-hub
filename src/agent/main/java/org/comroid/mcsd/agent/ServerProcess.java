@@ -40,8 +40,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 import static org.comroid.util.Streams.append;
@@ -51,10 +49,10 @@ import static org.comroid.util.Streams.append;
 @RequiredArgsConstructor
 public class ServerProcess extends Event.Bus<String> implements Startable, Command.Handler {
     // todo: improve these
-    public static final Pattern DonePattern_Vanilla = Pattern.compile(".*INFO]: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
-    public static final Pattern StopPattern_Vanilla = Pattern.compile(".*INFO]: Closing server.*\\r?\\n?");
-    public static final Pattern McsdPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w_-]+) issued server command: /mcsd (?<command>[\\w\\s_-]+)\\r?\\n?.*");
-    public static final Pattern ChatPattern_Vanilla = Pattern.compile(".*INFO]: " +
+    public static final Pattern DonePattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
+    public static final Pattern StopPattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: Closing server.*\\r?\\n?");
+    public static final Pattern McsdPattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: (?<username>[\\S\\w_-]+) issued server command: /mcsd (?<command>[\\w\\s_-]+)\\r?\\n?.*");
+    public static final Pattern ChatPattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: " +
             "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
             //"([(\\[{<]" +
             "<" +
@@ -63,10 +61,10 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
             //"[>}\\])]\\s?)\\s?" +
             "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
             "(?<message>.+)\\r?\\n?.*");
-    public static final Pattern BroadcastPattern_Vanilla = Pattern.compile(".*INFO]: (?<username>[\\S\\w_-]+) issued server command: /(?<command>(me)|(say)|(broadcast)) (?<message>.+)\\r?\\n?.*");
-    public static final Pattern CrashPattern_Vanilla = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
-    public static final Pattern PlayerEventPattern_Vanilla = Pattern.compile(
-            ".*INFO]: (?<username>[\\S\\w_-]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
+    public static final Pattern BroadcastPattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: (?<username>[\\S\\w_-]+) issued server command: /(?<command>(me)|(say)|(broadcast)) (?<message>.+)\\r?\\n?.*");
+    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
+    public static final Pattern PlayerEventPattern = Pattern.compile(
+            ".*INFO] (\\[\\w+/\\w+])?: (?<username>[\\S\\w_-]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
     private final AtomicReference<CompletableFuture<@Nullable File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AtomicInteger lastTicker = new AtomicInteger(0);
@@ -159,7 +157,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
             addChildren(discord = new DiscordConnection(this));
         pushStatus(Status.starting);
 
-        this.done = listenForPattern(DonePattern_Vanilla)
+        this.done = listenForPattern(DonePattern)
                 .mapData(m -> m.group("time"))
                 .mapData(Double::parseDouble)
                 .mapData(x -> Duration.ofMillis((long) (x * 1000)))
@@ -174,7 +172,7 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
 
         this.cmdr = new Command.Manager(this);
         addChildren(cmdr);
-        listenForPattern(McsdPattern_Vanilla).subscribeData(this::runCommand);
+        listenForPattern(McsdPattern).subscribeData(this::runCommand);
 
         if (Debug.isDebug())
             //oe.redirectToLogger(log);

@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.comroid.api.*;
 import org.comroid.api.Container;
 import org.comroid.api.Event;
@@ -14,19 +13,14 @@ import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.MinecraftProfile;
-import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.Markdown;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
@@ -107,10 +101,10 @@ public class DiscordConnection extends Container.Base {
                         .subscribeData(srv.getIn()::println)).stream(),
                 // minecraft -> public channel
                 Stream.of(srv.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
-                        .mapData(str -> Stream.of(ServerProcess.ChatPattern_Vanilla,
-                                        ServerProcess.PlayerEventPattern_Vanilla,
-                                        ServerProcess.BroadcastPattern_Vanilla,
-                                        ServerProcess.CrashPattern_Vanilla)
+                        .mapData(str -> Stream.of(ServerProcess.ChatPattern,
+                                        ServerProcess.PlayerEventPattern,
+                                        ServerProcess.BroadcastPattern,
+                                        ServerProcess.CrashPattern)
                                 .map(rgx -> rgx.matcher(str))
                                 .filter(Matcher::matches)
                                 .findAny()
