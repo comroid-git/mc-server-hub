@@ -23,7 +23,6 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
             " JOIN Agent a ON a.id = :agentId" +
             " JOIN ShConnection sh" +
             " WHERE sh.id = a.target AND sh.id = s.shConnection.id")
-        // todo this shit wont work in spring but in mysql its totally fine...
     Iterable<Server> findAllForAgent(@Param("agentId") UUID agentId);
 
     @Query("SELECT s FROM Server s" +
