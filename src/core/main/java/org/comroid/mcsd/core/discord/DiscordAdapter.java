@@ -1,4 +1,4 @@
-package org.comroid.mcsd.agent.discord;
+package org.comroid.mcsd.core.discord;
 
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.receive.ReadonlyMessage;
@@ -32,7 +32,6 @@ import org.comroid.api.*;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
-import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
@@ -40,11 +39,11 @@ import org.comroid.mcsd.core.entity.UserData;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserDataRepo;
-import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.util.Markdown;
 import org.comroid.util.Ratelimit;
 import org.comroid.util.Streams;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,6 +53,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -68,12 +68,18 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Log
 @Data
 public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener, Command.Handler {
+    private static final Map<UUID, DiscordAdapter> adapters = new ConcurrentHashMap<>();
     public static final int MaxBulkDelete = 100;
     public static final int MaxEditBacklog = 10;
     private final JDA jda;
 
+    @Contract("null -> null; _ -> _")
+    public static @Nullable DiscordAdapter get(final @Nullable DiscordBot bot) {
+        return bot == null ? null : adapters.computeIfAbsent(bot.getId(), $ -> new DiscordAdapter(bot));
+    }
+
     @SneakyThrows
-    public DiscordAdapter(DiscordBot bot) {
+    private DiscordAdapter(DiscordBot bot) {
         this.jda = JDABuilder.createDefault(bot.getToken(), GatewayIntent.getIntents(GatewayIntent.ALL_INTENTS))
                 .setActivity(Activity.playing("Minecraft"))
                 .setCompression(Compression.ZLIB)

@@ -1,32 +1,27 @@
-package org.comroid.mcsd.agent.discord;
+package org.comroid.mcsd.core.discord;
 
 import club.minnced.discord.webhook.WebhookClientBuilder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.comroid.api.*;
-import org.comroid.api.Container;
 import org.comroid.api.Event;
-import org.comroid.mcsd.agent.ServerProcess;
-import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.server.DiscordModule;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.Markdown;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
@@ -37,18 +32,18 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.*;
 import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 
 @Log
-@Data
-public class DiscordConnection extends Container.Base {
+@Getter
+@Setter
+@Deprecated
+public class DiscordConnection extends DiscordModule {
     private final DiscordAdapter.MessagePublisher msgTemplate, botTemplate;
     private final DiscordAdapter adapter;
-    private final ServerProcess srv;
 
-    public DiscordConnection(ServerProcess srv) {
-        final var server = srv.getServer();
+    public DiscordConnection(Server server) {
+        this(server);
 
-        this.srv = srv;
-        this.adapter = Optional.ofNullable(srv.getServer().getDiscordBot())
-                .map(srv.getRunner()::adapter)
+        this.adapter = Optional.ofNullable(server.getDiscordBot())
+                .map(DiscordAdapter::get)
                 .orElseThrow();
 
         final Event.Bus<Object> mainBus = bean(Event.Bus.class, "eventBus");
@@ -69,7 +64,7 @@ public class DiscordConnection extends Container.Base {
                 .orElseThrow();
 
         final var consoleChannel = Optional.ofNullable(server.getConsoleChannelId());
-        final var consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, srv.getServer().getConsoleMode()));
+        final var consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, server.getConsoleMode()));
 
         Polyfill.stream(
                 // status changes -> discord

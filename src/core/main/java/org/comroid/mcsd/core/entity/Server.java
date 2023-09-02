@@ -9,6 +9,7 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
+import org.comroid.api.Component;
 import org.comroid.api.Container;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.api.dto.StatusMessage;
@@ -40,11 +41,11 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Entity
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class Server extends AbstractEntity implements Container {
+public class Server extends AbstractEntity implements Component {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
-    private final @Transient @lombok.experimental.Delegate Container.Base delegate = new Container.Base();
+    private final @Transient @lombok.experimental.Delegate Component.Base delegate = new Component.Base();
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
     private @Nullable String homepage;
