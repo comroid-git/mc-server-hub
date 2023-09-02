@@ -49,10 +49,10 @@ import static org.comroid.util.Streams.append;
 @RequiredArgsConstructor
 public class ServerProcess extends Event.Bus<String> implements Startable, Command.Handler {
     // todo: improve these
-    public static final Pattern DonePattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
-    public static final Pattern StopPattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: Closing server.*\\r?\\n?");
-    public static final Pattern McsdPattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: (?<username>[\\S\\w_-]+) issued server command: /mcsd (?<command>[\\w\\s_-]+)\\r?\\n?.*");
-    public static final Pattern ChatPattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: " +
+    public static final Pattern DonePattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
+    public static final Pattern StopPattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: Closing server.*\\r?\\n?");
+    public static final Pattern McsdPattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: (?<username>[\\S\\w_-]+) issued server command: /mcsd (?<command>[\\w\\s_-]+)\\r?\\n?.*");
+    public static final Pattern ChatPattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: " +
             "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
             //"([(\\[{<]" +
             "<" +
@@ -61,10 +61,10 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
             //"[>}\\])]\\s?)\\s?" +
             "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
             "(?<message>.+)\\r?\\n?.*");
-    public static final Pattern BroadcastPattern = Pattern.compile(".*INFO] (\\[\\w+/\\w+])?: (?<username>[\\S\\w_-]+) issued server command: /(?<command>(me)|(say)|(broadcast)) (?<message>.+)\\r?\\n?.*");
+    public static final Pattern BroadcastPattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: (?<username>[\\S\\w_-]+) issued server command: /(?<command>(me)|(say)|(broadcast)) (?<message>.+)\\r?\\n?.*");
     public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
     public static final Pattern PlayerEventPattern = Pattern.compile(
-            ".*INFO] (\\[\\w+/\\w+])?: (?<username>[\\S\\w_-]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
+            ".*INFO] (\\[\\w*/\\w*])?: (?<username>[\\S\\w_-]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
     private final AtomicReference<CompletableFuture<@Nullable File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AtomicInteger lastTicker = new AtomicInteger(0);
