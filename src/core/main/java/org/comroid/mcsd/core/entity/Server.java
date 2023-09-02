@@ -5,9 +5,11 @@ import com.github.rmmccann.minecraft.status.query.MCQuery;
 import io.graversen.minecraft.rcon.Defaults;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
+import org.comroid.api.Container;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
@@ -38,12 +40,11 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Entity
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class Server extends AbstractEntity {
-    public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
-
+public class Server extends AbstractEntity implements Container {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
+    private final @Transient @lombok.experimental.Delegate Container.Base delegate = new Container.Base();
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
     private @Nullable String homepage;
@@ -298,4 +299,5 @@ public class Server extends AbstractEntity {
     public enum Permission implements BitmaskAttribute<Permission> {
         Status, Start, Stop, Console, Backup, Files
     }
+    public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
 }
