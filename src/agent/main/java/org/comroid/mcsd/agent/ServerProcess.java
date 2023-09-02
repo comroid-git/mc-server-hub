@@ -77,8 +77,8 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
     private DiscordConnection discord;
     private CompletableFuture<Duration> done;
     private CompletableFuture<Void> stop;
-    private IStatusMessage previousStatus;
-    private IStatusMessage currentStatus;
+    private IStatusMessage previousStatus = Status.unknown_status;
+    private IStatusMessage currentStatus = Status.unknown_status;
 
     public State getState() {
         return process == null
