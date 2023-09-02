@@ -177,8 +177,8 @@ public class DiscordConnection extends Container.Base {
                                 return (String) raw;
                             })
                             .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
-                            .peekData(out::println)
                             .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
+                            .peekData(out::println)
                             .subscribeData(srv.getIn()::println));
                 }).stream(),
                 // console -> console channel
