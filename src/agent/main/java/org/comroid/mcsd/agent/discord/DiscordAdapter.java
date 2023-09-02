@@ -407,8 +407,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         return builder;
     }
 
-    public PrintStream channelAsStream(final long id, final Server.ConsoleMode mode) {
-        final var scroll = mode != Server.ConsoleMode.Append;
+    public PrintStream channelAsStream(final long id, final boolean fancy) {
         final var channel = jda.getTextChannelById(id);
         if (channel == null)
             throw new NullPointerException("channel not found: " + id);
@@ -419,8 +418,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
             {
                 // getOrCreate msg
-                final var msg = Optional.of(0)
-                        .filter($ -> mode == Server.ConsoleMode.ScrollClean)
+                final var msg = Optional.of(0L)
+                        .filter($ -> fancy)
                         .flatMap($ -> Streams.of(channel.getIterableHistory())
                                 .filter(m -> jda.getSelfUser().equals(m.getAuthor()))
                                 .findFirst())
@@ -429,7 +428,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 this.msg = new AtomicReference<>(msg);
 
                 // cleanup channel
-                if (mode == Server.ConsoleMode.ScrollClean)
+                if (fancy)
                     msg.thenApply(ISnowflake::getIdLong).thenComposeAsync(it -> Polyfill
                             .batches(MaxBulkDelete, channel.getIterableHistory()
                                     .stream()
@@ -455,22 +454,19 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             public void accept(final String txt) {
                 if (txt.isBlank()) return; //todo: this shouldn't be necessary
                 log.finer("accept('" + txt + "')");
-                Ratelimit.run(txt, Duration.ofSeconds(scroll ? 3 : 1), msg, (msg, queue) -> {
+                Ratelimit.run(txt, Duration.ofSeconds(fancy ? 3 : 1), msg, (msg, queue) -> {
                     var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
                     var add = "";
                     log.finer("length of raw = " + raw.length());
                     boolean hasSpace = false;
-                    while (!queue.isEmpty() && (scroll || (hasSpace = (raw + add + queue.peek()).length() < MaxLength))) {
+                    while (!queue.isEmpty() && (fancy || (hasSpace = (raw + add + queue.peek()).length() < MaxLength))) {
                         var poll = queue.poll();
                         add += poll;
                     }
                     RestAction<Message> chain;
-                    if (mode == Server.ConsoleMode.ScrollClean ||
-                            channel.getLatestMessageIdLong() == msg.getIdLong() && msg.isPinned()) {
+                    if (fancy) {
                         var content = raw + add;
                         chain = msg.editMessage(wrapContent(content));
-                        if (!scroll && !hasSpace)
-                            chain = chain.flatMap($ -> newMsg(queue.poll()));
                     } else chain = newMsg(add);
                     return chain.submit();
                 });
@@ -488,7 +484,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             }
 
             private String scroll(String content) {
-                if (!scroll) return content;
+                if (!fancy) return content;
                 var lines = content.split("\r?\n");
                 var rev = new ArrayList<String>();
                 var index = lines.length - 1;

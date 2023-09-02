@@ -69,7 +69,7 @@ public class DiscordConnection extends Container.Base {
                 .orElseThrow();
 
         final var consoleChannel = Optional.ofNullable(server.getConsoleChannelId());
-        final var consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, srv.getServer().getConsoleMode()));
+        final var consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, srv.getServer().isFancyConsole()));
 
         Polyfill.stream(
                 // status changes -> discord
