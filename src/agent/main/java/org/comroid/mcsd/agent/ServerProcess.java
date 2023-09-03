@@ -187,9 +187,6 @@ public class ServerProcess extends ExecutionModule implements Startable, Command
         in.println(cmd);
     }
 
-    @SneakyThrows
-    public CompletableFuture<File> runBackup(final boolean important) {
-    }
 
 
 
