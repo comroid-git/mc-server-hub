@@ -1,23 +1,32 @@
 package org.comroid.mcsd.core.module;
 
-import lombok.Value;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.java.Log;
 import org.comroid.api.Event;
 import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
-import org.comroid.mcsd.util.Utils;
+import org.comroid.mcsd.util.McFormatCode;
+import org.comroid.mcsd.util.Tellraw;
 import org.springframework.util.StringUtils;
 
-import java.util.Arrays;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static java.time.Instant.now;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
-@Value
+@Log
+@Getter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChatModule extends ServerModule {
+    public static final Duration TickerTimeout = Duration.ofMinutes(15);
     public static final Pattern ChatPattern = ConsoleModule.pattern(
             "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
             //"([(\\[{<]" +
@@ -42,7 +51,8 @@ public class ChatModule extends ServerModule {
         }
     };
 
-    Event.Bus<ChatMessage> chat = new Event.Bus<>();
+    final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(),-1));
+    final Event.Bus<ChatMessage> bus = new Event.Bus<>();
 
     private ChatModule(Server server) {
         super(server);
@@ -53,15 +63,16 @@ public class ChatModule extends ServerModule {
         super.$initialize();
         var console = server.component(ConsoleModule.class)
                 .orElseThrow(()->new InitFailed("No Console module is loaded"));
-        console.console.mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
-                .flatMap(pattern -> {
-                    var matcher = pattern.matcher(str);
-                    if (matcher.matches())
-                        return Stream.of(matcher);
-                    return Stream.empty();
-                })
-                .findAny()
-                .orElse((Matcher)null))
+        //noinspection RedundantTypeArguments -> ide error
+        addChildren(console.bus.mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
+                        .flatMap(pattern -> {
+                            var matcher = pattern.matcher(str);
+                            if (matcher.matches())
+                                return Stream.of(matcher);
+                            return Stream.empty();
+                        })
+                        .findAny()
+                        .<Matcher>orElse(null))
                 .mapData(matcher -> {
                     var pattern = matcher.pattern().toString();
                     var event = pattern.contains("prefix");
@@ -71,6 +82,30 @@ public class ChatModule extends ServerModule {
                     if (event) message = StringUtils.capitalize(message);
                     return new ChatMessage(username, message, event || broadcast);
                 })
-                .subscribeData(chat::publish);
+                .subscribeData(bus::publish));
     }
+
+    @Override
+    protected void $tick() {
+        super.$tick();
+
+        var console = server.component(ConsoleModule.class);
+        var msgs = server.getTickerMessages();
+        var last = lastTickerMessage.get();
+        if (console.isNull() || msgs.isEmpty() || last.time.plus(TickerTimeout).isAfter(now()))
+            return;
+        var i = last.index + 1;
+        if (i >= msgs.size())
+            i = 0;
+        var msg = msgs.get(i);
+        var cmd = Tellraw.Command.builder()
+                .selector(Tellraw.Selector.Base.ALL_PLAYERS)
+                .component(McFormatCode.Gray.text("<").build())
+                .component(McFormatCode.Light_Purple.text(msg).build())
+                .component(McFormatCode.Gray.text("> ").build())
+                .build().toString();
+        console.assertion().execute(cmd);
+    }
+
+    private record TickerMessage(Instant time, int index) {}
 }

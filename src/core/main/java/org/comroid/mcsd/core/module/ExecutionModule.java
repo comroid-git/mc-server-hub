@@ -54,7 +54,7 @@ public final class ExecutionModule extends ConsoleModule {
     public CompletableFuture<String> execute(String input, @Nullable Pattern terminator) {
         if (input == null || input.isBlank())
             return CompletableFuture.failedFuture(new RuntimeException("Command is empty"));
-        return Utils.listenForPattern(console, terminator != null ? terminator
+        return Utils.listenForPattern(bus, terminator != null ? terminator
                         : ConsoleModule.commandPattern(input.split(" ")[0]))
                 .listen().once()
                 .thenApply(Event::getData)
@@ -85,9 +85,8 @@ public final class ExecutionModule extends ConsoleModule {
             }
 
             in.println("stop");
-            stop.join();
             return null;
-        });
+        }).thenCompose($->stop);
     }
 
     @Override
@@ -105,9 +104,9 @@ public final class ExecutionModule extends ConsoleModule {
                 new FileHandle(server.getDirectory(), true));
 
         in = new PrintStream(process.getOutputStream(), true);
-        oe = DelegateStream.IO.process(process).redirectToEventBus(console);
+        oe = DelegateStream.IO.process(process).redirectToEventBus(bus);
 
-        this.done = Utils.listenForPattern(console, DonePattern)
+        this.done = Utils.listenForPattern(bus, DonePattern)
                 .mapData(m -> m.group("time"))
                 .mapData(Double::parseDouble)
                 .mapData(x -> Duration.ofMillis((long) (x * 1000)))
@@ -121,7 +120,7 @@ public final class ExecutionModule extends ConsoleModule {
         }).thenAccept(msg -> log.info(server + " " + msg.getMessage())).join();
 
         this.stop = CompletableFuture.anyOf(process.onExit(),
-                        Utils.listenForPattern(console, StopPattern).listen().once())
+                        Utils.listenForPattern(bus, StopPattern).listen().once())
                 .thenRun(server::terminate);
     }
 
@@ -131,5 +130,19 @@ public final class ExecutionModule extends ConsoleModule {
             shutdown("Forced Shutdown", 5);
         stop.join();
         super.$terminate();
+    }
+
+    @Override
+    @SneakyThrows
+    public void closeSelf() {
+        if (process == null || !process.isAlive())
+            return;
+
+        server.component(StatusModule.class).assertion()
+                .pushStatus(Status.offline);
+        if (process.isAlive())
+            shutdown("Host shutdown", 2).join();
+        if (process.isAlive())
+            process.destroy();
     }
 }

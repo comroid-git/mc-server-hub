@@ -20,7 +20,7 @@ public abstract class ConsoleModule extends ServerModule {
     public static final Pattern McsdPattern = commandPattern("mcsd");
     public static Pattern commandPattern(String command) {return pattern("(?<username>[\\S\\w_-]+) issued server command: /"+command+" (?<command>[\\w\\s_-]+)\\r?\\n?.*");}
 
-    protected Event.Bus<String> console;
+    protected Event.Bus<String> bus;
 
     public ConsoleModule(Server server) {
         super(server);
@@ -28,13 +28,13 @@ public abstract class ConsoleModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        console = new Event.Bus<>();
+        bus = new Event.Bus<>();
         super.$initialize();
     }
 
     @Override
     protected void $terminate() {
-        console.close();
+        bus.close();
         super.$terminate();
     }
 

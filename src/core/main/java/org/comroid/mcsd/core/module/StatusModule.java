@@ -54,7 +54,10 @@ public class StatusModule extends ServerModule {
             bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), message);
             return message;
         }).thenCompose(msg -> server.component(UptimeModule.class).assertion().pushUptime()
-                .thenApply($ -> (IStatusMessage) msg));
+                .thenApply($ -> {
+                    bus.publish(message);
+                    return message;
+                }));
     }
 
     public CompletableFuture<IStatusMessage> getStatus() {

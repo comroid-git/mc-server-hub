@@ -2,7 +2,6 @@ package org.comroid.mcsd.core.module.discord;
 
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.ChatModule;
@@ -41,7 +40,7 @@ public class DiscordModule extends ServerModule {
     protected void $initialize() {
         super.$initialize();
 
-        var chat = server.component(ChatModule.class).map(ChatModule::getChat);
+        var chat = server.component(ChatModule.class).map(ChatModule::getBus);
         var consoleModule = server.component(ConsoleModule.class);
 
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
@@ -95,7 +94,7 @@ public class DiscordModule extends ServerModule {
             // console channel
             Optional.ofNullable(server.getConsoleChannelId()).ifPresent(id -> addChildren(
                     // mc -> dc
-                    console.getConsole().subscribeData(adapter.channelAsStream(id, server.isFancyConsole())::println),
+                    console.getBus().subscribeData(adapter.channelAsStream(id, server.isFancyConsole())::println),
                     // dc -> mc
                     adapter.flatMap(MessageReceivedEvent.class)
                             .filterData(e -> e.getChannel().getIdLong() == id)
