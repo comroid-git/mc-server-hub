@@ -17,7 +17,13 @@ import java.net.URL;
 @Log
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public abstract class FileModule extends ServerModule {
+public class FileModule extends ServerModule {
+    public static final Factory<FileModule> Factory = new Factory<>(FileModule.class) {
+        @Override
+        public FileModule create(Server server) {
+            return new FileModule(server);
+        }
+    };
     protected FileModule(Server server) {
         super(server);
     }

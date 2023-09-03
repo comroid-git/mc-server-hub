@@ -23,7 +23,7 @@ import java.util.logging.Level;
 @Log
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UpdateModule extends FileModule {
+public class UpdateModule extends ServerModule {
     public static final Factory<UpdateModule> Factory = new Factory<>(UpdateModule.class) {
         @Override
         public UpdateModule create(Server server) {
@@ -32,9 +32,16 @@ public class UpdateModule extends FileModule {
     };
 
     final AtomicBoolean updateRunning = new AtomicBoolean(false);
+    FileModule files;
 
     private UpdateModule(Server server) {
         super(server);
+    }
+
+    @Override
+    protected void $initialize() {
+        super.$initialize();
+        files=server.component(FileModule.class).assertion();
     }
 
     public CompletableFuture<Boolean> runUpdate(boolean force) {
@@ -65,7 +72,7 @@ public class UpdateModule extends FileModule {
                 if (!serverJar.exists()) {
                     serverJar.mkdirs();
                     serverJar.createNewFile();
-                } else if (!force && isJarUpToDate())
+                } else if (!force && files.isJarUpToDate())
                     return false;
                 try (var in = new URL(server.getJarUrl()).openStream();
                      var out = new FileOutputStream(serverJar, false)) {
