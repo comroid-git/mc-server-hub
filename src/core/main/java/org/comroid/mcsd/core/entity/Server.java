@@ -5,18 +5,17 @@ import com.github.rmmccann.minecraft.status.query.MCQuery;
 import io.graversen.minecraft.rcon.Defaults;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Component;
-import org.comroid.api.Container;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.model.ServerConnection;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.intellij.lang.annotations.Language;
@@ -31,6 +30,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -46,6 +46,7 @@ public class Server extends AbstractEntity implements Component {
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
     private final @Transient @lombok.experimental.Delegate Component.Base delegate = new Component.Base();
+    private static final Duration TickRate = Duration.ofMinutes(1);
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
     private @Nullable String homepage;
@@ -77,6 +78,15 @@ public class Server extends AbstractEntity implements Component {
     private Instant lastUpdate = Instant.ofEpochMilli(0);
     private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.unknown_status;
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
+
+    @PostLoad
+    public void load() {
+        addChildren(ApplicationContextProvider.<List<ServerModule.Factory<ServerModule>>, List<ServerModule.Factory<ServerModule>>>
+                        bean(List.class, "serverModuleFactories").stream()
+                .map(factory -> factory.create(this))
+                .peek(module -> module.execute(Executors.newSingleThreadScheduledExecutor(), TickRate))
+                .toArray());
+    }
 
     @JsonIgnore
     public ServerConnection con() {
