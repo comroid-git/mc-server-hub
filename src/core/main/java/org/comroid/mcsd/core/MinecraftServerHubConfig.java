@@ -6,7 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.dto.DBInfo;
 import org.comroid.mcsd.api.dto.OAuth2Info;
+import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.util.Streams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -20,6 +23,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
@@ -74,6 +78,20 @@ public class MinecraftServerHubConfig {
     @Bean
     public ScheduledExecutorService scheduler() {
         return Executors.newScheduledThreadPool(32);
+    }
+
+    @Bean
+    @Order
+    @Lazy(false)
+    public List<Server> serverList(@Autowired List<ServerModule.Factory<?>> serverModuleFactories) {
+        return Streams.of(servers.findAll())
+                .peek(srv -> {
+                    srv.addChildren(serverModuleFactories.stream()
+                            .map(factory -> factory.create(srv))
+                            .toArray());
+                    srv.execute(Executors.newScheduledThreadPool(4), Duration.ofMinutes(1));
+                })
+                .toList();
     }
 }
 

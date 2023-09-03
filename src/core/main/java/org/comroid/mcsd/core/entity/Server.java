@@ -3,6 +3,7 @@ package org.comroid.mcsd.core.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
 import io.graversen.minecraft.rcon.Defaults;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -79,15 +80,6 @@ public class Server extends AbstractEntity implements Component {
     private Instant lastUpdate = Instant.ofEpochMilli(0);
     private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.unknown_status;
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
-
-    @PostLoad
-    public void load() {
-        addChildren(ApplicationContextProvider.<List<ServerModule.Factory<ServerModule>>, List<ServerModule.Factory<ServerModule>>>
-                        bean(List.class, "serverModuleFactories").stream()
-                .map(factory -> factory.create(this))
-                .peek(module -> module.execute(Executors.newSingleThreadScheduledExecutor(), TickRate))
-                .toArray());
-    }
 
     @JsonIgnore
     public ServerConnection con() {
