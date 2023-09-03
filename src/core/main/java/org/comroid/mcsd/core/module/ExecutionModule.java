@@ -20,6 +20,7 @@ import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
@@ -40,6 +41,7 @@ public final class ExecutionModule extends ConsoleModule {
         }
     };
 
+    final AtomicBoolean manualShutdown = new AtomicBoolean(false);
     Process process;
     PrintStream in;
     DelegateStream.IO oe;
@@ -63,38 +65,11 @@ public final class ExecutionModule extends ConsoleModule {
                 .thenApply(Matcher::group);
     }
 
-    public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
-        return CompletableFuture.supplyAsync(() -> {
-            server.component(StatusModule.class).assertion()
-                    .pushStatus(Status.shutting_down.new Message(reason));
-            final var msg = (IntFunction<String>) t -> "say Server will shut down in %d seconds (%s)".formatted(t, reason);
-            int time = warnSeconds;
-
-            try {
-                while (time > 0) {
-                    in.println(msg.apply(time));
-                    if (time >= 10) {
-                        time /= 2;
-                        Thread.sleep(TimeUnit.SECONDS.toMillis(time));
-                    } else {
-                        time -= 1;
-                        Thread.sleep(1000);
-                    }
-                }
-            } catch (InterruptedException e) {
-                log.log(Level.SEVERE, "Could not wait for shutdown timeout", e);
-            }
-
-            in.println("stop");
-            return null;
-        }).thenCompose($->stop);
-    }
-
     @Override
     @SneakyThrows
     protected void $tick() {
         super.$tick();
-        if (server.isEnabled() && process.isAlive())
+        if (manualShutdown.get() || server.isEnabled() && process.isAlive())
             return;
         log.info("Starting " + server);
         final var stopwatch = Stopwatch.start("startup-" + server.getId());
@@ -125,6 +100,33 @@ public final class ExecutionModule extends ConsoleModule {
         this.stop = CompletableFuture.anyOf(process.onExit(),
                         Utils.listenForPattern(bus, StopPattern).listen().once())
                 .thenRun(server::terminate);
+    }
+
+    public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
+        return CompletableFuture.supplyAsync(() -> {
+            server.component(StatusModule.class).assertion()
+                    .pushStatus(Status.shutting_down.new Message(reason));
+            final var msg = (IntFunction<String>) t -> "say Server will shut down in %d seconds (%s)".formatted(t, reason);
+            int time = warnSeconds;
+
+            try {
+                while (time > 0) {
+                    in.println(msg.apply(time));
+                    if (time >= 10) {
+                        time /= 2;
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(time));
+                    } else {
+                        time -= 1;
+                        Thread.sleep(1000);
+                    }
+                }
+            } catch (InterruptedException e) {
+                log.log(Level.SEVERE, "Could not wait for shutdown timeout", e);
+            }
+
+            in.println("stop");
+            return null;
+        }).thenCompose($->stop);
     }
 
     @Override
