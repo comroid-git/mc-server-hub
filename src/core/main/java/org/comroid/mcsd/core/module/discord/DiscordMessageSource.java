@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.discord;
+package org.comroid.mcsd.core.module.discord;
 
 import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;

@@ -1,7 +1,6 @@
-package org.comroid.mcsd.core.discord;
+package org.comroid.mcsd.core.module.discord;
 
 import club.minnced.discord.webhook.WebhookClientBuilder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.java.Log;
@@ -13,7 +12,6 @@ import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.module.server.DiscordModule;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.util.McFormatCode;
@@ -37,14 +35,9 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 @Deprecated
 public class DiscordConnection extends DiscordModule {
     private final DiscordAdapter.MessagePublisher msgTemplate, botTemplate;
-    private final DiscordAdapter adapter;
 
     public DiscordConnection(Server server) {
-        this(server);
-
-        this.adapter = Optional.ofNullable(server.getDiscordBot())
-                .map(DiscordAdapter::get)
-                .orElseThrow();
+        super(server);
 
         final Event.Bus<Object> mainBus = bean(Event.Bus.class, "eventBus");
         final var publicChannel = Optional.ofNullable(server.getPublicChannelId());

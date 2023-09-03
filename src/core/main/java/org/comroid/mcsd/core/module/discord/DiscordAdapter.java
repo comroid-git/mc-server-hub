@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.discord;
+package org.comroid.mcsd.core.module.discord;
 
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.receive.ReadonlyMessage;

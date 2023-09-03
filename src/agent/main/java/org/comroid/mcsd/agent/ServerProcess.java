@@ -7,9 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.*;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
-import org.comroid.mcsd.agent.discord.DiscordConnection;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
+import org.comroid.mcsd.core.module.discord.DiscordConnection;
 import org.comroid.mcsd.core.entity.Backup;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
@@ -40,14 +40,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 import static org.comroid.util.Streams.append;
 
 @Slf4j
 @Getter
+@Deprecated
 @RequiredArgsConstructor
 public class ServerProcess extends Event.Bus<String> implements Startable, Command.Handler {
     // todo: improve these
