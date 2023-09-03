@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
+import static java.time.Instant.now;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
@@ -51,6 +52,14 @@ public class BackupModule extends ServerModule {
         consoleModule = server.component(ConsoleModule.class).assertion();
     }
 
+    @Override
+    protected void $tick() {
+        super.$tick();
+        if (server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()) || !currentBackup.get().isDone())
+            return;
+        runBackup(false);
+    }
+
     public CompletableFuture<File> runBackup(final boolean important) {
         if (!currentBackup.get().isDone()) {
             log.warning("A backup on server %s is already running".formatted(server));
@@ -65,7 +74,7 @@ public class BackupModule extends ServerModule {
         if (!backupDir.exists() && !backupDir.mkdirs())
             return CompletableFuture.failedFuture(new RuntimeException("Could not create backup directory"));
 
-        final var time = Instant.now();
+        final var time = now();
         var backup = consoleModule.execute("save-off\r\nsave-all", SaveCompletePattern)
                 // wait for save to finish
                 .thenCompose($ -> Archiver.find(Archiver.ReadOnly).zip()

@@ -20,6 +20,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
+import static java.time.Instant.now;
+
 @Log
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -42,6 +44,14 @@ public class UpdateModule extends ServerModule {
     protected void $initialize() {
         super.$initialize();
         files=server.component(FileModule.class).assertion();
+    }
+
+    @Override
+    protected void $tick() {
+        super.$tick();
+        if (server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()) || updateRunning.get())
+            return;
+        runUpdate(false);
     }
 
     public CompletableFuture<Boolean> runUpdate(boolean force) {
@@ -96,6 +106,8 @@ public class UpdateModule extends ServerModule {
                 log.log(Level.SEVERE, "An error occurred while updating", t);
                 status.pushStatus(Status.in_Trouble.new Message("Update failed"));
                 return false;
+            } finally {
+                updateRunning.set(false);
             }
         });
     }
