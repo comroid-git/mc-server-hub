@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 
-import static org.comroid.mcsd.core.MinecraftServerHubConfig.cronLog;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Slf4j
@@ -79,7 +78,6 @@ public class MinecraftServerHubAgent {
     public List<ServerModule.Factory<?>> serverModuleFactories() {
         return List.of(
                 StatusModule.Factory,
-                WebInterfaceModuleMcsd.Factory,
                 FileModule.Factory,
                 UpdateModule.Factory,
                 ExecutionModule.Factory,
