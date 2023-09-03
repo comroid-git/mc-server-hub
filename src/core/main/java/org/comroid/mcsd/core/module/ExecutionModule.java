@@ -54,6 +54,8 @@ public final class ExecutionModule extends ConsoleModule {
     public CompletableFuture<String> execute(String input, @Nullable Pattern terminator) {
         if (input == null || input.isBlank())
             return CompletableFuture.failedFuture(new RuntimeException("Command is empty"));
+        in.println(input);
+        in.flush();
         return Utils.listenForPattern(bus, terminator != null ? terminator
                         : ConsoleModule.commandPattern(input.split(" ")[0]))
                 .listen().once()

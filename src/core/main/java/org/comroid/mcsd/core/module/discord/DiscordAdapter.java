@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -36,6 +37,9 @@ import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.UserData;
+import org.comroid.mcsd.core.module.BackupModule;
+import org.comroid.mcsd.core.module.ConsoleModule;
+import org.comroid.mcsd.core.module.UpdateModule;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserDataRepo;
@@ -103,6 +107,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                 .setGuildOnly(true),
                         Commands.slash("update", "Update the server")
+                                .addOption(OptionType.BOOLEAN, "force", "Force the Update")
                                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                 .setGuildOnly(true),
                         Commands.slash("execute", "Run a command on the server")
@@ -210,27 +215,31 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
     @Command(ephemeral = true)
     public CompletableFuture<String> backup(SlashCommandInteractionEvent e) {
-        var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
-                .map(bean(AgentRunner.class)::process)
-                .orElseThrow(() -> new Command.Error("Unable to find server"));
-        return proc.runBackup(true).thenApply($->"Backup complete");
+        return bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .flatMap(srv -> srv.component(BackupModule.class).wrap())
+                .orElseThrow(() -> new Command.Error("Unable to find server"))
+                .runBackup(true)
+                .thenApply($->"Backup complete");
     }
 
     @Command(ephemeral = true)
     public CompletableFuture<String> update(SlashCommandInteractionEvent e) {
-        var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
-                .map(bean(AgentRunner.class)::process)
-                .orElseThrow(() -> new Command.Error("Unable to find server"));
-        return proc.runUpdate().thenApply($->$?"Update complete":"Update skipped");
+        return bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .flatMap(srv -> srv.component(UpdateModule.class).wrap())
+                .orElseThrow(() -> new Command.Error("Unable to find server"))
+                .runUpdate(Optional.ofNullable(e.getOption("force"))
+                        .map(OptionMapping::getAsBoolean)
+                        .orElse(false))
+                .thenApply($->$?"Update complete":"Update skipped");
     }
 
     @Command(ephemeral = true)
     public String execute(SlashCommandInteractionEvent e) {
-        var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
-                .map(bean(AgentRunner.class)::process)
+        var console = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .flatMap(srv -> srv.component(ConsoleModule.class).wrap())
                 .orElseThrow(() -> new Command.Error("Unable to find server"));
         var cmd = Objects.requireNonNull(e.getOption("command")).getAsString();
-        proc.getIn().println(cmd);
+        console.execute(cmd);
         return "Command was sent";
     }
 

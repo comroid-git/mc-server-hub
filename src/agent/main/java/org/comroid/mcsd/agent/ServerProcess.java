@@ -50,7 +50,6 @@ public class ServerProcess extends ExecutionModule implements Startable, Command
     private final AtomicInteger lastTicker = new AtomicInteger(0);
     private final @Deprecated @lombok.experimental.Delegate Event.Bus<String> bus = new Event.Bus<>();
     private final AgentRunner runner;
-    private Command.Manager cmdr;
     private IStatusMessage previousStatus = Status.unknown_status;
     private IStatusMessage currentStatus = Status.unknown_status;
 
@@ -96,69 +95,11 @@ public class ServerProcess extends ExecutionModule implements Startable, Command
         return is != val;
     }
 
-    @Override
-    @SneakyThrows
-    public void start() {
-        if (!currentBackup.get().isDone() || updateRunning.get())
-            return;
-        if (getState() == State.Running)
-            return;
-
-
-
-        var botConId = server.getDiscordBot();
-        if (botConId != null)
-            addChildren(discord = new DiscordConnection(this));
-        pushStatus(Status.starting);
-
-
-        this.cmdr = new Command.Manager(this);
-        addChildren(cmdr);
-        listenForPattern(McsdPattern).subscribeData(this::runCommand);
-
-        if (Debug.isDebug())
-            //oe.redirectToLogger(log);
-            oe.redirectToSystem();
-    }
 
     //region Commands
     private void runCommand(Matcher matcher) {
-        var username = matcher.group("username");
-        var profile = bean(MinecraftProfileRepo.class).get(username);
-        var command = matcher.group("command");
-        cmdr.execute(command.replaceAll("\r?\n", ""), profile);
     }
 
-    @Override
-    public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
-        var profile = Arrays.stream(args)
-                .flatMap(Streams.cast(MinecraftProfile.class))
-                .findAny()
-                .orElseThrow();
-        var tellraw = Tellraw.Command.builder()
-                .selector(profile.getName())
-                .component(McFormatCode.Gray.text("<").build())
-                .component(McFormatCode.Light_Purple.text("mcsd").build())
-                .component(McFormatCode.Gray.text("> ").build())
-                .component(McFormatCode.Reset.text(response.toString()).build())
-                .build()
-                .toString();
-        in.println(tellraw); // todo: tellraw data often too long
-        log.trace(tellraw);
-        in.flush();
-    }
-
-    @Command
-    public String link(MinecraftProfile profile) {
-        final var profiles = bean(MinecraftProfileRepo.class);
-        String code;
-        do {
-            code = Token.random(6, false);
-        } while (profiles.findByVerification(code).isPresent());
-        profile.setVerification(code);
-        profiles.save(profile);
-        return "Please run this command on discord: /verify " + code;
-    }
     //endregion
 
 
