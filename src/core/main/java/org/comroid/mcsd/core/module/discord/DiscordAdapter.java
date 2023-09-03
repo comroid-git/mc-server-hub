@@ -1,6 +1,7 @@
 package org.comroid.mcsd.core.module.discord;
 
 import club.minnced.discord.webhook.WebhookClient;
+import club.minnced.discord.webhook.WebhookClientBuilder;
 import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
@@ -33,9 +34,9 @@ import org.comroid.api.*;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
+import org.comroid.mcsd.api.Defaults;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
-import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.UserData;
 import org.comroid.mcsd.core.module.BackupModule;
 import org.comroid.mcsd.core.module.ConsoleModule;
@@ -364,7 +365,14 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         };
     }
 
-    public WebhookClient getWebhook(long channelId) {
+    public WebhookClient getWebhook(@Nullable String url, long channelId) {
+        return (url == null
+                ? Objects.requireNonNull(jda.getTextChannelById(channelId), "Channel not found").createWebhook(Defaults.WebhookName)
+                : jda.retrieveWebhookById(WebhookClient.withUrl(url).getId())
+                .onErrorFlatMap(t -> Objects.requireNonNull(jda.getTextChannelById(channelId), "Channel not found").createWebhook(Defaults.WebhookName)))
+                .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
+                .submit()
+                .join();
     }
 
     public abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {

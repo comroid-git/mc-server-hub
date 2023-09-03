@@ -4,15 +4,16 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class Defaults {
-    public static boolean FancyConsole = true;
-    public static boolean ForceCustomJar = false;
-    public static int Port = 25565;
-    public static byte RamGB = 4;
-    public static boolean Enabled = true;
-    public static boolean Managed = true;
-    public static boolean Whitelist = false;
-    public static boolean Maintenance = false;
-    public static int MaxPlayers = 20;
-    public static int QueryPort = 25565;
-    public static int RConPort = 25575;
+    public static final boolean FancyConsole = true;
+    public static final boolean ForceCustomJar = false;
+    public static final int Port = 25565;
+    public static final byte RamGB = 4;
+    public static final boolean Enabled = true;
+    public static final boolean Managed = true;
+    public static final boolean Whitelist = false;
+    public static final boolean Maintenance = false;
+    public static final int MaxPlayers = 20;
+    public static final int QueryPort = 25565;
+    public static final int RConPort = 25575;
+    public static final String WebhookName = "MCSD Chat Relay";
 }

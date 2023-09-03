@@ -46,7 +46,7 @@ public class DiscordModule extends ServerModule {
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
             // chat mirror
             Optional.ofNullable(server.getPublicChannelId()).ifPresent(id -> {
-                final var webhook = adapter.messageTemplate(adapter.getWebhook(id));
+                final var webhook = adapter.messageTemplate(adapter.getWebhook(server.getPublicChannelWebhook(), id));
 
                 // status -> dc
                 server.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
