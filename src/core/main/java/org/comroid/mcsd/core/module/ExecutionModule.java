@@ -19,6 +19,9 @@ import org.jetbrains.annotations.Nullable;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,6 +61,35 @@ public final class ExecutionModule extends ConsoleModule {
                 .thenApply(Matcher::group);
     }
 
+    @SneakyThrows
+    public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
+        return CompletableFuture.supplyAsync(() -> {
+            server.component(StatusModule.class).assertion()
+                    .pushStatus(Status.shutting_down.new Message(reason));
+            final var msg = (IntFunction<String>) t -> "say Server will shut down in %d seconds (%s)".formatted(t, reason);
+            int time = warnSeconds;
+
+            try {
+                while (time > 0) {
+                    in.println(msg.apply(time));
+                    if (time >= 10) {
+                        time /= 2;
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(time));
+                    } else {
+                        time -= 1;
+                        Thread.sleep(1000);
+                    }
+                }
+            } catch (InterruptedException e) {
+                log.log(Level.SEVERE, "Could not wait for shutdown timeout", e);
+            }
+
+            in.println("stop");
+            stop.join();
+            return null;
+        });
+    }
+
     @Override
     @SneakyThrows
     protected void $initialize() {
@@ -91,5 +123,13 @@ public final class ExecutionModule extends ConsoleModule {
         this.stop = CompletableFuture.anyOf(process.onExit(),
                         Utils.listenForPattern(console, StopPattern).listen().once())
                 .thenRun(server::terminate);
+    }
+
+    @Override
+    protected void $terminate() {
+        if (!stop.isDone())
+            shutdown("Forced Shutdown", 5);
+        stop.join();
+        super.$terminate();
     }
 }

@@ -12,9 +12,7 @@ import org.comroid.mcsd.core.entity.Backup;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.ServerUptimeEntry;
-import org.comroid.mcsd.core.module.ConsoleModule;
 import org.comroid.mcsd.core.module.ExecutionModule;
-import org.comroid.mcsd.core.module.discord.DiscordConnection;
 import org.comroid.mcsd.core.repo.BackupRepo;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
@@ -39,7 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
@@ -264,84 +261,8 @@ public class ServerProcess extends ExecutionModule implements Startable, Command
     }
 
     public CompletableFuture<Boolean> runUpdate(String... args) {
-        var flags = String.join("", args);
-        pushStatus(Status.updating);
-
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                // modify server.properties
-                Properties prop;
-                var serverProperties = new FileHandle(server.path("server.properties").toFile());
-                if (!serverProperties.exists()) {
-                    serverProperties.mkdirs();
-                    serverProperties.createNewFile();
-                }
-                try (var in = new FileInputStream(serverProperties)) {
-                    prop = server.updateProperties(in);
-                }
-                try (var out = new FileOutputStream(serverProperties, false)) {
-                    prop.store(out, "Managed Server Properties by MCSD");
-                }
-
-                // download server.jar
-                var serverJar = new FileHandle(server.path("server.jar").toFile());
-                if (!serverJar.exists()) {
-                    serverJar.mkdirs();
-                    serverJar.createNewFile();
-                } else if (!flags.contains("r") && isJarUpToDate())
-                    return false;
-                try (var in = new URL(server.getJarUrl()).openStream();
-                     var out = new FileOutputStream(serverJar, false)) {
-                    in.transferTo(out);
-                }
-
-                // eula.txt
-                var eulaTxt = new FileHandle(server.path("eula.txt").toFile());
-                if (!eulaTxt.exists()) {
-                    eulaTxt.mkdirs();
-                    eulaTxt.createNewFile();
-                }
-                try (var in = new DelegateStream.Input(new StringReader("eula=true\n"));
-                     var out = new FileOutputStream(eulaTxt, false)) {
-                    in.transferTo(out);
-                }
-
-                pushStatus(Status.online.new Message("Update done"));
-                return true;
-            } catch (Throwable t) {
-                log.error("An error occurred while updating", t);
-                return false;
-            }
-        });
     }
 
-    @SneakyThrows
-    public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
-        return CompletableFuture.supplyAsync(() -> {
-            pushStatus(Status.shutting_down.new Message(reason));
-            final var msg = (IntFunction<String>) t -> "say Server will shut down in %d seconds (%s)".formatted(t, reason);
-            int time = warnSeconds;
-
-            try {
-                while (time > 0) {
-                    in.println(msg.apply(time));
-                    if (time >= 10) {
-                        time /= 2;
-                        Thread.sleep(TimeUnit.SECONDS.toMillis(time));
-                    } else {
-                        time -= 1;
-                        Thread.sleep(1000);
-                    }
-                }
-            } catch (InterruptedException e) {
-                log.error("Could not wait for shutdown timeout", e);
-            }
-
-            in.println("stop");
-            stop.join();
-            return null;
-        });
-    }
 
     @Override
     @SneakyThrows
