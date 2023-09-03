@@ -355,6 +355,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         };
     }
 
+    public WebhookClient getWebhook(long channelId) {
+    }
+
     public abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {
         private final AtomicLong lastKnownMessage = new AtomicLong(0);
 

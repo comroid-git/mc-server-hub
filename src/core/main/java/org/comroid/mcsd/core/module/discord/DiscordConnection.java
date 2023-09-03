@@ -61,7 +61,7 @@ public class DiscordConnection extends DiscordModule {
 
         Polyfill.stream(
                 // status changes -> discord
-                Stream.of(mainBus.flatMapData(IStatusMessage.class)
+                Stream.of(mainBus.flatMap(IStatusMessage.class)
                         .filter(e -> server.getId().toString().equals(e.getKey()))
                         .mapData(message -> {
                             EmbedBuilder builder = new EmbedBuilder();
@@ -74,105 +74,8 @@ public class DiscordConnection extends DiscordModule {
                         .mapData(DiscordMessageSource::new)
                         .subscribeData(botTemplate)),
 
-                // public channel -> minecraft
-                publicChannel.map(id -> adapter.flatMap(MessageReceivedEvent.class)
-                        .filterData(e -> e.getChannel().getIdLong() == id)
-                        .mapData(MessageReceivedEvent::getMessage)
-                        .filterData(msg -> !msg.getAuthor().isBot())
-                        .mapData(msg -> Tellraw.Command.builder()
-                                .selector(Tellraw.Selector.Base.ALL_PLAYERS)
-                                .component(Gray.text("<").build())
-                                .component(Dark_Aqua.text(msg.getAuthor().getEffectiveName())
-                                        .hoverEvent(show_text.value("Open in Discord"))
-                                        .clickEvent(open_url.value(msg.getJumpUrl()))
-                                        .build())
-                                .component(Gray.text(">").build())
-                                // todo convert markdown to tellraw data
-                                .component(Reset.text(" " + msg.getContentStripped()).build())
-                                .build()
-                                .toString())
-                        .peekData(log::fine)
-                        .subscribeData(srv.getIn()::println)).stream(),
-                // minecraft -> public channel
-                Stream.of(srv.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
-                        .mapData(str -> Stream.of(ServerProcess.ChatPattern,
-                                        ServerProcess.PlayerEventPattern,
-                                        ServerProcess.BroadcastPattern,
-                                        ServerProcess.CrashPattern)
-                                .map(rgx -> rgx.matcher(str))
-                                .filter(Matcher::matches)
-                                .findAny()
-                                .orElse(null))
-                        .subscribeData(matcher -> {
-                            if (matcher.groupCount() == 1) try {
-                                // crash log
-                                var name = matcher.group(1);
-                                try (var input = new FileInputStream(server.path("crash-reports", name).toFile())) {
-                                    consoleChannel.ifPresent(id -> adapter.uploadFile(id, input, name, "@here"));
-                                    return;
-                                }
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                            var username = matcher.group("username");
-                            var message = matcher.group("message");
-                            var output = new DiscordMessageSource();
-                            var profile = bean(MinecraftProfileRepo.class).get(username);
-                            if (matcher.pattern().toString().contains("prefix")) {
-                                // chat message
-                                message = TextDecoration.convert(message, McFormatCode.class, Markdown.class);
-                                bean(Event.Bus.class, "eventBus").publish("chat", new ChatMessage(username, message));
-                                output.setData(TextDecoration.convert(message, McFormatCode.class, Markdown.class))
-                                        .setPlayer(profile)
-                                        .setAppend(true);
-                                msgTemplate.send(output).join();
-                                return;
-                            } else {
-                                // player event or
-                                var c = message.charAt(0);
-                                message = message.substring(1);
-                                message = Character.toUpperCase(c) + message;
-                                // broadcast command executed
-                                if (matcher.pattern().toString().contains("command")
-                                        && matcher.group("command").equals("broadcast")) {
-                                    output.setData(new EmbedBuilder()
-                                            .setAuthor("Broadcast", server.getViewURL(), server.getThumbnailURL())
-                                            .setColor(Gold.getColor())
-                                            .setDescription(message));
-                                } else output.setData(Markdown.Quote.apply(message));
-                            }
-                            output.setPlayer(profile)
-                                    .setAppend(true)
-                                    .send(msgTemplate)
-                                    .join();
-                        })),
-
                 //todo: moderation channel
 
-                // console channel -> console
-                consoleStream.map(out -> {
-                    onClose().thenRunAsync(() -> out.println("Agent shutting down"));
-                    return consoleChannel.map(id -> adapter
-                            .flatMap(MessageReceivedEvent.class)
-                            .filterData(e -> e.getChannel().getIdLong() == id)
-                            .mapData(MessageReceivedEvent::getMessage)
-                            .filterData(msg -> !msg.getAuthor().isBot())
-                            .mapData(msg -> {
-                                var raw = msg.getContentRaw();
-                                if (server.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
-                                    msg.delete().queue();
-                                //noinspection RedundantCast //ide error
-                                return (String) raw;
-                            })
-                            .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
-                            .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
-                            .peekData(out::println)
-                            .subscribeData(srv.getIn()::println));
-                }).stream(),
-                // console -> console channel
-                consoleStream.map(target -> srv.getOe()
-                        .rewireOE(oe -> oe.filter($ -> server.getLastStatus().getAsInt() > Status.starting.getAsInt()))
-                        .redirect(target, target)).stream()
         ).forEach(this::addChildren);
     }
 }

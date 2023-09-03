@@ -42,5 +42,9 @@ public abstract class ConsoleModule extends ServerModule {
         return Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: "+pattern);
     }
 
-    public abstract CompletableFuture<String> send(String input, @Nullable Pattern terminator);
+    public CompletableFuture<String> execute(String input) {
+        return execute(input, null);
+    }
+
+    public abstract CompletableFuture<String> execute(String input, @Nullable Pattern terminator);
 }

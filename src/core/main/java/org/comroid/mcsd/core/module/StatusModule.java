@@ -31,8 +31,16 @@ public class StatusModule extends ServerModule {
     IStatusMessage previousStatus = Status.unknown_status;
     IStatusMessage currentStatus = Status.unknown_status;
 
+    Event.Bus<IStatusMessage> bus;
+
     private StatusModule(Server server) {
         super(server);
+    }
+
+    @Override
+    protected void $initialize() {
+        super.$initialize();
+        addChildren(bus = new Event.Bus<>());
     }
 
     public CompletableFuture<IStatusMessage> pushStatus(IStatusMessage message) {
