@@ -6,4 +6,5 @@ import lombok.Value;
 public class ChatMessage {
     String username;
     String message;
+    boolean event;
 }

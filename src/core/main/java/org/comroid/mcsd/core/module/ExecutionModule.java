@@ -19,7 +19,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -91,11 +90,6 @@ public final class ExecutionModule extends ConsoleModule {
 
         this.stop = CompletableFuture.anyOf(process.onExit(),
                         Utils.listenForPattern(console, StopPattern).listen().once())
-                .thenRun(this::close);
-    }
-
-    @Override
-    protected void $terminate() {
-        super.$terminate();
+                .thenRun(server::terminate);
     }
 }

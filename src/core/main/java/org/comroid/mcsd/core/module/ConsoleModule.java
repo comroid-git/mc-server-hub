@@ -11,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Log
@@ -21,10 +20,22 @@ public abstract class ConsoleModule extends ServerModule {
     public static final Pattern McsdPattern = commandPattern("mcsd");
     public static Pattern commandPattern(String command) {return pattern("(?<username>[\\S\\w_-]+) issued server command: /"+command+" (?<command>[\\w\\s_-]+)\\r?\\n?.*");}
 
-    protected final Event.Bus<String> console = new Event.Bus<>();
+    protected Event.Bus<String> console;
 
     public ConsoleModule(Server server) {
         super(server);
+    }
+
+    @Override
+    protected void $initialize() {
+        console = new Event.Bus<>();
+        super.$initialize();
+    }
+
+    @Override
+    protected void $terminate() {
+        console.close();
+        super.$terminate();
     }
 
     protected static Pattern pattern(@NotNull @Language("RegExp") String pattern) {
