@@ -10,6 +10,7 @@ import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Component;
 import org.comroid.api.IntegerAttribute;
+import org.comroid.api.Named;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
@@ -45,7 +46,7 @@ public class Server extends AbstractEntity implements Component {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
-    private final @Transient @lombok.experimental.Delegate Component.Base delegate = new Component.Base();
+    private final @Transient @lombok.experimental.Delegate(excludes = Named.class) Component.Base delegate = new Component.Base();
     private static final Duration TickRate = Duration.ofMinutes(1);
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
