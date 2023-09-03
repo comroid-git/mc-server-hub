@@ -79,16 +79,6 @@ public class ServerProcess extends ExecutionModule implements Startable, Command
     }
 
     public void pushUptime() {
-        server.status()
-                .thenCombine(getState() == State.Running
-                                ? OS.current.getRamUsage(process.pid())
-                                : CompletableFuture.completedFuture(0L),
-                        (stat, ram) -> new ServerUptimeEntry(server,
-                                currentStatus.getStatus(),
-                                stat.getPlayers() != null ? stat.getPlayers().size() : stat.getPlayerCount(),
-                                ram))
-                .thenAccept(bean(ServerUptimeRepo.class)::save)
-                .join();
     }
 
     public boolean pushMaintenance(boolean val) { //todo
