@@ -12,6 +12,7 @@ import org.comroid.mcsd.agent.controller.ConsoleController;
 import org.comroid.mcsd.agent.discord.DiscordAdapter;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.*;
+import org.comroid.mcsd.core.module.WebInterfaceModuleMcsd;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.util.Utils;
@@ -36,7 +37,8 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Log
 @Getter
 @Service
-public class AgentRunner implements Command.Handler {
+@Deprecated
+public class AgentRunner extends WebInterfaceModuleMcsd implements Command.Handler {
     public final Map<UUID, ServerProcess> processes = new ConcurrentHashMap<>();
     public final Map<UUID, DiscordAdapter> adapters = new ConcurrentHashMap<>();
     public final Agent me;

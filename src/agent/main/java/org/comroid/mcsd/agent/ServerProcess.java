@@ -1,7 +1,6 @@
 package org.comroid.mcsd.agent;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.*;
@@ -9,11 +8,13 @@ import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.module.discord.DiscordConnection;
 import org.comroid.mcsd.core.entity.Backup;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.ServerUptimeEntry;
+import org.comroid.mcsd.core.module.ConsoleModule;
+import org.comroid.mcsd.core.module.ExecutionModule;
+import org.comroid.mcsd.core.module.discord.DiscordConnection;
 import org.comroid.mcsd.core.repo.BackupRepo;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
@@ -21,19 +22,18 @@ import org.comroid.mcsd.core.repo.ServerUptimeRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.*;
-import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,44 +42,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
-import static org.comroid.util.Streams.append;
 
 @Slf4j
 @Getter
 @Deprecated
-@RequiredArgsConstructor
-public class ServerProcess extends Event.Bus<String> implements Startable, Command.Handler {
+public class ServerProcess extends ExecutionModule implements Startable, Command.Handler {
     // todo: improve these
-    public static final Pattern DonePattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
-    public static final Pattern StopPattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: Closing server.*\\r?\\n?");
-    public static final Pattern McsdPattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: (?<username>[\\S\\w_-]+) issued server command: /mcsd (?<command>[\\w\\s_-]+)\\r?\\n?.*");
-    public static final Pattern ChatPattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: " +
-            "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
-            //"([(\\[{<]" +
-            "<" +
-            "(?<username>[\\w\\S_-]+)" +
-            ">\\s?" +
-            //"[>}\\])]\\s?)\\s?" +
-            "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
-            "(?<message>.+)\\r?\\n?.*");
-    public static final Pattern BroadcastPattern = Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: (?<username>[\\S\\w_-]+) issued server command: /(?<command>(me)|(say)|(broadcast)) (?<message>.+)\\r?\\n?.*");
-    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
-    public static final Pattern PlayerEventPattern = Pattern.compile(
-            ".*INFO] (\\[\\w*/\\w*])?: (?<username>[\\S\\w_-]+) (?<message>((joined|left) the game|has (made the advancement|completed the challenge) (\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
     private final AtomicReference<CompletableFuture<@Nullable File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean updateRunning = new AtomicBoolean(false);
     private final AtomicInteger lastTicker = new AtomicInteger(0);
+    private final @Deprecated @lombok.experimental.Delegate Event.Bus<String> bus = new Event.Bus<>();
     private final AgentRunner runner;
-    private final Server server;
-    private @Nullable Process process;
-    private PrintStream in;
-    private DelegateStream.IO oe;
     private Command.Manager cmdr;
-    private DiscordConnection discord;
-    private CompletableFuture<Duration> done;
-    private CompletableFuture<Void> stop;
     private IStatusMessage previousStatus = Status.unknown_status;
     private IStatusMessage currentStatus = Status.unknown_status;
+
+    public ServerProcess(AgentRunner runner, Server server) {
+        super(server);
+        this.runner = runner;
+    }
 
     public State getState() {
         return process == null
@@ -136,40 +117,13 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
         if (getState() == State.Running)
             return;
 
-        final var stopwatch = Stopwatch.start("startup-" + server.getId());
 
-        var exec = PathUtil.findExec("java").orElseThrow();
-        process = Runtime.getRuntime().exec(server.getCustomCommand() == null ? new String[]{
-                        exec.getAbsolutePath(),
-                        "-Xmx%dG".formatted(server.getRamGB()),
-                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : server.getCustomCommand().split(" "),
-                new String[0],
-                new FileHandle(server.getDirectory(), true));
-        in = new PrintStream(process.getOutputStream(), true);
-        final var redir = new DelegateStream.IO(
-                new DelegateStream.Input(this, DelegateStream.EndlMode.OnDelegate, DelegateStream.IO.EventKey_Output),
-                new DelegateStream.Output(this, DelegateStream.Capability.Output),
-                new DelegateStream.Output(this, DelegateStream.Capability.Error));
-        var base = DelegateStream.IO.process(process);
-        oe = base.redirect(redir);
 
         var botConId = server.getDiscordBot();
         if (botConId != null)
             addChildren(discord = new DiscordConnection(this));
         pushStatus(Status.starting);
 
-        this.done = listenForPattern(DonePattern)
-                .mapData(m -> m.group("time"))
-                .mapData(Double::parseDouble)
-                .mapData(x -> Duration.ofMillis((long) (x * 1000)))
-                .listen().once().thenApply($ -> stopwatch.stop());
-        done.thenAccept(d -> {
-            var t = Polyfill.durationString(d);
-            var msg = "Took " + t + " to start";
-            pushStatus((server.isMaintenance() ? Status.in_maintenance_mode : Status.online).new Message(msg));
-            log.info(server + " " + msg);
-        });
-        this.stop = process.onExit().thenRun(this::close);
 
         this.cmdr = new Command.Manager(this);
         addChildren(cmdr);
@@ -419,20 +373,6 @@ public class ServerProcess extends Event.Bus<String> implements Startable, Comma
             }
             case Running -> "Running";
         }; // todo: include server status fetch
-    }
-
-    public CompletableFuture<Event<String>> waitForOutput(@Language("RegExp") String pattern) {
-        return listenForOutput(pattern).listen().once();
-    }
-
-    public Event.Bus<String> listenForOutput(@Language("RegExp") String pattern) {
-        return filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
-                .filterData(str -> str.contains(pattern) | str.matches(pattern));
-    }
-
-    public Event.Bus<Matcher> listenForPattern(Pattern pattern) {
-        return mapData(input -> pattern.matcher(input))
-                .filterData(matcher -> matcher.matches());
     }
 
     public enum State implements Named {NotStarted, Exited, Running;}

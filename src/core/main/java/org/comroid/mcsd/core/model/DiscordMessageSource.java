@@ -1,6 +1,5 @@
-package org.comroid.mcsd.agent.util;
+package org.comroid.mcsd.core.model;
 
-import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.comroid.api.StreamSupplier;

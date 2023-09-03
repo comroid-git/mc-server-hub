@@ -19,6 +19,8 @@ import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
+import org.comroid.mcsd.core.module.*;
+import org.comroid.mcsd.core.module.discord.DiscordModule;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
@@ -35,6 +37,7 @@ import org.springframework.scheduling.TaskScheduler;
 import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
@@ -70,6 +73,20 @@ public class MinecraftServerHubAgent {
     public Agent me(@Autowired GatewayConnectionInfo connectionData, @Autowired AgentRepo agents) {
         return agents.findById(connectionData.getAgent())
                 .orElseThrow(() -> new EntityNotFoundException(Agent.class, connectionData.getAgent()));
+    }
+
+    @Bean
+    public List<ServerModule.Factory<?>> serverModuleFactories() {
+        return List.of(
+                StatusModule.Factory,
+                WebInterfaceModuleMcsd.Factory,
+                FileModule.Factory,
+                UpdateModule.Factory,
+                ExecutionModule.Factory,
+                BackupModule.Factory,
+                ChatModule.Factory,
+                DiscordModule.Factory
+        );
     }
 
     //@Bean

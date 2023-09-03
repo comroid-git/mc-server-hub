@@ -7,7 +7,7 @@ import org.comroid.mcsd.core.entity.Server;
 import org.jetbrains.annotations.Nullable;
 
 @Data
-public abstract class AbstractModule extends Component.Base implements Named {
+public abstract class ServerModule extends Component.Base implements Named {
     protected final Server server;
 
     @Override
@@ -18,5 +18,12 @@ public abstract class AbstractModule extends Component.Base implements Named {
     @Override
     public final Component.Base setParent(@Nullable Component parent) {
         throw new UnsupportedOperationException();
+    }
+
+    @Data
+    public static abstract class Factory<Module extends ServerModule> {
+        protected final Class<Module> type;
+
+        public abstract Module create(Server server);
     }
 }
