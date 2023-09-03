@@ -9,6 +9,7 @@ import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -51,6 +52,7 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
     public DiscordMessageSource embed(final Consumer<EmbedBuilder> embedModifier) {
         data = embed().<Object>map(embed -> {
                     embedModifier.accept(embed);
+                    embed.setTimestamp(Instant.now());
                     return embed;
                 })
                 .orElse(data);

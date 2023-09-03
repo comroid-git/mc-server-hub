@@ -57,7 +57,7 @@ public class DiscordConnection extends DiscordModule {
                 .orElseThrow();
 
         final var consoleChannel = Optional.ofNullable(server.getConsoleChannelId());
-        final var consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, server.getConsoleMode()));
+        final var consoleStream = consoleChannel.map(id -> adapter.channelAsStream(id, server.isFancyConsole()));
 
         Polyfill.stream(
                 // status changes -> discord
@@ -95,10 +95,10 @@ public class DiscordConnection extends DiscordModule {
                         .subscribeData(srv.getIn()::println)).stream(),
                 // minecraft -> public channel
                 Stream.of(srv.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
-                        .mapData(str -> Stream.of(ServerProcess.ChatPattern_Vanilla,
-                                        ServerProcess.PlayerEventPattern_Vanilla,
-                                        ServerProcess.BroadcastPattern_Vanilla,
-                                        ServerProcess.CrashPattern_Vanilla)
+                        .mapData(str -> Stream.of(ServerProcess.ChatPattern,
+                                        ServerProcess.PlayerEventPattern,
+                                        ServerProcess.BroadcastPattern,
+                                        ServerProcess.CrashPattern)
                                 .map(rgx -> rgx.matcher(str))
                                 .filter(Matcher::matches)
                                 .findAny()
@@ -165,8 +165,8 @@ public class DiscordConnection extends DiscordModule {
                                 return (String) raw;
                             })
                             .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
-                            .peekData(out::println)
                             .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
+                            .peekData(out::println)
                             .subscribeData(srv.getIn()::println));
                 }).stream(),
                 // console -> console channel

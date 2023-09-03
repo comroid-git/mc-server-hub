@@ -222,7 +222,7 @@ public class AgentRunner implements Command.Handler {
                 null,
                 null,
                 null,
-                Server.ConsoleMode.ScrollClean,
+                null,
                 true,
                 true,
                 null,

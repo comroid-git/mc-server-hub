@@ -26,15 +26,11 @@ public class User extends AbstractEntity implements IUser {
     public void migrate() {
         //noinspection ConstantValue
         if (userData == null || userData.getUser() == null || minecraft != null || discordId != null) {
-            var users = ApplicationContextProvider.bean(UserRepo.class);
             var data = ApplicationContextProvider.bean(UserDataRepo.class);
             data.save(userData = data.findByUserId(getId()).orElseGet(UserData::new)
                     .setUser(this)
                     .setMinecraft(minecraft)
                     .setDiscordId(discordId));
-            minecraft = null;
-            discordId = null;
-            users.save(this);
         }
     }
 
