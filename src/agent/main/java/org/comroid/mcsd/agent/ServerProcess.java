@@ -189,79 +189,8 @@ public class ServerProcess extends ExecutionModule implements Startable, Command
 
     @SneakyThrows
     public CompletableFuture<File> runBackup(final boolean important) {
-        if (!currentBackup.get().isDone()) {
-            log.warn("A backup on server %s is already running".formatted(server));
-            return currentBackup.get();
-        }
-
-        pushStatus(Status.running_backup);
-        final var stopwatch = Stopwatch.start("backup-" + server.getId());
-
-        var backupDir = new FileHandle(server.shCon().orElseThrow().getBackupsDir()).createSubDir(server.getName());
-        if (!backupDir.exists() && !backupDir.mkdirs())
-            return CompletableFuture.failedFuture(new RuntimeException("Could not create backup directory"));
-
-        // todo: fix bugs from this
-        var saveComplete = waitForOutput("INFO]: Saved the game");
-        in.println("save-off");
-        in.println("save-all");
-
-        final var time = Instant.now();
-        return saveComplete
-                // wait for save to finish
-                .thenCompose($ -> Archiver.find(Archiver.ReadOnly).zip()
-                        // do run backup
-                        .inputDirectory(server.path().toAbsolutePath())
-                        .excludePattern("**cache/**")
-                        .excludePattern("**libraries/**")
-                        .excludePattern("**versions/**")
-                        .excludePattern("**dynmap/web/**") // do not backup dynmap
-                        .excludePattern("**.lock")
-                        .outputPath(Paths.get(backupDir.getAbsolutePath(), "backup-" + PathUtil.sanitize(time)).toAbsolutePath())
-                        .execute()
-                        //.orTimeout(30, TimeUnit.SECONDS) // dev variant
-                        .orTimeout(1, TimeUnit.HOURS)
-                        .whenComplete((r, t) -> {
-                            var stat = Status.online;
-                            var duration = stopwatch.stop();
-                            var sizeKb = r != null ? (r.length() / (1024)) : 0;
-                            var msg = "Backup finished; took %s; size: %1.2fGB".formatted(
-                                    Polyfill.durationString(duration),
-                                    (double) sizeKb / (1024 * 1024));
-                            if (r != null)
-                                bean(BackupRepo.class)
-                                        .save(new Backup(time, server, sizeKb, duration, r.getAbsolutePath(), important));
-                            if (t != null) {
-                                stat = Status.in_Trouble;
-                                msg = "Unable to complete Backup";
-                                log.error(msg + " for " + server, t);
-                            }
-                            in.println("save-on");
-                            pushStatus(stat.new Message(msg));
-                        }));
     }
 
-    @SneakyThrows
-    public boolean isJarUpToDate() {
-        if (server.isForceCustomJar())
-            return true;
-        var serverJar = new FileHandle(server.path("server.jar").toFile());
-        if (!serverJar.exists())
-            return false;
-        try (var source = new JSON.Deserializer(new URL(server.getJarInfoUrl()).openStream());
-             var local = new FileInputStream(serverJar)) {
-            var sourceMd5 = source.readObject().get("response").get("md5").asString("");
-            var localMd5 = MD5.calculate(local);
-            return sourceMd5.equals(localMd5);
-        }
-    }
-
-    public boolean startUpdate() {
-        return !isJarUpToDate() && updateRunning.compareAndSet(false, true);
-    }
-
-    public CompletableFuture<Boolean> runUpdate(String... args) {
-    }
 
 
     @Override
