@@ -103,57 +103,5 @@ public class MinecraftServerHubAgent {
     public Event.Listener<GatewayPacket> gatewayListener(@Autowired GatewayClient gateway) {
         return gateway.register(this);
     }
-
-    //region Cron
-    @Bean
-    public Map<Runnable, Duration> cronjobs() {
-        return Map.of(
-                this::$cronWatchdog, MinecraftServerHubConfig.CronRate_Watchdog,
-                this::$cronUptime, MinecraftServerHubConfig.CronRate_Uptime,
-                this::$cronInternal, MinecraftServerHubConfig.CronRate_Internal,
-                this::$cronBackup, MinecraftServerHubConfig.CronRate_Queue,
-                this::$cronUpdate, MinecraftServerHubConfig.CronRate_Queue
-        );
-    }
-
-    @Bean
-    @Lazy(false)
-    public Map<Runnable, Duration> startCronjobs(@Autowired TaskScheduler scheduler, @Autowired Map<Runnable, Duration> cronjobs) {
-        cronjobs.forEach((task, delay) -> {
-            try {
-                scheduler.scheduleWithFixedDelay(()->{
-                    try {
-                        task.run();
-                    } catch (Exception e) {
-                        cronLog.log(Level.SEVERE, "An error occurred during cronjob", e);
-                    }
-                }, Instant.now().plus(delay), delay);
-            } catch (Throwable t) {
-                cronLog.log(Level.SEVERE, "Cronjob %s failed".formatted(StackTraceUtils.lessSimpleName(task.getClass())), t);
-            }
-        });
-        return cronjobs;
-    }
-
-    @Synchronized
-    private void $cronWatchdog() {
-        cronLog.log(Level.FINEST, "Running Watchdog");
-        users.findAll().forEach(User::migrate);
-        agentRunner.streamServers()
-                .filter(Server::isEnabled)
-                .map(agentRunner::process)
-                .filter(proc->proc.getState()!= ServerProcess.State.Running)
-                .peek(proc->cronLog.warning("Enabled "+proc.getServer()+" is offline! Starting..."))
-                .peek(proc->{
-                    if (proc.isJarUpToDate()) return;
-                    cronLog.warning(proc.getServer()+" is outdated; updating...");
-                    proc.runUpdate().join();
-                })
-                .forEach(ServerProcess::start);
-        cronLog.log(Level.FINER, "Watchdog finished");
-    }
-
-
-    //endregion
 }
 

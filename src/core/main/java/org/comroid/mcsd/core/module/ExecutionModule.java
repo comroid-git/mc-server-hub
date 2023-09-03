@@ -61,7 +61,6 @@ public final class ExecutionModule extends ConsoleModule {
                 .thenApply(Matcher::group);
     }
 
-    @SneakyThrows
     public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
         return CompletableFuture.supplyAsync(() -> {
             server.component(StatusModule.class).assertion()
@@ -91,10 +90,12 @@ public final class ExecutionModule extends ConsoleModule {
 
     @Override
     @SneakyThrows
-    protected void $initialize() {
+    protected void $tick() {
+        super.$tick();
+        if (server.isEnabled() && process.isAlive())
+            return;
+        log.info("Starting " + server);
         final var stopwatch = Stopwatch.start("startup-" + server.getId());
-        super.$initialize();
-
         var exec = PathUtil.findExec("java").orElseThrow();
         process = Runtime.getRuntime().exec(server.getCustomCommand() == null ? new String[]{
                         exec.getAbsolutePath(),
