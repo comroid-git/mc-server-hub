@@ -1,7 +1,11 @@
 package org.comroid.mcsd.core.module;
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Value;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.java.Log;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.util.JSON;
@@ -10,16 +14,11 @@ import org.comroid.util.MD5;
 import java.io.FileInputStream;
 import java.net.URL;
 
-@Value
-public class FileModule extends ServerModule {
-    public static final Factory<FileModule> Factory = new Factory<>(FileModule.class) {
-        @Override
-        public FileModule create(Server server) {
-            return new FileModule(server);
-        }
-    };
-
-    private FileModule(Server server) {
+@Log
+@Getter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public abstract class FileModule extends ServerModule {
+    protected FileModule(Server server) {
         super(server);
     }
 
