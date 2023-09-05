@@ -64,7 +64,7 @@ public class ChatModule extends ServerModule {
         var console = server.component(ConsoleModule.class)
                 .orElseThrow(()->new InitFailed("No Console module is loaded"));
         //noinspection RedundantTypeArguments -> ide error
-        addChildren(console.bus.mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
+        addChildren(console.bus.<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
                         .flatMap(pattern -> {
                             var matcher = pattern.matcher(str);
                             if (matcher.matches())

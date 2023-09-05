@@ -83,6 +83,7 @@ public final class ExecutionModule extends ConsoleModule {
 
         in = new PrintStream(process.getOutputStream(), true);
         oe = DelegateStream.IO.process(process).redirectToEventBus(bus);
+        if (Debug.isDebug()) oe.redirectToSystem();
 
         this.done = Utils.listenForPattern(bus, DonePattern)
                 .mapData(m -> m.group("time"))

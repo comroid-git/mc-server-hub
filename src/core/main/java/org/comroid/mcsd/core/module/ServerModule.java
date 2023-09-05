@@ -17,7 +17,7 @@ public abstract class ServerModule extends Component.Base implements Named {
 
     @Override
     public final Component.Base setParent(@Nullable Component parent) {
-        throw new UnsupportedOperationException();
+        return this; // do nothing, parent is final
     }
 
     @Data
