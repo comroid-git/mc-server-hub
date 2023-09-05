@@ -56,6 +56,7 @@ import org.comroid.util.Markdown;
 import org.comroid.util.MultithreadUtil;
 import org.comroid.util.Ratelimit;
 import org.comroid.util.Streams;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -97,8 +98,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .setActivity(Activity.playing("Minecraft"))
                 .setCompression(Compression.ZLIB)
                 .addEventListeners(this)
-                .build()
-                .awaitReady();
+                .build();
         jda.retrieveCommands().submit()
                 .thenCompose(ls -> CompletableFuture.allOf(ls.stream()
                         .map(net.dv8tion.jda.api.interactions.commands.Command::delete)
@@ -381,10 +381,10 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                             .submit()
                             .thenApply($ -> client);
                 })
-                .exceptionallyCompose(t -> getChannel(channelId)
-                        .thenCompose(chl -> chl.createWebhook(Defaults.WebhookName)
-                                .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
-                                .submit()))
+                .exceptionallyCompose(t -> Objects.requireNonNull(jda.getTextChannelById(channelId))
+                        .createWebhook(Defaults.WebhookName)
+                        .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
+                        .submit())
                 .thenApply(wh -> {
                     final var servers = bean(ServerRepo.class);
                     servers.findByDiscordChannel(channelId)
@@ -393,20 +393,6 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                             .forEach(servers::save);
                     return wh;
                 });
-    }
-
-    public CompletableFuture<TextChannel> getChannel(final long channelId) {
-        return Optional.ofNullable(jda.getTextChannelCache().getElementById(channelId))
-                .map(CompletableFuture::completedFuture)
-                .orElseGet(() -> MultithreadUtil.firstOf(jda.getGuilds().stream()
-                        .map(gld -> new RestActionImpl<TextChannel>(jda, Route.Channels.GET_CHANNEL.compile(String.valueOf(channelId)),
-                                (response, textChannelRequest) -> {
-                                    DataObject object = response.getObject();
-                                    EntityBuilder builder = ((JDAImpl) jda).getEntityBuilder();
-                                    return builder.createTextChannel(object, gld.getIdLong());
-                                }))
-                        .map(RestAction::submit)
-                        .toArray(CompletableFuture[]::new)));
     }
 
     public abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {

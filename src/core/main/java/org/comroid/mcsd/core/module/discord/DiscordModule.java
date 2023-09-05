@@ -2,6 +2,7 @@ package org.comroid.mcsd.core.module.discord;
 
 import club.minnced.discord.webhook.WebhookClient;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -45,9 +46,12 @@ public class DiscordModule extends ServerModule {
     }
 
     @Override
+    @SneakyThrows
     protected void $initialize() {
         var chat = server.component(ChatModule.class).map(ChatModule::getBus);
         var consoleModule = server.component(ConsoleModule.class);
+
+        adapter.getJda().awaitReady();
 
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
             // chat mirror
