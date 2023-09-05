@@ -2,8 +2,10 @@ package org.comroid.mcsd.core.module;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
+import org.comroid.api.Component;
 import org.comroid.api.Event;
 import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.core.entity.Server;
@@ -24,7 +26,9 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Getter
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Component.Requires(ConsoleModule.class)
 public class ChatModule extends ServerModule {
     public static final Duration TickerTimeout = Duration.ofMinutes(15);
     public static final Pattern ChatPattern = ConsoleModule.pattern(
@@ -59,20 +63,19 @@ public class ChatModule extends ServerModule {
     }
 
     @Override
+    @SuppressWarnings({"RedundantCast", "RedundantTypeArguments"})
     protected void $initialize() {
-        super.$initialize();
         var console = server.component(ConsoleModule.class)
                 .orElseThrow(()->new InitFailed("No Console module is loaded"));
-        //noinspection RedundantTypeArguments -> ide error
         addChildren(console.bus.<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
-                        .flatMap(pattern -> {
+                        .<Matcher>flatMap(pattern -> {
                             var matcher = pattern.matcher(str);
                             if (matcher.matches())
                                 return Stream.of(matcher);
-                            return Stream.empty();
+                            return Stream.<Matcher>empty();
                         })
                         .findAny()
-                        .<Matcher>orElse(null))
+                        .<Matcher>orElse((Matcher)null))
                 .mapData(matcher -> {
                     var pattern = matcher.pattern().toString();
                     var event = pattern.contains("prefix");

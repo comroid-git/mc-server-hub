@@ -29,7 +29,6 @@ public abstract class ConsoleModule extends ServerModule {
     @Override
     protected void $initialize() {
         bus = new Event.Bus<>();
-        super.$initialize();
     }
 
     @Override

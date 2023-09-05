@@ -1,9 +1,6 @@
 package org.comroid.mcsd.core.module;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.SneakyThrows;
-import lombok.Value;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.io.FileHandle;
@@ -16,6 +13,7 @@ import java.net.URL;
 
 @Log
 @Getter
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class FileModule extends ServerModule {
     public static final Factory<FileModule> Factory = new Factory<>(FileModule.class) {

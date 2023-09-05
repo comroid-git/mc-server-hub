@@ -2,8 +2,10 @@ package org.comroid.mcsd.core.module;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
+import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.model.Status;
@@ -29,7 +31,9 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Getter
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Component.Requires(ConsoleModule.class)
 public class BackupModule extends ServerModule {
     public static final Pattern SaveCompletePattern = ConsoleModule.pattern("Saved the game");
     public static final Factory<BackupModule> Factory = new Factory<>(BackupModule.class) {
@@ -48,7 +52,6 @@ public class BackupModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        super.$initialize();
         consoleModule = server.component(ConsoleModule.class).assertion();
     }
 

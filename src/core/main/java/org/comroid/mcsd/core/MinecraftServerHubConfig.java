@@ -11,6 +11,8 @@ import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.util.Streams;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -33,11 +35,13 @@ import java.util.logging.Logger;
 @ImportResource({"classpath:baseBeans.xml"})
 @EntityScan(basePackages = "org.comroid.mcsd.core.entity")
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
-public class MinecraftServerHubConfig {
+public class MinecraftServerHubConfig implements ApplicationRunner {
 
     @Lazy
     @Autowired
     private ServerRepo servers;
+    @Autowired
+    private List<ServerModule.Factory<?>> serverModuleFactories;
 
     @Bean(name = "configDir")
     @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -80,18 +84,14 @@ public class MinecraftServerHubConfig {
         return Executors.newScheduledThreadPool(32);
     }
 
-    @Bean
-    @Order
-    @Lazy(false)
-    public List<Server> serverList(@Autowired List<ServerModule.Factory<?>> serverModuleFactories) {
-        return Streams.of(servers.findAll())
-                .peek(srv -> {
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        Streams.of(servers.findAll()).forEach(srv -> {
                     srv.addChildren(serverModuleFactories.stream()
                             .map(factory -> factory.create(srv))
                             .toArray());
                     srv.execute(Executors.newScheduledThreadPool(4), Duration.ofMinutes(1));
-                })
-                .toList();
+                });
     }
 }
 

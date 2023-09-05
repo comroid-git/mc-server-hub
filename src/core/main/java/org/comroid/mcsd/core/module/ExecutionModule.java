@@ -3,6 +3,7 @@ package org.comroid.mcsd.core.module;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
+import org.comroid.api.Component;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
@@ -28,6 +29,8 @@ import java.util.regex.Pattern;
 
 @Log
 @Getter
+@ToString
+@Component.Requires(FileModule.class)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public final class ExecutionModule extends ConsoleModule {
     public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");

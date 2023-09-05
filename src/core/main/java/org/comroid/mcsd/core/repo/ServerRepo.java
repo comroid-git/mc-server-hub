@@ -35,7 +35,7 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
             " WHERE s.PublicChannelId = :id" +
             " OR s.ModerationChannelId = :id" +
             " OR s.ConsoleChannelId = :id")
-    Optional<Server> findByDiscordChannel(long id);
+    Optional<Server> findByDiscordChannel(@Param("id") long id);
 
     @Modifying
     @Transactional

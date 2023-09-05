@@ -1,8 +1,12 @@
 package org.comroid.mcsd.core.module.discord;
 
+import club.minnced.discord.webhook.WebhookClient;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import org.comroid.api.Component;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.ChatModule;
 import org.comroid.mcsd.core.module.ConsoleModule;
@@ -13,6 +17,7 @@ import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 import static org.comroid.mcsd.util.McFormatCode.*;
@@ -20,6 +25,9 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.open_url;
 import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 
 @Log
+@Getter
+@ToString
+@Component.Requires({ChatModule.class,ConsoleModule.class})
 public class DiscordModule extends ServerModule {
     public static final Factory<DiscordModule> Factory = new Factory<>(DiscordModule.class) {
         @Override
@@ -38,15 +46,14 @@ public class DiscordModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        super.$initialize();
-
         var chat = server.component(ChatModule.class).map(ChatModule::getBus);
         var consoleModule = server.component(ConsoleModule.class);
 
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
             // chat mirror
             Optional.ofNullable(server.getPublicChannelId()).ifPresent(id -> {
-                final var webhook = adapter.messageTemplate(adapter.getWebhook(server.getPublicChannelWebhook(), id));
+                final var wh = adapter.getWebhook(server.getPublicChannelWebhook(), id);
+                final var webhook = adapter.messageTemplate(wh.join());
 
                 // status -> dc
                 server.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->

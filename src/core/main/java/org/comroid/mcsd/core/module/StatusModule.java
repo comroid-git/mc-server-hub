@@ -2,6 +2,7 @@ package org.comroid.mcsd.core.module;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
@@ -19,6 +20,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Getter
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class StatusModule extends ServerModule {
     public static final Factory<StatusModule> Factory = new Factory<>(StatusModule.class) {
@@ -39,7 +41,6 @@ public class StatusModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        super.$initialize();
         addChildren(bus = new Event.Bus<>());
     }
 

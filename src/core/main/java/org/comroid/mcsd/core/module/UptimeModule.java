@@ -2,9 +2,11 @@ package org.comroid.mcsd.core.module;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.apache.commons.lang3.NotImplementedException;
+import org.comroid.api.Component;
 import org.comroid.api.Event;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.model.IStatusMessage;
@@ -22,7 +24,9 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Getter
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Component.Requires({ExecutionModule.class, StatusModule.class})
 public class UptimeModule extends ServerModule {
     public static final Factory<UptimeModule> Factory = new Factory<>(UptimeModule.class) {
         @Override
@@ -40,7 +44,7 @@ public class UptimeModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        super.$initialize();
+        ;
         execution = component(ExecutionModule.class).assertion();
         statusModule = component(StatusModule.class).assertion();
     }

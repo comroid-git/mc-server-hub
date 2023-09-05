@@ -2,10 +2,12 @@ package org.comroid.mcsd.core.module;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.apache.commons.lang3.NotImplementedException;
+import org.comroid.api.Component;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.model.Status;
@@ -24,7 +26,9 @@ import static java.time.Instant.now;
 
 @Log
 @Getter
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Component.Requires(FileModule.class)
 public class UpdateModule extends ServerModule {
     public static final Factory<UpdateModule> Factory = new Factory<>(UpdateModule.class) {
         @Override
@@ -42,7 +46,6 @@ public class UpdateModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        super.$initialize();
         files=server.component(FileModule.class).assertion();
     }
 

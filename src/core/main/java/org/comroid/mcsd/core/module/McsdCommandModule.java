@@ -2,9 +2,11 @@ package org.comroid.mcsd.core.module;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.Command;
+import org.comroid.api.Component;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
@@ -22,7 +24,9 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Getter
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Component.Requires(ConsoleModule.class)
 public class McsdCommandModule extends ServerModule implements Command.Handler {
     public static final Pattern McsdPattern = ConsoleModule.commandPattern("mcsd");
     public static final Factory<McsdCommandModule> Factory = new Factory<>(McsdCommandModule.class) {
@@ -41,7 +45,7 @@ public class McsdCommandModule extends ServerModule implements Command.Handler {
 
     @Override
     protected void $initialize() {
-        super.$initialize();
+        ;
         console = server.component(ConsoleModule.class).assertion();
 
         addChildren(Utils.listenForPattern(console.bus, McsdPattern).subscribeData(matcher -> {

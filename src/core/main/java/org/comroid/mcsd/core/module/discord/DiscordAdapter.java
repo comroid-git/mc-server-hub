@@ -23,6 +23,8 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.RestAction;
+import net.dv8tion.jda.api.requests.Route;
+import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
@@ -30,6 +32,11 @@ import net.dv8tion.jda.api.utils.Compression;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
+import net.dv8tion.jda.api.utils.data.DataObject;
+import net.dv8tion.jda.internal.JDAImpl;
+import net.dv8tion.jda.internal.entities.EntityBuilder;
+import net.dv8tion.jda.internal.requests.RestActionImpl;
+import net.dv8tion.jda.internal.requests.restaction.ChannelActionImpl;
 import org.comroid.api.*;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
@@ -46,6 +53,7 @@ import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserDataRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.util.Markdown;
+import org.comroid.util.MultithreadUtil;
 import org.comroid.util.Ratelimit;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.Contract;
@@ -365,14 +373,40 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         };
     }
 
-    public WebhookClient getWebhook(@Nullable String url, long channelId) {
-        return (url == null
-                ? Objects.requireNonNull(jda.getTextChannelById(channelId), "Channel not found").createWebhook(Defaults.WebhookName)
-                : jda.retrieveWebhookById(WebhookClient.withUrl(url).getId())
-                .onErrorFlatMap(t -> Objects.requireNonNull(jda.getTextChannelById(channelId), "Channel not found").createWebhook(Defaults.WebhookName)))
-                .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
-                .submit()
-                .join();
+    public CompletableFuture<WebhookClient> getWebhook(@Nullable String webhookUrl, long channelId) {
+        return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(webhookUrl))
+                .thenCompose(url -> {
+                    final var client = WebhookClient.withUrl(url);
+                    return jda.retrieveWebhookById(client.getId())
+                            .submit()
+                            .thenApply($ -> client);
+                })
+                .exceptionallyCompose(t -> getChannel(channelId)
+                        .thenCompose(chl -> chl.createWebhook(Defaults.WebhookName)
+                                .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
+                                .submit()))
+                .thenApply(wh -> {
+                    final var servers = bean(ServerRepo.class);
+                    servers.findByDiscordChannel(channelId)
+                            .stream()
+                            .map(srv -> srv.setPublicChannelWebhook(wh.getUrl()))
+                            .forEach(servers::save);
+                    return wh;
+                });
+    }
+
+    public CompletableFuture<TextChannel> getChannel(final long channelId) {
+        return Optional.ofNullable(jda.getTextChannelCache().getElementById(channelId))
+                .map(CompletableFuture::completedFuture)
+                .orElseGet(() -> MultithreadUtil.firstOf(jda.getGuilds().stream()
+                        .map(gld -> new RestActionImpl<TextChannel>(jda, Route.Channels.GET_CHANNEL.compile(String.valueOf(channelId)),
+                                (response, textChannelRequest) -> {
+                                    DataObject object = response.getObject();
+                                    EntityBuilder builder = ((JDAImpl) jda).getEntityBuilder();
+                                    return builder.createTextChannel(object, gld.getIdLong());
+                                }))
+                        .map(RestAction::submit)
+                        .toArray(CompletableFuture[]::new)));
     }
 
     public abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {
