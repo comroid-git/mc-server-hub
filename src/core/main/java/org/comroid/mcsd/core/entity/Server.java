@@ -53,9 +53,9 @@ public class Server extends AbstractEntity implements Component {
     private @ManyToOne @Nullable DiscordBot discordBot;
     private @Nullable String homepage;
     private @Nullable String PublicChannelWebhook;
-    private /*@Column(unique = true)*/ @Nullable Long PublicChannelId;
-    private /*@Column(unique = true)*/ @Nullable Long ModerationChannelId;
-    private /*@Column(unique = true)*/ @Nullable Long ConsoleChannelId;
+    private @Nullable @Column(unique = true) Long PublicChannelId;
+    private @Nullable @Column(unique = true) Long ModerationChannelId;
+    private @Nullable @Column(unique = true) Long ConsoleChannelId;
     private @Nullable String ConsoleChannelPrefix;
     private boolean fancyConsole = true;
     private boolean forceCustomJar = false;
