@@ -142,7 +142,9 @@ public final class ExecutionModule extends ConsoleModule {
     @Override
     protected void $terminate() {
         if (!stop.isDone())
-            shutdown("Forced Shutdown", 5).join();
+            shutdown("Forced Shutdown", 5)
+                    .completeOnTimeout(null, 20, TimeUnit.SECONDS)
+                    .join();
         super.$terminate();
     }
 
