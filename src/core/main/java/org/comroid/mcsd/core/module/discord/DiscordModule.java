@@ -62,12 +62,13 @@ public class DiscordModule extends ServerModule {
                 // status -> dc
                 server.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
                         addChildren(bus.mapData(msg -> new EmbedBuilder()
-                                        .setAuthor(null,
+                                        .setAuthor(server.getAlternateName(),
                                                 Optional.ofNullable(server.getHomepage())
                                                         .orElse(server.getViewURL()),
                                                 server.getThumbnailURL())
                                         .setTimestamp(Instant.now()))
                                 .mapData(DiscordMessageSource::new)
+                                .peekData(msg -> msg.setAppend(false))
                                 .subscribeData(webhook)));
 
                 addChildren(
@@ -78,9 +79,7 @@ public class DiscordModule extends ServerModule {
                                 })
                                 .subscribeData(webhook),
                         // dc -> mc
-                        adapter.flatMap(MessageReceivedEvent.class)
-                                .filterData(e -> e.getChannel().getIdLong() == id)
-                                .mapData(MessageReceivedEvent::getMessage)
+                        adapter.listenMessages(id)
                                 .filterData(msg -> !msg.getAuthor().isBot())
                                 .mapData(msg -> Tellraw.Command.builder()
                                         .selector(Tellraw.Selector.Base.ALL_PLAYERS)
@@ -107,9 +106,7 @@ public class DiscordModule extends ServerModule {
                     // mc -> dc
                     console.getBus().subscribeData(adapter.channelAsStream(id, server.isFancyConsole())::println),
                     // dc -> mc
-                    adapter.flatMap(MessageReceivedEvent.class)
-                            .filterData(e -> e.getChannel().getIdLong() == id)
-                            .mapData(MessageReceivedEvent::getMessage)
+                    adapter.listenMessages(id)
                             .filterData(msg -> !msg.getAuthor().isBot())
                             .mapData(msg -> {
                                 var raw = msg.getContentRaw();

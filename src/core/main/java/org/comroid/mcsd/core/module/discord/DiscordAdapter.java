@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
@@ -393,6 +394,12 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                     .forEach(servers::save);
                             return wh;
                         }));
+    }
+
+    public Event.Bus<Message> listenMessages(long id) {
+        return this.flatMap(MessageReceivedEvent.class)
+                .filterData(e -> e.getChannel().getIdLong() == id)
+                .mapData(MessageReceivedEvent::getMessage);
     }
 
     public abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {
