@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 public final class DiscordMessageSource implements StreamSupplier<Object> {
     private @Nullable Object data;
     private @Nullable MinecraftProfile player = null;
-    private boolean append = false;
+    private boolean append = true;
 
     public DiscordMessageSource() {
     }
