@@ -78,7 +78,7 @@ public class ChatModule extends ServerModule {
                         .<Matcher>orElse((Matcher)null))
                 .mapData(matcher -> {
                     var pattern = matcher.pattern().toString();
-                    var event = pattern.contains("prefix");
+                    var event = !pattern.contains("prefix");
                     var broadcast = pattern.contains("command");
                     var username = matcher.group("username");
                     var message = matcher.group("message");
