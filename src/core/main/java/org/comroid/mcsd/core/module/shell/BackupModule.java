@@ -61,7 +61,7 @@ public class BackupModule extends ServerModule {
         super.$tick();
         if (server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()) || !currentBackup.get().isDone())
             return;
-        runBackup(false);
+        //todo runBackup(false);
     }
 
     public CompletableFuture<File> runBackup(final boolean important) {
