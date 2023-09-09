@@ -70,9 +70,9 @@ public final class ExecutionModule extends ConsoleModule {
 
     @Override
     @SneakyThrows
-    protected void $tick() {
+    protected synchronized void $tick() {
         super.$tick();
-        if (manualShutdown.get() || server.isEnabled() && process.isAlive())
+        if (!server.isEnabled() && (manualShutdown.get() || process.isAlive()))
             return;
         log.info("Starting " + server);
         final var stopwatch = Stopwatch.start("startup-" + server.getId());
@@ -85,8 +85,10 @@ public final class ExecutionModule extends ConsoleModule {
                 new FileHandle(server.getDirectory(), true));
 
         in = new PrintStream(process.getOutputStream(), true);
-        oe = DelegateStream.IO.process(process).redirectToEventBus(bus);
-        if (Debug.isDebug()) oe.redirectToSystem();
+        oe = DelegateStream.IO.process(process);
+        if (Debug.isDebug())
+            oe.redirectToSystem();
+        oe.redirectToEventBus(bus);
 
         this.done = Utils.listenForPattern(bus, DonePattern)
                 .mapData(m -> m.group("time"))
