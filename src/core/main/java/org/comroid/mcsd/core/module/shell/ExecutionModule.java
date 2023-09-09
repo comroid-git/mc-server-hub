@@ -15,6 +15,7 @@ import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Debug;
+import org.comroid.util.MultithreadUtil;
 import org.comroid.util.PathUtil;
 import org.comroid.util.Stopwatch;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +37,7 @@ import java.util.regex.Pattern;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public final class ExecutionModule extends ConsoleModule {
     public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?.*?");
-    public static final Pattern StopPattern = pattern("Closing server.*\\r?\\n?.*?");
+    public static final Pattern StopPattern = pattern("Closing [sS]erver.*\\r?\\n?.*?");
     public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*.*?");
 
     public static final Factory<ExecutionModule> Factory = new Factory<>(ExecutionModule.class) {
@@ -106,7 +107,7 @@ public final class ExecutionModule extends ConsoleModule {
                     .pushStatus((server.isMaintenance() ? Status.in_maintenance_mode : Status.online).new Message(msg));
         }).thenAccept(msg -> log.info(server + " " + msg.getMessage())).join();
 
-        this.stop = CompletableFuture.anyOf(process.onExit(),
+        this.stop = MultithreadUtil.firstOf(process.onExit(),
                         Utils.listenForPattern(bus, StopPattern).listen().once())
                 .thenRun(server::terminate);
     }
@@ -141,9 +142,7 @@ public final class ExecutionModule extends ConsoleModule {
     @Override
     protected void $terminate() {
         if (!stop.isDone())
-            shutdown("Forced Shutdown", 5)
-                    .thenCompose($->stop)
-                    .join();
+            shutdown("Forced Shutdown", 5).join();
         super.$terminate();
     }
 
