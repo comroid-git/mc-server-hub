@@ -61,7 +61,6 @@ public class UpdateModule extends ServerModule {
         if (!updateRunning.compareAndSet(false, true))
             return CompletableFuture.failedFuture(new RuntimeException("There is already an update running"));
         var status = server.component(StatusModule.class).assertion();
-
         status.pushStatus(Status.updating);
 
         return CompletableFuture.supplyAsync(() -> {
