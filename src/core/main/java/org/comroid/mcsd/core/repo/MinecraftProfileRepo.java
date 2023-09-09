@@ -13,7 +13,7 @@ import java.util.UUID;
 public interface MinecraftProfileRepo extends CrudRepository<MinecraftProfile, UUID> {
     Optional<MinecraftProfile> findByName(String name);
     Optional<MinecraftProfile> findByVerification(String verification);
-    @Query("SELECT u.minecraft FROM User u" +
+    @Query("SELECT u.minecraft FROM UserData u" +
             " JOIN MinecraftProfile mc ON u.minecraft.id = mc.id" +
             " WHERE u.discordId = :discordId")
     Optional<MinecraftProfile> findByDiscordId(@Param("discordId") long discordId);
