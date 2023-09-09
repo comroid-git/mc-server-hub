@@ -18,5 +18,5 @@ logging:
     root: info
     cron: debug
     screen: warn
-    org.comroid: debug
+    org.comroid: trace
     org.hibernate.SQL: info

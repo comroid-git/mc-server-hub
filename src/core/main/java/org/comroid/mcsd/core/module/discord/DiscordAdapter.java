@@ -47,6 +47,7 @@ import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserDataRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.util.Markdown;
+import org.comroid.util.Pair;
 import org.comroid.util.Ratelimit;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.Contract;
@@ -91,7 +92,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .setCompression(Compression.ZLIB)
                 .addEventListeners(this)
                 .build();
-        jda.retrieveCommands().submit()
+        /*jda.retrieveCommands().submit()
                 .thenCompose(ls -> CompletableFuture.allOf(ls.stream()
                         .map(net.dv8tion.jda.api.interactions.commands.Command::delete)
                         .map(RestAction::submit)
@@ -115,7 +116,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                 .addOption(OptionType.STRING, "command", "The command to run", true)
                                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                 .setGuildOnly(true)).submit())
-                .join();
+                .join();*/
 
         final var cmdr = new Command.Manager(this);
         cmdr.register(this);
@@ -388,7 +389,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     public Event.Bus<Message> listenMessages(long id) {
-        return this.flatMap(MessageReceivedEvent.class)
+        return flatMap(MessageReceivedEvent.class)
                 .filterData(e -> e.getChannel().getIdLong() == id)
                 .mapData(MessageReceivedEvent::getMessage);
     }
@@ -500,20 +501,27 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 log.finer("accept('" + txt + "')");
                 Ratelimit.run(txt, Duration.ofSeconds(fancy ? 3 : 1), msg, (msg, queue) -> {
                     var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
-                    var add = "";
                     log.finer("length of raw = " + raw.length());
-                    boolean hasSpace = false;
-                    while (!queue.isEmpty() && (fancy || (hasSpace = (raw + add + queue.peek()).length() < MaxLength))) {
-                        var poll = queue.poll();
-                        add += poll;
-                    }
+                    var add = oneString(raw.length(), queue);
                     RestAction<Message> chain;
                     if (fancy) {
                         var content = raw + add;
                         chain = msg.editMessage(wrapContent(content));
-                    } else chain = newMsg(add);
+                    } else chain = newMsg(add.getFirst());
+                    if (!fancy && !add.getSecond())
+                        chain = chain.flatMap($ -> newMsg(oneString(0, queue).getFirst()));
                     return chain.submit();
-                });
+                }).exceptionally(Polyfill.exceptionLogger(log));
+            }
+
+            private Pair<@NotNull String, @NotNull Boolean> oneString(int rawLen, Queue<@NotNull String> queue) {
+                boolean hasSpace = false;
+                String add = "";
+                while (!queue.isEmpty() && (fancy || (hasSpace = (rawLen + add + queue.peek()).length() < MaxLength))) {
+                    var poll = queue.poll();
+                    add += poll;
+                }
+                return new Pair<>(add, hasSpace);
             }
 
             private MessageCreateAction newMsg(@Nullable String content) {

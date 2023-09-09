@@ -105,7 +105,7 @@ public class DiscordModule extends ServerModule {
                 final var channel = adapter.channelAsStream(id, server.isFancyConsole());
                 addChildren(
                         // mc -> dc
-                        console.getBus().subscribeData(x -> channel.println(x)),
+                        console.getBus().subscribeData(channel::println),
                         // dc -> mc
                         adapter.listenMessages(id)
                                 .filterData(msg -> !msg.getAuthor().isBot())
