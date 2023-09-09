@@ -237,7 +237,6 @@ public class AgentRunner implements Command.Handler {
                 Duration.ofDays(7),
                 Instant.EPOCH,
                 Instant.EPOCH,
-                Status.unknown_status,
                 new ArrayList<>()
         );
         server.setOwner(con.getUser()).setName(name);

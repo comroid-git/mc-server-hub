@@ -44,21 +44,20 @@ public class StatusModule extends ServerModule {
         addChildren(bus = new Event.Bus<>());
     }
 
-    public CompletableFuture<IStatusMessage> pushStatus(IStatusMessage message) {
+    public CompletableFuture<IStatusMessage> pushStatus(final IStatusMessage message) {
         return CompletableFuture.supplyAsync(() -> {
-            if (currentStatus != null && currentStatus.getStatus() == message.getStatus()
-                    && Objects.equals(currentStatus.getMessage(), message.getMessage()))
-                return CompletableFuture.completedFuture(currentStatus); // do not push same status twice
-            previousStatus = currentStatus;
-            currentStatus = message;
-            bean(ServerRepo.class).setStatus(server.getId(), message.getStatus());
-            bean(Event.Bus.class, "eventBus").publish(server.getId().toString(), message);
-            return message;
-        }).thenCompose(msg -> server.component(UptimeModule.class).assertion().pushUptime()
+                    if (currentStatus != null && currentStatus.getStatus() == message.getStatus()
+                            && Objects.equals(currentStatus.getMessage(), message.getMessage()))
+                        return CompletableFuture.completedFuture(currentStatus); // do not push same status twice
+                    previousStatus = currentStatus;
+                    currentStatus = message;
+                    return message;
+                }).thenCompose(msg -> server.component(UptimeModule.class)
+                        .ifPresentMapOrElseGet(UptimeModule::pushUptime, () -> CompletableFuture.completedFuture(null)))
                 .thenApply($ -> {
                     bus.publish(message);
                     return message;
-                }));
+                });
     }
 
     public CompletableFuture<IStatusMessage> getStatus() {

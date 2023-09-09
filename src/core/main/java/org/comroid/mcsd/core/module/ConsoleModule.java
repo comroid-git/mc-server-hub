@@ -38,7 +38,7 @@ public abstract class ConsoleModule extends ServerModule {
     }
 
     protected static Pattern pattern(@NotNull @Language("RegExp") String pattern) {
-        return Pattern.compile(".*INFO] (\\[\\w*/\\w*])?: "+pattern);
+        return Pattern.compile(".*INFO]( \\[\\w*/\\w*])?: "+pattern);
     }
 
     public CompletableFuture<String> execute(String input) {

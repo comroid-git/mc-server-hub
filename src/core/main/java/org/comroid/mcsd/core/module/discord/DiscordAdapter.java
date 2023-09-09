@@ -384,15 +384,15 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .exceptionallyCompose(t -> Objects.requireNonNull(jda.getTextChannelById(channelId))
                         .createWebhook(Defaults.WebhookName)
                         .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
-                        .submit())
-                .thenApply(wh -> {
-                    final var servers = bean(ServerRepo.class);
-                    servers.findByDiscordChannel(channelId)
-                            .stream()
-                            .map(srv -> srv.setPublicChannelWebhook(wh.getUrl()))
-                            .forEach(servers::save);
-                    return wh;
-                });
+                        .submit()
+                        .thenApply(wh -> {
+                            final var servers = bean(ServerRepo.class);
+                            servers.findByDiscordChannel(channelId)
+                                    .stream()
+                                    .map(srv -> srv.setPublicChannelWebhook(wh.getUrl()))
+                                    .forEach(servers::save);
+                            return wh;
+                        }));
     }
 
     public abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {

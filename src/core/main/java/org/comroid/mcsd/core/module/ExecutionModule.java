@@ -33,9 +33,9 @@ import java.util.regex.Pattern;
 @Component.Requires(FileModule.class)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public final class ExecutionModule extends ConsoleModule {
-    public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?");
-    public static final Pattern StopPattern = pattern("Closing server.*\\r?\\n?");
-    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*");
+    public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?.*?");
+    public static final Pattern StopPattern = pattern("Closing server.*\\r?\\n?.*?");
+    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*.*?");
 
     public static final Factory<ExecutionModule> Factory = new Factory<>(ExecutionModule.class) {
         @Override
@@ -75,6 +75,7 @@ public final class ExecutionModule extends ConsoleModule {
         if (!server.isEnabled() && (manualShutdown.get() || process.isAlive()))
             return;
         log.info("Starting " + server);
+        server.component(StatusModule.class).assertion().pushStatus(Status.starting);
         final var stopwatch = Stopwatch.start("startup-" + server.getId());
         var exec = PathUtil.findExec("java").orElseThrow();
         process = Runtime.getRuntime().exec(server.getCustomCommand() == null ? new String[]{
@@ -138,8 +139,9 @@ public final class ExecutionModule extends ConsoleModule {
     @Override
     protected void $terminate() {
         if (!stop.isDone())
-            shutdown("Forced Shutdown", 5);
-        stop.join();
+            shutdown("Forced Shutdown", 5)
+                    .thenCompose($->stop)
+                    .join();
         super.$terminate();
     }
 

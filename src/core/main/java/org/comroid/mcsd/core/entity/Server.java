@@ -78,7 +78,6 @@ public class Server extends AbstractEntity implements Component {
     private Duration updatePeriod = Duration.ofDays(7);
     private Instant lastBackup = Instant.ofEpochMilli(0);
     private Instant lastUpdate = Instant.ofEpochMilli(0);
-    private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.unknown_status;
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
 
     @JsonIgnore
