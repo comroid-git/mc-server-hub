@@ -7,12 +7,14 @@ import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.player.ChatModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
+import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;
@@ -52,7 +54,7 @@ public class DiscordModule extends ServerModule {
         adapter.getJda().awaitReady();
 
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
-            // chat mirror
+            // public channel
             Optional.ofNullable(server.getPublicChannelId()).ifPresent(id -> {
                 final var wh = adapter.getWebhook(server.getPublicChannelWebhook(), id);
                 final var webhook = adapter.messageTemplate(wh.join());
@@ -84,9 +86,13 @@ public class DiscordModule extends ServerModule {
                                 .mapData(msg -> Tellraw.Command.builder()
                                         .selector(Tellraw.Selector.Base.ALL_PLAYERS)
                                         .component(Gray.text("<").build())
-                                        .component(Dark_Aqua.text(msg.getAuthor().getEffectiveName())
+                                        .component(Dark_Aqua.text(bean(MinecraftProfileRepo.class)
+                                                        .findByDiscordId(msg.getAuthor().getIdLong())
+                                                        .map(AbstractEntity::getName)
+                                                        .orElseGet(()->msg.getAuthor().getEffectiveName()))
                                                 .hoverEvent(show_text.value("Open in Discord"))
                                                 .clickEvent(open_url.value(msg.getJumpUrl()))
+                                                .format(Underlined)
                                                 .build())
                                         .component(Gray.text(">").build())
                                         // todo convert markdown to tellraw data
