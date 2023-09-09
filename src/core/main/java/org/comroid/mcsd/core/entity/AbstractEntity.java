@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -34,6 +35,9 @@ public abstract class AbstractEntity implements Named {
     private String name;
     @Setter
     @Nullable
+    private String displayName;
+    @Setter
+    @Nullable
     @ManyToOne
     private UserData owner;
     @ElementCollection(fetch = FetchType.EAGER)
@@ -49,6 +53,11 @@ public abstract class AbstractEntity implements Named {
 
     public final Rewrapper<AbstractEntity> verifyPermission(final @NotNull IUser user, final AbstractEntity.Permission... permissions) {
         return () -> hasPermission(user, permissions) ? this : null;
+    }
+
+    @Override
+    public String getAlternateName() {
+        return Optional.ofNullable(getDisplayName()).orElseGet(this::getName);
     }
 
     public String toString() {
