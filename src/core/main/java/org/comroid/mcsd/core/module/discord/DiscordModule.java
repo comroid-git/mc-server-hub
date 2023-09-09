@@ -6,6 +6,7 @@ import lombok.ToString;
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.comroid.api.Component;
+import org.comroid.api.Polyfill;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.player.ChatModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
@@ -93,7 +94,7 @@ public class DiscordModule extends ServerModule {
                                         .build()
                                         .toString())
                                 .peekData(log::fine)
-                                .subscribeData(tellraw -> console.execute(tellraw).join())
+                                .subscribeData(tellraw -> console.execute(tellraw).exceptionally(Polyfill.exceptionLogger(log)))
                 );
             });
 
@@ -118,7 +119,7 @@ public class DiscordModule extends ServerModule {
                                 })
                                 .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
                                 .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
-                                .subscribeData(input -> console.execute(input).join())
+                                .subscribeData(input -> console.execute(input).exceptionally(Polyfill.exceptionLogger(log)))
                 );
             });
         });
