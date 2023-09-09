@@ -59,10 +59,12 @@ public class DiscordModule extends ServerModule {
                 // status -> dc
                 server.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
                         addChildren(bus.mapData(msg -> new EmbedBuilder()
-                                        .setAuthor(server.getAlternateName(),
-                                                Optional.ofNullable(server.getHomepage())
-                                                        .orElse(server.getViewURL()),
-                                                server.getThumbnailURL())
+                                        //.setAuthor(server.getAlternateName(),
+                                        //        Optional.ofNullable(server.getHomepage())
+                                        //                .orElse(server.getViewURL()),
+                                        //        server.getThumbnailURL())
+                                        .setDescription(msg.toStatusMessage())
+                                        .setColor(msg.getStatus().getColor())
                                         .setTimestamp(Instant.now()))
                                 .mapData(DiscordMessageSource::new)
                                 .peekData(msg -> msg.setAppend(false))
@@ -99,23 +101,26 @@ public class DiscordModule extends ServerModule {
             Optional.ofNullable(server.getModerationChannelId()).ifPresent(id -> addChildren(/*todo*/));
 
             // console channel
-            Optional.ofNullable(server.getConsoleChannelId()).ifPresent(id -> addChildren(
-                    // mc -> dc
-                    console.getBus().subscribeData(adapter.channelAsStream(id, server.isFancyConsole())::println),
-                    // dc -> mc
-                    adapter.listenMessages(id)
-                            .filterData(msg -> !msg.getAuthor().isBot())
-                            .mapData(msg -> {
-                                var raw = msg.getContentRaw();
-                                if (server.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
-                                    msg.delete().queue();
-                                //noinspection RedundantCast //ide error
-                                return (String) raw;
-                            })
-                            .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
-                            .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
-                            .subscribeData(input -> console.execute(input).join())
-            ));
+            Optional.ofNullable(server.getConsoleChannelId()).ifPresent(id -> {
+                final var channel = adapter.channelAsStream(id, server.isFancyConsole());
+                addChildren(
+                        // mc -> dc
+                        console.getBus().subscribeData(x -> channel.println(x)),
+                        // dc -> mc
+                        adapter.listenMessages(id)
+                                .filterData(msg -> !msg.getAuthor().isBot())
+                                .mapData(msg -> {
+                                    var raw = msg.getContentRaw();
+                                    if (server.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                        msg.delete().queue();
+                                    //noinspection RedundantCast //ide error
+                                    return (String) raw;
+                                })
+                                .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
+                                .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
+                                .subscribeData(input -> console.execute(input).join())
+                );
+            });
         });
     }
 }
