@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.module;
+package org.comroid.mcsd.core.module.player;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -9,13 +9,14 @@ import org.comroid.api.Component;
 import org.comroid.api.Event;
 import org.comroid.mcsd.api.dto.ChatMessage;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.console.ConsoleModule;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -67,7 +68,7 @@ public class ChatModule extends ServerModule {
     protected void $initialize() {
         var console = server.component(ConsoleModule.class)
                 .orElseThrow(()->new InitFailed("No Console module is loaded"));
-        addChildren(console.bus.<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
+        addChildren(console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
                         .<Matcher>flatMap(pattern -> {
                             var matcher = pattern.matcher(str);
                             if (matcher.matches())

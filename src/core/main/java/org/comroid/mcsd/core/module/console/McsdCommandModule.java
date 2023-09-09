@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.module;
+package org.comroid.mcsd.core.module.console;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -9,6 +9,7 @@ import org.comroid.api.Command;
 import org.comroid.api.Component;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;

@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.module;
+package org.comroid.mcsd.core.module.shell;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -11,6 +11,8 @@ import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.console.ConsoleModule;
+import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Debug;
 import org.comroid.util.PathUtil;

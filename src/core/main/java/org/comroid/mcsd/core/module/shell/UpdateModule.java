@@ -1,17 +1,17 @@
-package org.comroid.mcsd.core.module;
+package org.comroid.mcsd.core.module.shell;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.ToString;
-import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.apache.commons.lang3.NotImplementedException;
 import org.comroid.api.Component;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.ServerModule;
+import org.comroid.mcsd.core.module.status.StatusModule;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

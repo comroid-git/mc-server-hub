@@ -1,24 +1,21 @@
 package org.comroid.mcsd.core.module.discord;
 
-import club.minnced.discord.webhook.WebhookClient;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.comroid.api.Component;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.module.ChatModule;
-import org.comroid.mcsd.core.module.ConsoleModule;
+import org.comroid.mcsd.core.module.player.ChatModule;
+import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.mcsd.core.module.StatusModule;
+import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 import static org.comroid.mcsd.util.McFormatCode.*;

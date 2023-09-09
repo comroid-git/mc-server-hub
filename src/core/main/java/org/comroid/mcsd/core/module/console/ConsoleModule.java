@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.module;
+package org.comroid.mcsd.core.module.console;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.Event;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,7 +38,7 @@ public abstract class ConsoleModule extends ServerModule {
         super.$terminate();
     }
 
-    protected static Pattern pattern(@NotNull @Language("RegExp") String pattern) {
+    public static Pattern pattern(@NotNull @Language("RegExp") String pattern) {
         return Pattern.compile(".*INFO]( \\[\\w*/\\w*])?: "+pattern);
     }
 

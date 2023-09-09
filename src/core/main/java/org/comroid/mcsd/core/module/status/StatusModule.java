@@ -1,9 +1,8 @@
-package org.comroid.mcsd.core.module;
+package org.comroid.mcsd.core.module.status;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.ToString;
-import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.apache.commons.lang3.NotImplementedException;
@@ -11,7 +10,7 @@ import org.comroid.api.Event;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.module.ServerModule;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;

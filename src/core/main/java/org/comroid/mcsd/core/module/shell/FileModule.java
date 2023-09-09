@@ -1,10 +1,11 @@
-package org.comroid.mcsd.core.module;
+package org.comroid.mcsd.core.module.shell;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.util.JSON;
 import org.comroid.util.MD5;
 
