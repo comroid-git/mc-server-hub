@@ -1,5 +1,6 @@
 package org.comroid.mcsd.core.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToOne;
 import lombok.Getter;
@@ -17,7 +18,7 @@ import java.util.UUID;
 public class UserData extends AbstractEntity implements IUser {
     private @OneToOne @Nullable User user;
     private @OneToOne @Nullable MinecraftProfile minecraft;
-    private @Nullable Long discordId;
+    private @Column(unique = true) @Nullable Long discordId;
 
     @Override
     public String toString() {

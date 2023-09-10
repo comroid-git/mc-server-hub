@@ -20,19 +20,6 @@ import java.util.UUID;
 public class User extends AbstractEntity implements IUser {
     private boolean guest;
     private @OneToOne @NotNull @Getter(onMethod = @__(@JsonIgnore)) UserData userData = new UserData();
-    private @Deprecated @OneToOne @Nullable MinecraftProfile minecraft;
-    private @Deprecated @Nullable Long discordId;
-
-    public void migrate() {
-        //noinspection ConstantValue
-        if (userData == null || userData.getUser() == null || minecraft != null || discordId != null) {
-            var data = ApplicationContextProvider.bean(UserDataRepo.class);
-            data.save(userData = data.findByUserId(getId()).orElseGet(UserData::new)
-                    .setUser(this)
-                    .setMinecraft(minecraft)
-                    .setDiscordId(discordId));
-        }
-    }
 
     @Override
     public String toString() {
