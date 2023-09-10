@@ -1,6 +1,7 @@
-package org.comroid.mcsd.agent.discord;
+package org.comroid.mcsd.core.module.discord;
 
 import club.minnced.discord.webhook.WebhookClient;
+import club.minnced.discord.webhook.WebhookClientBuilder;
 import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
@@ -15,8 +16,10 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -32,19 +35,19 @@ import org.comroid.api.*;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
-import org.comroid.mcsd.agent.AgentRunner;
+import org.comroid.mcsd.api.Defaults;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
-import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.UserData;
+import org.comroid.mcsd.core.module.shell.BackupModule;
+import org.comroid.mcsd.core.module.console.ConsoleModule;
+import org.comroid.mcsd.core.module.shell.UpdateModule;
 import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserDataRepo;
-import org.comroid.mcsd.agent.util.DiscordMessageSource;
 import org.comroid.mcsd.util.McFormatCode;
-import org.comroid.util.Markdown;
-import org.comroid.util.Ratelimit;
-import org.comroid.util.Streams;
+import org.comroid.util.*;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,6 +57,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -68,42 +72,49 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Log
 @Data
 public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener, Command.Handler {
+    private static final Map<UUID, DiscordAdapter> adapters = new ConcurrentHashMap<>();
     public static final int MaxBulkDelete = 100;
     public static final int MaxEditBacklog = 10;
     private final JDA jda;
 
+    @Contract("null -> null; _ -> _")
+    public static @Nullable DiscordAdapter get(final @Nullable DiscordBot bot) {
+        return bot == null ? null : adapters.computeIfAbsent(bot.getId(), $ -> new DiscordAdapter(bot));
+    }
+
     @SneakyThrows
-    public DiscordAdapter(DiscordBot bot) {
+    private DiscordAdapter(DiscordBot bot) {
         this.jda = JDABuilder.createDefault(bot.getToken(), GatewayIntent.getIntents(GatewayIntent.ALL_INTENTS))
                 .setActivity(Activity.playing("Minecraft"))
                 .setCompression(Compression.ZLIB)
                 .addEventListeners(this)
-                .build()
-                .awaitReady();
-        jda.retrieveCommands().submit()
-                .thenCompose(ls -> CompletableFuture.allOf(ls.stream()
-                        .map(net.dv8tion.jda.api.interactions.commands.Command::delete)
-                        .map(RestAction::submit)
-                        .toArray(CompletableFuture[]::new)))
-                .thenCompose($ -> jda.updateCommands().addCommands(
-                        Commands.slash("info", "Shows server information")
-                                .setGuildOnly(true),
-                        Commands.slash("list", "Shows list of online players")
-                                .setGuildOnly(true),
-                        Commands.slash("verify", "Verify Minecraft Account linkage. Used after running /mcsd link ingame")
-                                .addOption(OptionType.STRING, "code", "Your verification code", true)
-                                .setGuildOnly(true),
-                        Commands.slash("backup", "Create a backup of the server")
-                                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
-                                .setGuildOnly(true),
-                        Commands.slash("update", "Update the server")
-                                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
-                                .setGuildOnly(true),
-                        Commands.slash("execute", "Run a command on the server")
-                                .addOption(OptionType.STRING, "command", "The command to run", true)
-                                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
-                                .setGuildOnly(true)).submit())
-                .join();
+                .build();
+        if (!Debug.isDebug())
+            jda.retrieveCommands().submit()
+                    .thenCompose(ls -> CompletableFuture.allOf(ls.stream()
+                            .map(net.dv8tion.jda.api.interactions.commands.Command::delete)
+                            .map(RestAction::submit)
+                            .toArray(CompletableFuture[]::new)))
+                    .thenCompose($ -> jda.updateCommands().addCommands(
+                            Commands.slash("info", "Shows server information")
+                                    .setGuildOnly(true),
+                            Commands.slash("list", "Shows list of online players")
+                                    .setGuildOnly(true),
+                            Commands.slash("verify", "Verify Minecraft Account linkage. Used after running /mcsd link ingame")
+                                    .addOption(OptionType.STRING, "code", "Your verification code", true)
+                                    .setGuildOnly(true),
+                            Commands.slash("backup", "Create a backup of the server")
+                                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
+                                    .setGuildOnly(true),
+                            Commands.slash("update", "Update the server")
+                                    .addOption(OptionType.BOOLEAN, "force", "Force the Update")
+                                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
+                                    .setGuildOnly(true),
+                            Commands.slash("execute", "Run a command on the server")
+                                    .addOption(OptionType.STRING, "command", "The command to run", true)
+                                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
+                                    .setGuildOnly(true)).submit())
+                    .join();
 
         final var cmdr = new Command.Manager(this);
         cmdr.register(this);
@@ -204,27 +215,31 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
     @Command(ephemeral = true)
     public CompletableFuture<String> backup(SlashCommandInteractionEvent e) {
-        var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
-                .map(bean(AgentRunner.class)::process)
-                .orElseThrow(() -> new Command.Error("Unable to find server"));
-        return proc.runBackup(true).thenApply($->"Backup complete");
+        return bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .flatMap(srv -> srv.component(BackupModule.class).wrap())
+                .orElseThrow(() -> new Command.Error("Unable to find server"))
+                .runBackup(true)
+                .thenApply($->"Backup complete");
     }
 
     @Command(ephemeral = true)
     public CompletableFuture<String> update(SlashCommandInteractionEvent e) {
-        var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
-                .map(bean(AgentRunner.class)::process)
-                .orElseThrow(() -> new Command.Error("Unable to find server"));
-        return proc.runUpdate().thenApply($->$?"Update complete":"Update skipped");
+        return bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .flatMap(srv -> srv.component(UpdateModule.class).wrap())
+                .orElseThrow(() -> new Command.Error("Unable to find server"))
+                .runUpdate(Optional.ofNullable(e.getOption("force"))
+                        .map(OptionMapping::getAsBoolean)
+                        .orElse(false))
+                .thenApply($->$?"Update complete":"Update skipped");
     }
 
     @Command(ephemeral = true)
     public String execute(SlashCommandInteractionEvent e) {
-        var proc = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
-                .map(bean(AgentRunner.class)::process)
+        var console = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .flatMap(srv -> srv.component(ConsoleModule.class).wrap())
                 .orElseThrow(() -> new Command.Error("Unable to find server"));
         var cmd = Objects.requireNonNull(e.getOption("command")).getAsString();
-        proc.getIn().println(cmd);
+        console.execute(cmd);
         return "Command was sent";
     }
 
@@ -349,6 +364,34 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         };
     }
 
+    public CompletableFuture<WebhookClient> getWebhook(@Nullable String webhookUrl, long channelId) {
+        return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(webhookUrl))
+                .thenCompose(url -> {
+                    final var client = WebhookClient.withUrl(url);
+                    return jda.retrieveWebhookById(client.getId())
+                            .submit()
+                            .thenApply($ -> client);
+                })
+                .exceptionallyCompose(t -> Objects.requireNonNull(jda.getTextChannelById(channelId))
+                        .createWebhook(Defaults.WebhookName)
+                        .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
+                        .submit()
+                        .thenApply(wh -> {
+                            final var servers = bean(ServerRepo.class);
+                            servers.findByDiscordChannel(channelId)
+                                    .stream()
+                                    .map(srv -> srv.setPublicChannelWebhook(wh.getUrl()))
+                                    .forEach(servers::save);
+                            return wh;
+                        }));
+    }
+
+    public Event.Bus<Message> listenMessages(long id) {
+        return flatMap(MessageReceivedEvent.class)
+                .filterData(e -> e.getChannel().getIdLong() == id)
+                .mapData(MessageReceivedEvent::getMessage);
+    }
+
     public abstract class MessagePublisher implements Consumer<DiscordMessageSource>, DiscordMessageSource.Sender {
         private final AtomicLong lastKnownMessage = new AtomicLong(0);
 
@@ -432,18 +475,18 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     msg.thenApply(ISnowflake::getIdLong).thenComposeAsync(it -> Polyfill
                             .batches(MaxBulkDelete, channel.getIterableHistory()
                                     .stream()
-                                    .peek(x -> log.info("filter(id): " + x))
+                                    //.peek(x -> log.info("filter(id): " + x))
                                     .filter(m -> m.getIdLong() != it)
-                                    .peek(x -> log.info("map(id): " + x))
+                                    //.peek(x -> log.info("map(id): " + x))
                                     .map(ISnowflake::getId))
-                            .peek(ids -> log.fine(Polyfill.batches(8, ids.stream())
-                                    .map(ls -> String.join(", ", ls))
-                                    .collect(Collectors.joining("\n\t\t", "Deleting message batch:\n\t\t", ""))))
-                            .peek(x -> log.info("bulkDelete(): " + x))
+                            //.peek(ids -> log.fine(Polyfill.batches(8, ids.stream())
+                            //        .map(ls -> String.join(", ", ls))
+                             //       .collect(Collectors.joining("\n\t\t", "Deleting message batch:\n\t\t", ""))))
+                            //.peek(x -> log.info("bulkDelete(): " + x))
                             .map(channel::deleteMessagesByIds)
-                            .peek(x -> log.info("submit(): " + x))
+                            //.peek(x -> log.info("submit(): " + x))
                             .map(RestAction::submit)
-                            .peek(x -> log.info("collect(): " + x))
+                            //.peek(x -> log.info("collect(): " + x))
                             .collect(Collectors.collectingAndThen(
                                     Collectors.<CompletableFuture<?>>toList(),
                                     all -> CompletableFuture.allOf(all.toArray(CompletableFuture[]::new)))
@@ -453,27 +496,34 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             @Override
             public void accept(final String txt) {
                 if (txt.isBlank()) return; //todo: this shouldn't be necessary
-                log.finer("accept('" + txt + "')");
+                log.finest("accept('" + txt + "')");
                 Ratelimit.run(txt, Duration.ofSeconds(fancy ? 3 : 1), msg, (msg, queue) -> {
                     var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
-                    var add = "";
-                    log.finer("length of raw = " + raw.length());
-                    boolean hasSpace = false;
-                    while (!queue.isEmpty() && (fancy || (hasSpace = (raw + add + queue.peek()).length() < MaxLength))) {
-                        var poll = queue.poll();
-                        add += poll;
-                    }
+                    log.finest("length of raw = " + raw.length());
+                    var add = oneString(raw.length(), queue);
                     RestAction<Message> chain;
                     if (fancy) {
                         var content = raw + add;
                         chain = msg.editMessage(wrapContent(content));
-                    } else chain = newMsg(add);
+                    } else chain = newMsg(add.getFirst());
+                    if (!fancy && !add.getSecond())
+                        chain = chain.flatMap($ -> newMsg(oneString(0, queue).getFirst()));
                     return chain.submit();
-                });
+                }).exceptionally(Polyfill.exceptionLogger(log));
+            }
+
+            private Pair<@NotNull String, @NotNull Boolean> oneString(int rawLen, Queue<@NotNull String> queue) {
+                boolean hasSpace = false;
+                String add = "";
+                while (!queue.isEmpty() && (fancy || (hasSpace = (rawLen + add + queue.peek()).length() < MaxLength))) {
+                    var poll = queue.poll();
+                    add += poll;
+                }
+                return new Pair<>(add, hasSpace);
             }
 
             private MessageCreateAction newMsg(@Nullable String content) {
-                log.finer("new message with start content:\n" + content);
+                log.finest("new message with start content:\n" + content);
                 return channel.sendMessage(wrapContent(content));
             }
 
@@ -491,7 +541,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 int size = 0;
                 while (index >= 0 && (size = rev.stream().mapToInt(s -> s.length() + 1).sum() + lines[index].length()) < MaxLength)
                     rev.add(lines[index--]);
-                log.finer("size after scroll = " + (index < 0 ? size : (size - lines[index].length())));
+                log.finest("size after scroll = " + (index < 0 ? size : (size - lines[index].length())));
                 Collections.reverse(rev);
                 return String.join("\n", rev) + '\n';
             }

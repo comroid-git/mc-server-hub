@@ -15,7 +15,8 @@ import java.util.UUID;
 @Setter
 @Entity
 public class MinecraftProfile extends AbstractEntity {
-    private @Getter(onMethod = @__(@JsonIgnore)) @Nullable String verification;
+    private @Column(unique = true) @ToString.Exclude @Getter(onMethod = @__(@JsonIgnore))
+    @Nullable String verification;
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<UUID, String> serverLogins;
 

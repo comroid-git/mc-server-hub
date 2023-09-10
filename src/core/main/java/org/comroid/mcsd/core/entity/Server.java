@@ -3,17 +3,21 @@ package org.comroid.mcsd.core.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
 import io.graversen.minecraft.rcon.Defaults;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
+import org.comroid.api.Component;
 import org.comroid.api.IntegerAttribute;
+import org.comroid.api.Named;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.model.ServerConnection;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.intellij.lang.annotations.Language;
@@ -28,6 +32,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -38,19 +43,19 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Entity
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class Server extends AbstractEntity {
-    public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
-
+public class Server extends AbstractEntity implements Component {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
+    private final @Transient @lombok.experimental.Delegate(excludes = Named.class) Component.Base delegate = new Component.Base();
+    private static final Duration TickRate = Duration.ofMinutes(1);
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
     private @Nullable String homepage;
     private @Nullable String PublicChannelWebhook;
-    private @Nullable Long PublicChannelId;
-    private @Nullable Long ModerationChannelId;
-    private @Nullable Long ConsoleChannelId;
+    private @Nullable @Column(unique = true) Long PublicChannelId;
+    private @Nullable @Column(unique = true) Long ModerationChannelId;
+    private @Nullable @Column(unique = true) Long ConsoleChannelId;
     private @Nullable String ConsoleChannelPrefix;
     private boolean fancyConsole = true;
     private boolean forceCustomJar = false;
@@ -73,7 +78,6 @@ public class Server extends AbstractEntity {
     private Duration updatePeriod = Duration.ofDays(7);
     private Instant lastBackup = Instant.ofEpochMilli(0);
     private Instant lastUpdate = Instant.ofEpochMilli(0);
-    private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.unknown_status;
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
 
     @JsonIgnore
@@ -300,4 +304,5 @@ public class Server extends AbstractEntity {
     public enum Permission implements BitmaskAttribute<Permission> {
         Status, Start, Stop, Console, Backup, Files
     }
+    public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
 }

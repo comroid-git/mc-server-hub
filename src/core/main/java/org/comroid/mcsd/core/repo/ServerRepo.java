@@ -35,7 +35,7 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
             " WHERE s.PublicChannelId = :id" +
             " OR s.ModerationChannelId = :id" +
             " OR s.ConsoleChannelId = :id")
-    Optional<Server> findByDiscordChannel(long id);
+    Optional<Server> findByDiscordChannel(@Param("id") long id);
 
     @Modifying
     @Transactional
@@ -46,11 +46,6 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
     @Transactional
     @Query("UPDATE Server s SET s.maintenance = :maintenance WHERE s.id = :srvId")
     void setMaintenance(@Param("srvId") UUID srvId, @Param("maintenance") boolean maintenance);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE Server s SET s.lastStatus = :status WHERE s.id = :srvId")
-    void setStatus(@Param("srvId") UUID srvId, @Param("status") Status status);
 
     @Modifying
     @Transactional

@@ -7,11 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.mcsd.agent.AgentRunner;
-import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
-import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.UserData;
 import org.comroid.mcsd.core.model.ServerConnection;
+import org.comroid.mcsd.core.module.shell.ExecutionModule;
 import org.comroid.mcsd.core.repo.UserDataRepo;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +72,7 @@ public class ConsoleController {
     @Getter
     public class Connection extends Event.Bus<String> {
         private final UserData user;
-        private @Nullable ServerProcess process;
+        private @Nullable Server process;
 
         private Connection(UserData user) {
             this.user = user;
@@ -80,9 +80,9 @@ public class ConsoleController {
             agentRunner.oe.redirectToEventBus(this);
         }
 
-        public void attach(ServerProcess process) {
+        public void attach(Server process) {
             this.process = process;
-            process.getOe().redirect(agentRunner.oe);
+            process.component(ExecutionModule.class).assertion().getOe().redirect(agentRunner.oe);
         }
 
         public void detach() {

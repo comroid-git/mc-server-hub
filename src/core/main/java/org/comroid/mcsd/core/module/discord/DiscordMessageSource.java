@@ -1,6 +1,5 @@
-package org.comroid.mcsd.agent.util;
+package org.comroid.mcsd.core.module.discord;
 
-import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.comroid.api.StreamSupplier;
@@ -9,7 +8,6 @@ import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -21,7 +19,7 @@ import java.util.stream.Stream;
 public final class DiscordMessageSource implements StreamSupplier<Object> {
     private @Nullable Object data;
     private @Nullable MinecraftProfile player = null;
-    private boolean append = false;
+    private boolean append = true;
 
     public DiscordMessageSource() {
     }
@@ -52,7 +50,6 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
     public DiscordMessageSource embed(final Consumer<EmbedBuilder> embedModifier) {
         data = embed().<Object>map(embed -> {
                     embedModifier.accept(embed);
-                    embed.setTimestamp(Instant.now());
                     return embed;
                 })
                 .orElse(data);

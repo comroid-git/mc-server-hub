@@ -6,8 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.dto.DBInfo;
 import org.comroid.mcsd.api.dto.OAuth2Info;
+import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.util.Streams;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -20,6 +25,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
@@ -29,16 +35,13 @@ import java.util.logging.Logger;
 @ImportResource({"classpath:baseBeans.xml"})
 @EntityScan(basePackages = "org.comroid.mcsd.core.entity")
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
-public class MinecraftServerHubConfig {
-    public static final Duration CronRate_Watchdog = Duration.ofSeconds(10);
-    public static final Duration CronRate_Uptime = Duration.ofMinutes(1);
-    public static final Duration CronRate_Internal = Duration.ofMinutes(15);
-    public static final Duration CronRate_Queue = Duration.ofHours(1);
-    public static final Logger cronLog = Logger.getLogger("cron");
+public class MinecraftServerHubConfig implements ApplicationRunner {
 
     @Lazy
     @Autowired
     private ServerRepo servers;
+    @Autowired
+    private List<ServerModule.Factory<?>> serverModuleFactories;
 
     @Bean(name = "configDir")
     @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -79,6 +82,16 @@ public class MinecraftServerHubConfig {
     @Bean
     public ScheduledExecutorService scheduler() {
         return Executors.newScheduledThreadPool(32);
+    }
+
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        Streams.of(servers.findAll()).forEach(srv -> {
+                    srv.addChildren(serverModuleFactories.stream()
+                            .map(factory -> factory.create(srv))
+                            .toArray());
+                    srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
+                });
     }
 }
 
