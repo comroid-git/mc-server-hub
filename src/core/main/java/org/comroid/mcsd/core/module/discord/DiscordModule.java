@@ -56,8 +56,9 @@ public class DiscordModule extends ServerModule {
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
             // public channel
             Optional.ofNullable(server.getPublicChannelId()).ifPresent(id -> {
-                final var wh = adapter.getWebhook(server.getPublicChannelWebhook(), id);
-                final var webhook = adapter.messageTemplate(wh.join());
+                final var webhook = adapter.getWebhook(server.getPublicChannelWebhook(), id)
+                        .thenApply(adapter::messageTemplate).join();
+                final var bot = adapter.messageTemplate(id);
 
                 // status -> dc
                 server.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
@@ -71,7 +72,7 @@ public class DiscordModule extends ServerModule {
                                         .setTimestamp(Instant.now()))
                                 .mapData(DiscordMessageSource::new)
                                 .peekData(msg -> msg.setAppend(false))
-                                .subscribeData(webhook)));
+                                .subscribeData(bot)));
 
                 addChildren(
                         // mc -> dc
