@@ -67,10 +67,9 @@ public class ChatModule extends ServerModule {
     @Override
     @SuppressWarnings({"RedundantCast", "RedundantTypeArguments"})
     protected void $initialize() {
-        bus = new Event.Bus<>();
         var console = server.component(ConsoleModule.class)
                 .orElseThrow(()->new InitFailed("No Console module is loaded"));
-        addChildren(console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
+        addChildren(bus = console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
                         .<Matcher>flatMap(pattern -> {
                             var matcher = pattern.matcher(str);
                             if (matcher.matches())
@@ -88,8 +87,7 @@ public class ChatModule extends ServerModule {
                     if (event) message = StringUtils.capitalize(message);
                     return new ChatMessage(username, message, event || broadcast);
                 })
-                .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg)))
-                .subscribeData(bus::publish));
+                .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg))));
     }
 
     @Override
