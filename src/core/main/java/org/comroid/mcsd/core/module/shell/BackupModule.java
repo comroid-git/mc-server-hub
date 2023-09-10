@@ -61,7 +61,8 @@ public class BackupModule extends ServerModule {
     protected void $tick() {
         super.$tick();
         var status = server.component(StatusModule.class).assertion().getCurrentStatus().getStatus();
-        if (Stream.of(Status.online,Status.in_maintenance_mode,Status.offline).noneMatch(status::equals)
+        if (server.getBackupPeriod() == null
+                || Stream.of(Status.online,Status.in_maintenance_mode,Status.offline).noneMatch(status::equals)
                 || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now())
                 || !currentBackup.get().isDone())
             return;

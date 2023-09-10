@@ -52,7 +52,8 @@ public class UpdateModule extends ServerModule {
     @Override
     protected void $tick() {
         super.$tick();
-        if (server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()) || updateRunning.get())
+        if ((server.getBackupPeriod() == null || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()))
+                || updateRunning.get())
             return;
         //todo runUpdate(false);
     }

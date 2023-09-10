@@ -74,7 +74,7 @@ public class Server extends AbstractEntity implements Component {
     private int queryPort = 25565;
     private int rConPort = Defaults.RCON_PORT;
     private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = UUID.randomUUID().toString();
-    private Duration backupPeriod = Duration.ofHours(12);
+    private @Nullable Duration backupPeriod = Duration.ofHours(12);
     private Duration updatePeriod = Duration.ofDays(7);
     private Instant lastBackup = Instant.ofEpochMilli(0);
     private Instant lastUpdate = Instant.ofEpochMilli(0);
