@@ -498,10 +498,10 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             @Override
             public void accept(final String txt) {
                 if (txt.isBlank()) return; //todo: this shouldn't be necessary
-                log.finer("accept('" + txt + "')");
+                log.finest("accept('" + txt + "')");
                 Ratelimit.run(txt, Duration.ofSeconds(fancy ? 3 : 1), msg, (msg, queue) -> {
                     var raw = MarkdownSanitizer.sanitize(msg.getContentRaw());
-                    log.finer("length of raw = " + raw.length());
+                    log.finest("length of raw = " + raw.length());
                     var add = oneString(raw.length(), queue);
                     RestAction<Message> chain;
                     if (fancy) {
@@ -525,7 +525,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             }
 
             private MessageCreateAction newMsg(@Nullable String content) {
-                log.finer("new message with start content:\n" + content);
+                log.finest("new message with start content:\n" + content);
                 return channel.sendMessage(wrapContent(content));
             }
 
@@ -543,7 +543,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 int size = 0;
                 while (index >= 0 && (size = rev.stream().mapToInt(s -> s.length() + 1).sum() + lines[index].length()) < MaxLength)
                     rev.add(lines[index--]);
-                log.finer("size after scroll = " + (index < 0 ? size : (size - lines[index].length())));
+                log.finest("size after scroll = " + (index < 0 ? size : (size - lines[index].length())));
                 Collections.reverse(rev);
                 return String.join("\n", rev) + '\n';
             }
