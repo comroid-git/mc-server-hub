@@ -46,6 +46,8 @@ import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserDataRepo;
 import org.comroid.mcsd.util.McFormatCode;
+import org.comroid.mcsd.util.Tellraw;
+import org.comroid.mcsd.util.Utils;
 import org.comroid.util.*;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -100,7 +102,10 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                     .setGuildOnly(true),
                             Commands.slash("list", "Shows list of online players")
                                     .setGuildOnly(true),
-                            Commands.slash("verify", "Verify Minecraft Account linkage. Used after running /mcsd link ingame")
+                            Commands.slash("link", "Link your Minecraft account. You will be sent a code in-game")
+                                    .addOption(OptionType.STRING, "username", "Minecraft Username", true)
+                                    .setGuildOnly(true),
+                            Commands.slash("verify", "Verify Minecraft Account linkage. Used after running link command")
                                     .addOption(OptionType.STRING, "code", "Your verification code", true)
                                     .setGuildOnly(true),
                             Commands.slash("backup", "Create a backup of the server")
@@ -201,6 +206,23 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     true));
             return embed;
         });
+    }
+
+    @Command(ephemeral = true)
+    public String link(SlashCommandInteractionEvent e) {
+        final var profiles = bean(MinecraftProfileRepo.class);
+        var username = Objects.requireNonNull(e.getOption("username")).getAsString();
+        var profile = profiles.findByName(username)
+                .orElseThrow(() -> new Command.MildError("Invalid username"));
+        var code = profiles.startMcDcLinkage(profile);
+        final var cmd = Tellraw.notify(username, McFormatCode.Blue.text("Account Verification").build(),
+                        "Use code %s to link this Minecraft Account to Discord User %s".formatted(code, e.getUser().getEffectiveName()))
+                .build()
+                .toString();
+        Streams.of(bean(ServerRepo.class).findAll())
+                .flatMap(srv -> srv.component(ConsoleModule.class).stream())
+                .forEach(console -> console.execute(cmd));
+        return "Please check Minecraft Chat for the code and then run /verify <code>";
     }
 
     @Command(ephemeral = true)

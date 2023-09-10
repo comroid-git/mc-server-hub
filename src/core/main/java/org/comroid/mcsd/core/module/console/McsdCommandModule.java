@@ -78,12 +78,7 @@ public class McsdCommandModule extends ServerModule implements Command.Handler {
     @Command
     public String link(MinecraftProfile profile) {
         final var profiles = bean(MinecraftProfileRepo.class);
-        String code;
-        do {
-            code = Token.random(6, false);
-        } while (profiles.findByVerification(code).isPresent());
-        profile.setVerification(code);
-        profiles.save(profile);
+        var code = profiles.startMcDcLinkage(profile);
         return "Please run this command on discord: /verify " + code;
     }
 }

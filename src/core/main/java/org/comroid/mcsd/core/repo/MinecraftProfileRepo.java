@@ -28,4 +28,14 @@ public interface MinecraftProfileRepo extends CrudRepository<MinecraftProfile, U
             return profile;
         });
     }
+
+    default String startMcDcLinkage(MinecraftProfile profile) {
+        String code;
+        do {
+            code = Token.random(6, false);
+        } while (findByVerification(code).isPresent());
+        profile.setVerification(code);
+        save(profile);
+        return code;
+    }
 }
