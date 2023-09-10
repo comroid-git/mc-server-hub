@@ -35,13 +35,7 @@ import java.util.logging.Logger;
 @ImportResource({"classpath:baseBeans.xml"})
 @EntityScan(basePackages = "org.comroid.mcsd.core.entity")
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
-public class MinecraftServerHubConfig implements ApplicationRunner {
-
-    @Lazy
-    @Autowired
-    private ServerRepo servers;
-    @Autowired
-    private List<ServerModule.Factory<?>> serverModuleFactories;
+public class MinecraftServerHubConfig {
 
     @Bean(name = "configDir")
     @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -82,16 +76,6 @@ public class MinecraftServerHubConfig implements ApplicationRunner {
     @Bean
     public ScheduledExecutorService scheduler() {
         return Executors.newScheduledThreadPool(32);
-    }
-
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
-        Streams.of(servers.findAll()).forEach(srv -> {
-                    srv.addChildren(serverModuleFactories.stream()
-                            .map(factory -> factory.create(srv))
-                            .toArray());
-                    srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
-                });
     }
 }
 

@@ -13,6 +13,7 @@ import org.comroid.mcsd.connector.gateway.GatewayClient;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
 import org.comroid.mcsd.connector.gateway.GatewayPacket;
 import org.comroid.mcsd.core.entity.Agent;
+import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.module.*;
 import org.comroid.mcsd.core.module.discord.DiscordModule;
@@ -27,6 +28,8 @@ import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +37,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -43,14 +48,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ImportResource({"classpath:beans.xml"})
 @SpringBootApplication(scanBasePackages = "org.comroid.mcsd.*")
 @ComponentScan(basePackageClasses = {AgentRunner.class, ApiController.class, WebSocketConfig.class})
-public class MinecraftServerHubAgent {
-    @Lazy @Autowired
-    private ServerRepo servers;
-    @Lazy @Autowired
-    private AgentRunner agentRunner;
-    @Lazy @Autowired
-    private UserRepo users;
-
+public class MinecraftServerHubAgent implements ApplicationRunner {
     public static void main(String[] args) {
         if (!Debug.isDebug() && !OS.isUnix)
             throw new RuntimeException("Only Unix operation systems are supported");
@@ -82,19 +80,16 @@ public class MinecraftServerHubAgent {
         );
     }
 
-    //@Bean
-    public HubConnector connector(@Autowired GatewayConnectionInfo connectionData, @Autowired ScheduledExecutorService scheduler) {
-        return new HubConnector(connectionData, scheduler);
-    }
-
-    //@Bean
-    public GatewayClient gateway(@Autowired HubConnector connector) {
-        return connector.getGateway();
-    }
-
-    //@Bean
-    public Event.Listener<GatewayPacket> gatewayListener(@Autowired GatewayClient gateway) {
-        return gateway.register(this);
+    @Override
+    public void run(ApplicationArguments args) {
+        Streams.of(bean(ServerRepo.class).findAllForAgent(bean(Agent.class, "me").getId()))
+                .forEach(srv -> {
+                    srv.addChildren(((List<ServerModule.Factory<?>>)bean(List.class, "serverModuleFactories"))
+                            .stream()
+                            .map(factory -> factory.create(srv))
+                            .toArray());
+                    srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
+                });
     }
 }
 
