@@ -75,7 +75,7 @@ public final class ExecutionModule extends ConsoleModule {
     @SneakyThrows
     protected synchronized void $tick() {
         super.$tick();
-        if (!server.isEnabled() && (manualShutdown.get() || process.isAlive()))
+        if (server.isEnabled() && (manualShutdown.get() || (process != null && process.isAlive())))
             return;
         log.info("Starting " + server);
         server.component(StatusModule.class).assertion().pushStatus(Status.starting);
@@ -105,11 +105,13 @@ public final class ExecutionModule extends ConsoleModule {
             var msg = "Took " + t + " to start";
             return server.component(StatusModule.class).assertion()
                     .pushStatus((server.isMaintenance() ? Status.in_maintenance_mode : Status.online).new Message(msg));
-        }).thenAccept(msg -> log.info(server + " " + msg.getMessage())).join();
+        }).thenAccept(msg -> log.info(server + " " + msg.getMessage()))
+                .exceptionally(Polyfill.exceptionLogger());
 
         this.stop = MultithreadUtil.firstOf(process.onExit(),
                         Utils.listenForPattern(bus, StopPattern).listen().once())
-                .thenRun(server::terminate);
+                .thenRun(server::terminate)
+                .exceptionally(Polyfill.exceptionLogger());
     }
 
     public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {

@@ -90,7 +90,7 @@ public class MinecraftServerHubConfig implements ApplicationRunner {
                     srv.addChildren(serverModuleFactories.stream()
                             .map(factory -> factory.create(srv))
                             .toArray());
-                    srv.execute(Executors.newScheduledThreadPool(4), Duration.ofMinutes(1));
+                    srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
                 });
     }
 }
