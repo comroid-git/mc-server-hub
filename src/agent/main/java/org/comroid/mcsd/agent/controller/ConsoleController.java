@@ -10,9 +10,9 @@ import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.UserData;
-import org.comroid.mcsd.core.model.ServerConnection;
 import org.comroid.mcsd.core.module.shell.ExecutionModule;
 import org.comroid.mcsd.core.repo.UserDataRepo;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
@@ -71,6 +71,8 @@ public class ConsoleController {
 
     @Getter
     public class Connection extends Event.Bus<String> {
+        @Language("html")
+        public static final String br = "<br/>";
         private final UserData user;
         private @Nullable Server process;
 
@@ -97,7 +99,7 @@ public class ConsoleController {
             respond.convertAndSendToUser(user.getName(), "/console/output",
                     e.getData().replace("<","&lt;")
                             .replace(">","&gt;")
-                            .replaceAll("\r?\n",ServerConnection.br));
+                            .replaceAll("\r?\n",br));
         }
 
         @Event.Subscriber(DelegateStream.IO.EventKey_Error)
@@ -105,7 +107,7 @@ public class ConsoleController {
             respond.convertAndSendToUser(user.getName(), "/console/error",
                     e.getData().replace("<","&lt;")
                             .replace(">","&gt;")
-                            .replaceAll("\r?\n",ServerConnection.br));
+                            .replaceAll("\r?\n",br));
         }
 
         @Override

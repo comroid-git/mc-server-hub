@@ -13,9 +13,9 @@ import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.ShConnection;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
-import org.comroid.mcsd.core.model.ServerConnection;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
+import org.intellij.lang.annotations.Language;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -69,7 +69,7 @@ public class ConsoleController {
         var res = connections.getOrDefault(user.getId(), null);
         if (res == null)
             throw new EntityNotFoundException(ShConnection.class, "User " + user.getId());
-        return res.con;//.runBackup(); // todo: send backup command to agent if agent is available
+        return res;//.runBackup(); // todo: send backup command to agent if agent is available
     }
 
     @MessageMapping("/console/disconnect")
@@ -84,23 +84,23 @@ public class ConsoleController {
     @Getter
     @AllArgsConstructor
     private class Connection extends Container.Base {
+        @Language("html")
+        public static final String br = "<br/>";
         private final Server server;
         private final User user;
-        private final ServerConnection con;
         private final Event.Listener<String> listenOutput, listenError;
 
         public Connection(Server server, User user) {
             this.server = server;
             this.user = user;
-            this.con = server.con();
 
             var bus = server.con().getGame().screen;
             this.listenOutput =  bus.listen().setKey(DelegateStream.IO.EventKey_Output)
                     .subscribe(e -> e.consume(txt -> respond.convertAndSendToUser(
-                            user.getName(), "/console/output", txt + ServerConnection.br)));
+                            user.getName(), "/console/output", txt + br)));
             this.listenError =   bus.listen().setKey(DelegateStream.IO.EventKey_Error)
                     .subscribe(e -> e.consume(txt -> respond.convertAndSendToUser(
-                            user.getName(), "/console/error", txt + ServerConnection.br)));
+                            user.getName(), "/console/error", txt + br)));
         }
 
         @Override

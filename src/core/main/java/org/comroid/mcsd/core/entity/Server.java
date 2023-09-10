@@ -3,7 +3,6 @@ package org.comroid.mcsd.core.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
 import io.graversen.minecraft.rcon.Defaults;
-import jakarta.annotation.PostConstruct;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +15,6 @@ import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
-import org.comroid.mcsd.core.model.ServerConnection;
-import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.intellij.lang.annotations.Language;
@@ -32,7 +29,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -81,11 +77,6 @@ public class Server extends AbstractEntity implements Component {
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
 
     @JsonIgnore
-    public ServerConnection con() {
-        return ServerConnection.getInstance(this);
-    }
-
-    @JsonIgnore
     public boolean isVanilla() {
         return mode == Mode.Vanilla;
     }
@@ -114,56 +105,10 @@ public class Server extends AbstractEntity implements Component {
         return this;
     }
 
-    public String getUnitName() {
-        return "mcsd-" + getName();
-    }
-
-    @Language("sh")
-    public String wrapCmd(@Language("sh") String cmd) {
-        return wrapDevNull(
-                "(cd '"+getDirectory()+"' &&\n" +
-                "echo '"+ServerConnection.OutputBeginMarker +"' &&\n" +
-                "("+cmd+") || echo 'command failed'>&2) &&\n" +
-                "echo '"+ServerConnection.OutputEndMarker +"' &&\n" +
-                "exit");
-        /*
-        return "(cd '" + getDirectory() + "' && " +
-                //"chmod 755 "+ServerConnection.RunScript+" && " +
-                "echo '" + ServerConnection.OutputMarker + "' && " +
-                "(" + cmd + ")" +
-                " || echo 'Command finished with non-zero exit code'>&2" +
-                ") && " +
-                "echo '" + ServerConnection.EndMarker + "' && " +
-                "exit";
-         */
-    }
     @Language("sh")
     private String wrapDevNull(@Language("sh") String cmd) {
         return "export TERM='xterm' && script -q /dev/null < <(echo \""+cmd+"\"; cat)";
         //return "export TERM='xterm' && echo \""+cmd+"\" | script /dev/null";
-    }
-
-    public String cmdStart() {
-        return wrapCmd("./"+ServerConnection.RunScript+" start ");
-    }
-
-    public String cmdAttach() {
-        return wrapCmd("./"+ServerConnection.RunScript+" attach ");
-    }
-
-    public String cmdBackup() {
-        return wrapCmd("./"+ServerConnection.RunScript+" backup " + ApplicationContextProvider.bean(ShRepo.class)
-                .findById(UUID.randomUUID())
-                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + getId()))
-                .getBackupsDir() + '/' + getUnitName());
-    }
-
-    public String cmdUpdate() {
-        return wrapCmd("./"+ServerConnection.RunScript+" update");
-    }
-
-    public String cmdDisable() {
-        return wrapCmd("./"+ServerConnection.RunScript+" disable");
     }
 
     @Override
