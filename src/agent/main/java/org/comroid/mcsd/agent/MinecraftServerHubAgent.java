@@ -72,9 +72,9 @@ public class MinecraftServerHubAgent implements ApplicationRunner {
         return List.of(
                 StatusModule.Factory,
                 FileModule.Factory,
-                UpdateModule.Factory,
+                //todo: fix UpdateModule.Factory,
                 ExecutionModule.Factory,
-                BackupModule.Factory,
+                //todo: fix BackupModule.Factory,
                 ChatModule.Factory,
                 DiscordModule.Factory
         );
