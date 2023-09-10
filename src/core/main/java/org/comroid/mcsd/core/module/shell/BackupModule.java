@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static java.time.Instant.now;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -59,9 +60,12 @@ public class BackupModule extends ServerModule {
     @Override
     protected void $tick() {
         super.$tick();
-        if (server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()) || !currentBackup.get().isDone())
+        var status = server.component(StatusModule.class).assertion().getCurrentStatus().getStatus();
+        if (Stream.of(Status.online,Status.in_maintenance_mode,Status.offline).noneMatch(status::equals)
+                || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now())
+                || !currentBackup.get().isDone())
             return;
-        //todo runBackup(false);
+        runBackup(false).exceptionally(Polyfill.exceptionLogger());
     }
 
     public CompletableFuture<File> runBackup(final boolean important) {
