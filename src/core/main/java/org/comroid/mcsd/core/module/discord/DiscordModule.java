@@ -85,7 +85,7 @@ public class DiscordModule extends ServerModule {
                                 .filterData(msg -> !msg.getAuthor().isBot())
                                 .mapData(msg -> Tellraw.Command.builder()
                                         .selector(Tellraw.Selector.Base.ALL_PLAYERS)
-                                        .component(Gray.text("<").build())
+                                        .component(White.text("<").build())
                                         .component(Dark_Aqua.text(bean(MinecraftProfileRepo.class)
                                                         .findByDiscordId(msg.getAuthor().getIdLong())
                                                         .map(AbstractEntity::getName)
@@ -94,7 +94,7 @@ public class DiscordModule extends ServerModule {
                                                 .clickEvent(open_url.value(msg.getJumpUrl()))
                                                 .format(Underlined)
                                                 .build())
-                                        .component(Gray.text(">").build())
+                                        .component(White.text(">").build())
                                         // todo convert markdown to tellraw data
                                         .component(Reset.text(" " + msg.getContentStripped()).build())
                                         .build()
