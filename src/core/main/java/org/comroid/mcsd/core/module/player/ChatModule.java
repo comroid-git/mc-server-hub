@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -57,7 +58,7 @@ public class ChatModule extends ServerModule {
     };
 
     final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(),-1));
-    final Event.Bus<ChatMessage> bus = new Event.Bus<>();
+    protected Event.Bus<ChatMessage> bus;
 
     private ChatModule(Server server) {
         super(server);
@@ -66,6 +67,7 @@ public class ChatModule extends ServerModule {
     @Override
     @SuppressWarnings({"RedundantCast", "RedundantTypeArguments"})
     protected void $initialize() {
+        bus = new Event.Bus<>();
         var console = server.component(ConsoleModule.class)
                 .orElseThrow(()->new InitFailed("No Console module is loaded"));
         addChildren(console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
@@ -86,6 +88,7 @@ public class ChatModule extends ServerModule {
                     if (event) message = StringUtils.capitalize(message);
                     return new ChatMessage(username, message, event || broadcast);
                 })
+                .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg)))
                 .subscribeData(bus::publish));
     }
 
