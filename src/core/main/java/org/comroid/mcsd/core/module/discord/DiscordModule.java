@@ -84,7 +84,7 @@ public class DiscordModule extends ServerModule {
                                 .subscribeData(webhook),
                         // dc -> mc
                         adapter.listenMessages(id)
-                                .filterData(msg -> !msg.getAuthor().isBot())
+                                .filterData(msg -> !msg.getAuthor().isBot() && !msg.getContentRaw().isBlank())
                                 .mapData(msg -> Tellraw.Command.builder()
                                         .selector(Tellraw.Selector.Base.ALL_PLAYERS)
                                         .component(White.text("<").build())
