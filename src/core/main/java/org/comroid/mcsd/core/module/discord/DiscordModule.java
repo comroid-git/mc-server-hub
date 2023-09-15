@@ -69,6 +69,7 @@ public class DiscordModule extends ServerModule {
                                         //        server.getThumbnailURL())
                                         .setDescription(msg.toStatusMessage())
                                         .setColor(msg.getStatus().getColor())
+                                        .setFooter(msg.getMessage())
                                         .setTimestamp(Instant.now()))
                                 .mapData(DiscordMessageSource::new)
                                 .peekData(msg -> msg.setAppend(false))
