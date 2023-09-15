@@ -392,6 +392,14 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     final var client = WebhookClient.withUrl(url);
                     return jda.retrieveWebhookById(client.getId())
                             .submit()
+                            .thenCompose(wh -> {
+                                if (wh.getChannel().getIdLong() == channelId)
+                                    return CompletableFuture.completedFuture(wh);
+                                log.warning("Webhook " + wh.getIdLong() + " pointing to incorrect channel, recreating...");
+                                return wh.delete().submit().thenApply($ -> {
+                                    throw new RuntimeException("Invalid webhook, recreating");
+                                });
+                            })
                             .thenApply($ -> client);
                 })
                 .exceptionallyCompose(t -> Objects.requireNonNull(jda.getTextChannelById(channelId))
