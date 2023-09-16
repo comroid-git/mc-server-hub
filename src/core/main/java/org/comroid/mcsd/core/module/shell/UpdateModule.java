@@ -55,7 +55,7 @@ public class UpdateModule extends ServerModule {
         if ((server.getBackupPeriod() == null || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()))
                 || updateRunning.get())
             return;
-        //todo runUpdate(false);
+        runUpdate(false);
     }
 
     public CompletableFuture<Boolean> runUpdate(boolean force) {
