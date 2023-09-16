@@ -67,18 +67,9 @@ public class UpdateModule extends ServerModule {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // modify server.properties
-                Properties prop;
-                var serverProperties = new FileHandle(server.path("server.properties").toFile());
-                if (!serverProperties.exists()) {
-                    serverProperties.mkdirs();
-                    serverProperties.createNewFile();
-                }
-                try (var in = new FileInputStream(serverProperties)) {
-                    prop = server.updateProperties(in);
-                }
-                try (var out = new FileOutputStream(serverProperties, false)) {
-                    prop.store(out, "Managed Server Properties by MCSD");
-                }
+                server.component(FileModule.class)
+                        .assertion()
+                        .updateProperties();
 
                 // download server.jar
                 var serverJar = new FileHandle(server.path("server.jar").toFile());

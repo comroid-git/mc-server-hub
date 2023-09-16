@@ -10,7 +10,12 @@ import org.comroid.util.JSON;
 import org.comroid.util.MD5;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.util.Objects;
+import java.util.Properties;
 
 @Log
 @Getter
@@ -27,6 +32,12 @@ public class FileModule extends ServerModule {
         super(server);
     }
 
+    @Override
+    @SneakyThrows
+    protected void $initialize() {
+        updateProperties();
+    }
+
     @SneakyThrows
     public boolean isJarUpToDate() {
         if (server.isForceCustomJar())
@@ -40,5 +51,35 @@ public class FileModule extends ServerModule {
             var localMd5 = MD5.calculate(local);
             return sourceMd5.equals(localMd5);
         }
+    }
+
+    public Properties updateProperties() throws IOException {
+        var serverProperties = new FileHandle(server.path("server.properties").toFile());
+        if (!serverProperties.exists()) {
+            serverProperties.mkdirs();
+            serverProperties.createNewFile();
+        }
+        var prop = new Properties();
+        try (var input = new FileInputStream(serverProperties.getAbsolutePath())) {
+            prop.load(input);
+        }
+
+        prop.setProperty("server-port", String.valueOf(server.getPort()));
+        prop.setProperty("max-players", String.valueOf(server.getMaxPlayers()));
+        prop.setProperty("white-list", String.valueOf(server.isWhitelist() || server.isMaintenance()));
+
+        // query
+        prop.setProperty("enable-query", String.valueOf(true));
+        prop.setProperty("query.port", String.valueOf(server.getQueryPort()));
+
+        // rcon
+        prop.setProperty("enable-rcon", String.valueOf(server.getRConPassword() != null && !server.getRConPassword().isBlank()));
+        prop.setProperty("rcon.port", String.valueOf(server.getRConPort()));
+        prop.setProperty("rcon.password", Objects.requireNonNullElse(server.getRConPassword(), ""));
+
+        try (var out = new FileOutputStream(serverProperties, false)) {
+            prop.store(out, "Managed Server Properties by MCSD");
+        }
+        return prop;
     }
 }

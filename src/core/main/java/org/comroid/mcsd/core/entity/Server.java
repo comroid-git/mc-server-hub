@@ -159,27 +159,6 @@ public class Server extends AbstractEntity implements Component {
         return Paths.get(getDirectory(), extra);
     }
 
-    public Properties updateProperties(InputStream input) throws IOException {
-        var prop = new Properties();
-        prop.load(input);
-
-        prop.setProperty("server-port", String.valueOf(getPort()));
-        prop.setProperty("max-players", String.valueOf(getMaxPlayers()));
-        prop.setProperty("white-list", String.valueOf(isWhitelist() || isMaintenance()));
-
-        // query
-        prop.setProperty("enable-query", String.valueOf(true));
-        prop.setProperty("query.port", String.valueOf(getQueryPort()));
-
-        // rcon
-        prop.setProperty("enable-rcon", String.valueOf(false));
-        //prop.setProperty("enable-rcon", String.valueOf(getRConPassword() != null && !getRConPassword().isBlank()));
-        prop.setProperty("rcon.port", String.valueOf(getRConPort()));
-        prop.setProperty("rcon.password", Objects.requireNonNullElse(getRConPassword(), ""));
-
-        return prop;
-    }
-
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
         log.trace("Getting status of Server %s".formatted(this));
