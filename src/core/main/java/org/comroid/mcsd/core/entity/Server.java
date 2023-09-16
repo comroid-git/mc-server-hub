@@ -17,6 +17,7 @@ import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.util.Token;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,7 +70,7 @@ public class Server extends AbstractEntity implements Component {
     private int maxPlayers = 20;
     private int queryPort = 25565;
     private int rConPort = Defaults.RCON_PORT;
-    private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = UUID.randomUUID().toString();
+    private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
     private @Nullable Duration backupPeriod = Duration.ofHours(12);
     private Duration updatePeriod = Duration.ofDays(7);
     private Instant lastBackup = Instant.ofEpochMilli(0);
