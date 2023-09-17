@@ -18,6 +18,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
+@Deprecated
 public class UserData extends AbstractEntity implements IUser {
     private @OneToOne @Nullable User user;
     private @OneToOne @Nullable MinecraftProfile minecraft;

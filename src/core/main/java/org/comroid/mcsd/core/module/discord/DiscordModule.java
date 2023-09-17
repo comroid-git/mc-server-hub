@@ -13,8 +13,6 @@ import org.comroid.mcsd.core.module.player.ChatModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
-import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
-import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;

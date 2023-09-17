@@ -14,6 +14,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
+@Deprecated
 public class MinecraftProfile extends AbstractEntity {
     private @Column(unique = true) @ToString.Exclude @Getter(onMethod = @__(@JsonIgnore))
     @Nullable String verification;

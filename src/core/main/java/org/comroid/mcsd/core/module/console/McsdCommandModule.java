@@ -9,13 +9,13 @@ import org.comroid.api.Command;
 import org.comroid.api.Component;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
+import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Streams;
-import org.comroid.util.Token;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -51,7 +51,7 @@ public class McsdCommandModule extends ServerModule implements Command.Handler {
 
         addChildren(Utils.listenForPattern(console.bus, McsdPattern).subscribeData(matcher -> {
             var username = matcher.group("username");
-            var profile = bean(MinecraftProfileRepo.class).get(username);
+            var profile = bean(UserRepo.class).get(username).get();
             var command = matcher.group("command");
             cmdr.execute(command.replaceAll("\r?\n", ""), profile);
         }));
@@ -60,7 +60,7 @@ public class McsdCommandModule extends ServerModule implements Command.Handler {
     @Override
     public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
         var profile = Arrays.stream(args)
-                .flatMap(Streams.cast(MinecraftProfile.class))
+                .flatMap(Streams.cast(User.class))
                 .findAny()
                 .orElseThrow();
         var tellraw = Tellraw.Command.builder()
@@ -76,8 +76,8 @@ public class McsdCommandModule extends ServerModule implements Command.Handler {
     }
 
     @Command
-    public String link(MinecraftProfile profile) {
-        final var profiles = bean(MinecraftProfileRepo.class);
+    public String link(User profile) {
+        final var profiles = bean(UserRepo.class);
         var code = profiles.startMcDcLinkage(profile);
         return "Please run this command on discord: /verify " + code;
     }

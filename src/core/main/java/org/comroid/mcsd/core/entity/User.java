@@ -4,12 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.mcsd.core.model.IUser;
-import org.comroid.mcsd.core.repo.UserDataRepo;
-import org.comroid.mcsd.core.repo.UserRepo;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -18,8 +15,13 @@ import java.util.UUID;
 @Setter
 @Entity
 public class User extends AbstractEntity implements IUser {
-    private boolean guest;
-    private @OneToOne @NotNull @Getter(onMethod = @__(@JsonIgnore)) UserData userData = new UserData();
+    private @Column(unique = true) @Nullable UUID hubId;
+    private @Column(unique = true) @Nullable UUID minecraftId;
+    private @Column(unique = true) @Nullable Long discordId;
+    private @Column(unique = true)
+    @ToString.Exclude
+    @Getter(onMethod = @__(@JsonIgnore))
+    @Nullable String verification;
 
     @Override
     public String toString() {
