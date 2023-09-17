@@ -93,10 +93,12 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .build();
         if (!Debug.isDebug())
             jda.retrieveCommands().submit()
+                    /* todo: must not delete all commands every time
                     .thenCompose(ls -> CompletableFuture.allOf(ls.stream()
                             .map(net.dv8tion.jda.api.interactions.commands.Command::delete)
                             .map(RestAction::submit)
                             .toArray(CompletableFuture[]::new)))
+                    */
                     .thenCompose($ -> jda.updateCommands().addCommands(
                             Commands.slash("info", "Shows server information")
                                     .setGuildOnly(true),
