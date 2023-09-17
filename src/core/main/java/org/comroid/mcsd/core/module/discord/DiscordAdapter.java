@@ -153,8 +153,13 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             if (response instanceof EmbedBuilder)
                 req = e.replyEmbeds(embed((EmbedBuilder) response, mc).build());
             else req = e.reply(String.valueOf(response));
-            req.submit();
+            req.setEphemeral(cmd.ephemeral()).submit();
         }
+    }
+
+    @Override
+    public @Nullable String handleThrowable(Throwable throwable) {
+        return Markdown.CodeBlock.apply(Command.Handler.super.handleThrowable(throwable));
     }
 
     @Command
@@ -213,12 +218,13 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         final var profiles = bean(MinecraftProfileRepo.class);
         var username = Objects.requireNonNull(e.getOption("username")).getAsString();
         var profile = profiles.findByName(username)
-                .orElseThrow(() -> new Command.MildError("Invalid username"));
+                .orElseThrow(() -> new Command.Error("Invalid username"));
         var code = profiles.startMcDcLinkage(profile);
         final var cmd = Tellraw.notify(username, McFormatCode.Blue.text("Account Verification").build(),
                         "Use code %s to link this Minecraft Account to Discord User %s".formatted(code, e.getUser().getEffectiveName()))
                 .build()
                 .toString();
+        // todo: should check if player is online
         ((List<Server>)bean(List.class, "servers")).stream()
                 .flatMap(srv -> srv.component(ConsoleModule.class).stream())
                 .forEach(console -> console.execute(cmd));
@@ -230,7 +236,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         final var code = Objects.requireNonNull(e.getOption("code")).getAsString();
         final var profiles = bean(MinecraftProfileRepo.class);
         final var profile = profiles.findByVerification(code)
-                .orElseThrow(() -> new Command.MildError("Invalid code"));
+                .orElseThrow(() -> new Command.Error("Invalid code"));
         final var userdata = bean(UserDataRepo.class);
         userdata.modify(e.getUser()).complete(user -> user.setMinecraft(profile));
         profile.setVerification(null);

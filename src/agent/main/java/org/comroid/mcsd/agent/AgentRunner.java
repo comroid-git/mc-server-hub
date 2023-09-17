@@ -192,7 +192,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "")
     public String detach(String[] args, ConsoleController.Connection con) {
         if (attached == null)
-            throw new Command.MildError("Not attached");
+            throw new Command.Error("Not attached");
         con.detach();
         attached = null;
         return "Detached";
