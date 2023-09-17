@@ -269,7 +269,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         final var profile = profiles.findByVerification(code)
                 .orElseThrow(() -> new Command.Error("Invalid code"));
         final var userdata = bean(UserDataRepo.class);
-        userdata.modify(e.getUser()).complete(user -> user.setMinecraft(profile));
+        userdata.migrate(e.getUser()).complete(user -> user.setMinecraft(profile));
         profile.setVerification(null);
         profiles.save(profile);
         return "Minecraft account " + profile.getName() + " has been linked";
