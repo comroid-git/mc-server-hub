@@ -47,8 +47,9 @@ public interface UserDataRepo extends CrudRepository<UserData, UUID> {
         UUID id = UUID.fromString(Objects.requireNonNull(oAuth2User.getAttribute("id"), "User ID cannot be null"));
         return findByUserId(id).orElseGet(() -> {
             var usr = new UserData();
-            usr.setUser(ApplicationContextProvider.bean(UserRepo.class).findBySession(session));
-            usr.setName(oAuth2User.getAttribute("login"));
+            var panelUser = ApplicationContextProvider.bean(UserRepo.class).findBySession(session);
+            usr.setUser(panelUser);
+            usr.setName(panelUser.getName());
             save(usr);
             return usr;
         });
