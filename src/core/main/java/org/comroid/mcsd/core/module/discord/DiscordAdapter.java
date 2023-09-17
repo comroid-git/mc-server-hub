@@ -102,6 +102,10 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                     .setGuildOnly(true),
                             Commands.slash("list", "Shows list of online players")
                                     .setGuildOnly(true),
+                            Commands.slash("whois", "Check the profile of a user")
+                                    .addOption(OptionType.STRING, "minecraft", "Minecraft Username", false)
+                                    .addOption(OptionType.USER, "discord", "Discord User", false)
+                                    .setGuildOnly(true),
                             Commands.slash("link", "Link your Minecraft account. You will be sent a code in-game")
                                     .addOption(OptionType.STRING, "username", "Minecraft Username", true)
                                     .setGuildOnly(true),
@@ -211,6 +215,33 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     true));
             return embed;
         });
+    }
+
+    @Command(ephemeral = true)
+    public CompletableFuture<String> whois(SlashCommandInteractionEvent e) {
+        final var users = bean(UserDataRepo.class);
+        final var profiles = bean(MinecraftProfileRepo.class);
+        var profile = e.getOption("minecraft");
+        var discord = e.getOption("discord");
+
+        if (profile == null && discord == null)
+            return CompletableFuture.completedFuture("Please provide a Minecraft or Discord user");
+        else if (profile != null)
+            return profiles.findByName(profile.getAsString())
+                    .flatMap(mc -> users.findByMinecraftId(mc.getId()))
+                    .filter(data -> data.getDiscordId() != null)
+                    .map(data -> jda.retrieveUserById(data.getDiscordId())
+                            .useCache(true)
+                            .map(usr -> profile.getAsString() + " is " + usr.getAsMention() + " on Discord")
+                            .submit())
+                    .orElseGet(() -> CompletableFuture.completedFuture(profile.getAsString() + " has not linked their Accounts"));
+        else {
+            final long dcid = discord.getAsUser().getIdLong();
+            return CompletableFuture.completedFuture(users.findByDiscordId(dcid)
+                    .filter(data -> data.getMinecraft() != null)
+                    .map(data -> discord.getAsUser().getAsMention() + " is " + data.getMinecraft().getName() + " in Minecraft")
+                    .orElseGet(() -> discord.getAsUser().getAsMention() + " has not linked their Accounts"));
+        }
     }
 
     @Command(ephemeral = true)
