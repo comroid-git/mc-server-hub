@@ -250,6 +250,11 @@ public class AgentRunner implements Command.Handler {
         if (Arrays.stream(Utils.SuperAdmins).noneMatch(con.getUser().getId()::equals))
             throw new Command.Error("Insufficient permissions");
         log.info("Shutting down agent");
+        CompletableFuture.allOf(((List<Server>) bean(List.class, "servers")).stream()
+                .flatMap(srv -> srv.component(ExecutionModule.class).stream())
+                .map(exec -> exec.shutdown("Host shutting down", 10))
+                .toArray(CompletableFuture[]::new))
+                .join();
         System.exit(0);
         return "shutting down";
     }
