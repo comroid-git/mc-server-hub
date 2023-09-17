@@ -219,7 +219,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         "Use code %s to link this Minecraft Account to Discord User %s".formatted(code, e.getUser().getEffectiveName()))
                 .build()
                 .toString();
-        Streams.of(bean(ServerRepo.class).findAll())
+        ((List<Server>)bean(List.class, "servers")).stream()
                 .flatMap(srv -> srv.component(ConsoleModule.class).stream())
                 .forEach(console -> console.execute(cmd));
         return "Please check Minecraft Chat for the code and then run /verify <code>";

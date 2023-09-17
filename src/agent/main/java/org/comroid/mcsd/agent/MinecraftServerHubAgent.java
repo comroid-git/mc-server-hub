@@ -80,9 +80,14 @@ public class MinecraftServerHubAgent implements ApplicationRunner {
         );
     }
 
+    @Bean
+    public List<Server> servers(@Autowired ServerRepo servers, @Autowired Agent me) {
+        return Streams.of(servers.findAllForAgent(me.getId())).toList();
+    }
+
     @Override
     public void run(ApplicationArguments args) {
-        Streams.of(bean(ServerRepo.class).findAllForAgent(bean(Agent.class, "me").getId()))
+        ((List<Server>)bean(List.class, "servers"))
                 .forEach(srv -> {
                     srv.addChildren(((List<ServerModule.Factory<?>>)bean(List.class, "serverModuleFactories"))
                             .stream()
