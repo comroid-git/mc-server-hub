@@ -38,6 +38,7 @@ import org.comroid.api.Polyfill;
 import org.comroid.mcsd.api.Defaults;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.MinecraftProfile;
+import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.UserData;
 import org.comroid.mcsd.core.module.shell.BackupModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
@@ -47,7 +48,6 @@ import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserDataRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
-import org.comroid.mcsd.util.Utils;
 import org.comroid.util.*;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -228,10 +228,13 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     @Command(ephemeral = true)
     public String verify(SlashCommandInteractionEvent e) {
         final var code = Objects.requireNonNull(e.getOption("code")).getAsString();
-        var profile = bean(MinecraftProfileRepo.class).findByVerification(code)
+        final var profiles = bean(MinecraftProfileRepo.class);
+        final var profile = profiles.findByVerification(code)
                 .orElseThrow(() -> new Command.MildError("Invalid code"));
         final var userdata = bean(UserDataRepo.class);
-        userdata.get(e.getUser()).complete(user -> user.setMinecraft(profile));
+        userdata.modify(e.getUser()).complete(user -> user.setMinecraft(profile));
+        profile.setVerification(null);
+        profiles.save(profile);
         return "Minecraft account " + profile.getName() + " has been linked";
     }
 
