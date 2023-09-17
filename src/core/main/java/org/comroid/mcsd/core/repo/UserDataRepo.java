@@ -7,6 +7,7 @@ import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.AlmostComplete;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
@@ -15,20 +16,20 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface UserDataRepo extends CrudRepository<UserData, UUID> {
-    @Query("SELECT u FROM UserData u WHERE u.name = ?1")
-    Optional<UserData> findByName(String name);
+    @Query("SELECT u FROM UserData u WHERE u.name = :name")
+    Optional<UserData> findByName(@Param("name") String name);
 
-    @Query("SELECT u FROM UserData u WHERE u.user.id = ?1")
-    Optional<UserData> findByUserId(UUID id);
+    @Query("SELECT u FROM UserData u WHERE u.user.id = :id")
+    Optional<UserData> findByUserId(@Param("id") UUID id);
 
     @Query("SELECT DISTINCT u FROM UserData u WHERE u.discordId = :id")
-    Optional<UserData> findByDiscordId(long id);
+    Optional<UserData> findByDiscordId(@Param("id") long id);
 
     @Query("SELECT DISTINCT u FROM UserData u WHERE u.minecraft.id = :id")
-    Optional<UserData> findByMinecraftId(UUID id);
+    Optional<UserData> findByMinecraftId(@Param("id") UUID id);
 
     @Query("SELECT DISTINCT u FROM UserData u WHERE u.minecraft.name = :username")
-    Optional<UserData> findByMinecraftName(String username);
+    Optional<UserData> findByMinecraftName(@Param("username") String username);
 
     default AlmostComplete<UserData> get(User discordUser) {
         final var id = discordUser.getIdLong();
