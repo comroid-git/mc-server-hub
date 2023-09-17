@@ -36,7 +36,7 @@ public interface UserDataRepo extends CrudRepository<UserData, UUID> {
         return findByDiscordId(id).map(AlmostComplete::of).orElseGet(() -> new AlmostComplete<>(() -> {
             var usr = new UserData();
             usr.setDiscordId(id);
-            usr.setName(discordUser.getEffectiveName()); // todo: this will cause issues; should use username attribute value as key
+            usr.setName(discordUser.getName());
             return usr;
         }, this::save));
     }
