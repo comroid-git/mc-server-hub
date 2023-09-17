@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public class Utils {
     public static final UUID[] SuperAdmins = new UUID[]{
             UUID.fromString("5fdb75ec-effd-4be1-a669-271cc9a51891"), // dev
-            UUID.fromString("f31ac5bc-c6b5-4a48-a656-4253fd0528f9") // prod
+            UUID.fromString("ea991b89-b539-459b-9151-25637eac589c") // prod
     };
 
     @Contract("null -> null; _ -> _")
