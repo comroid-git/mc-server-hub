@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
+import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Component;
 import org.comroid.api.Event;
 import org.comroid.mcsd.api.dto.ChatMessage;
@@ -13,6 +14,7 @@ import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
+import org.comroid.util.Switch;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
@@ -46,10 +48,13 @@ public class ChatModule extends ServerModule {
             "(?<username>[\\S\\w_-]+) issued server command: " +
             "/(?<command>(me)|(say)|(broadcast)) " +
             "(?<message>.+)\\r?\\n?.*");
-    public static final Pattern PlayerEventPattern = ConsoleModule.pattern(
+    public static final Pattern JoinLeavePattern = ConsoleModule.pattern(
             "(?<username>[\\S\\w_-]+) " +
-            "(?<message>((joined|left) the game|has (made the advancement|completed the challenge) " +
-            "(\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
+            "(?<message>(joined|left) the game)\\r?\\n?");
+    public static final Pattern AchievementPattern = ConsoleModule.pattern(
+            "(?<username>[\\S\\w_-]+) " +
+            "(?<message>has (made the advancement|completed the challenge) " +
+            "(\\[(?<advancement>[\\w\\s]+)]))\\r?\\n?");
     public static final Factory<ChatModule> Factory = new Factory<>(ChatModule.class) {
         @Override
         public ChatModule create(Server server) {
@@ -69,7 +74,7 @@ public class ChatModule extends ServerModule {
     protected void $initialize() {
         var console = server.component(ConsoleModule.class)
                 .orElseThrow(()->new InitFailed("No Console module is loaded"));
-        addChildren(bus = console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
+        addChildren(bus = console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)
                         .<Matcher>flatMap(pattern -> {
                             var matcher = pattern.matcher(str);
                             if (matcher.matches())
@@ -81,11 +86,15 @@ public class ChatModule extends ServerModule {
                 .mapData(matcher -> {
                     var pattern = matcher.pattern().toString();
                     var event = !pattern.contains("prefix");
-                    var broadcast = pattern.contains("command");
                     var username = matcher.group("username");
                     var message = matcher.group("message");
                     if (event) message = StringUtils.capitalize(message);
-                    return new ChatMessage(username, message, event || broadcast);
+                    return new ChatMessage(username, message,
+                            new Switch<>(()->ChatMessage.Type.Other)
+                                    .option(ChatPattern, ChatMessage.Type.Chat)
+                                    .option(JoinLeavePattern, ChatMessage.Type.JoinLeave)
+                                    .option(AchievementPattern, ChatMessage.Type.Achievement)
+                                    .apply(matcher.pattern()));
                 })
                 .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg))));
     }

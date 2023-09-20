@@ -77,7 +77,8 @@ public class DiscordModule extends ServerModule {
 
                 addChildren(
                         // mc -> dc
-                        chatBus.mapData(msg -> {
+                        chatBus.filterData(msg -> msg.getType().isFlagSet(server.getPublicChannelEvents()))
+                                .mapData(msg -> {
                                     var player = bean(MinecraftProfileRepo.class).get(msg.getUsername());
                                     return new DiscordMessageSource(msg.toString()).setPlayer(player);
                                 })

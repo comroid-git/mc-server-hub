@@ -54,6 +54,7 @@ public class Server extends AbstractEntity implements Component {
     private @Nullable @Column(unique = true) Long ModerationChannelId;
     private @Nullable @Column(unique = true) Long ConsoleChannelId;
     private @Nullable String ConsoleChannelPrefix;
+    private int publicChannelEvents = 0xFFFF_FFFF;
     private boolean fancyConsole = true;
     private boolean forceCustomJar = false;
     private @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
