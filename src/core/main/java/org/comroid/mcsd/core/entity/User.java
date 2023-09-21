@@ -1,12 +1,11 @@
 package org.comroid.mcsd.core.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.comroid.api.BitmaskAttribute;
+import org.comroid.util.REST;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.UUID;
 
@@ -23,9 +22,9 @@ public class User extends AbstractEntity {
     @Nullable String verification;
 
     public String getMinecraftName() {
-        return new RestTemplate().getForObject(getMojangAccountUrl(minecraftId), ObjectNode.class)
-                .get("name")
-                .asText();
+        return REST.get(getMojangAccountUrl(minecraftId))
+                .thenApply(rsp -> rsp.getBody().get("name").asString())
+                .join();
     }
 
     @Override

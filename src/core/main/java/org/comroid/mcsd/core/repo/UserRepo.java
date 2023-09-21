@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.util.AlmostComplete;
+import org.comroid.util.REST;
 import org.comroid.util.Streams;
 import org.comroid.util.Token;
 import org.jetbrains.annotations.ApiStatus;
@@ -14,7 +15,6 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -36,11 +36,9 @@ public interface UserRepo extends CrudRepository<User, UUID> {
     }
 
     default UUID findMinecraftId(String username) {
-        var profile = new RestTemplate().getForObject(
-                User.getMojangAccountUrl(username),
-                ObjectNode.class);
-        assert profile != null : "No profile found for username " + username;
-        var raw = profile.get("id").asText();
+        var raw = REST.get(User.getMojangAccountUrl(username))
+                .thenApply(rsp -> rsp.getBody().get("name").asString())
+                .join();
         var sb = new StringBuilder(raw);
         sb.insert(8, "-").insert(13, "-").insert(18, "-").insert(23, "-");
         return UUID.fromString(sb.toString());
