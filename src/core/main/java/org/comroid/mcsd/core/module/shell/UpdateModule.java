@@ -51,17 +51,20 @@ public class UpdateModule extends ServerModule {
 
     @Override
     protected void $tick() {
-        super.$tick();
         if ((server.getBackupPeriod() == null || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()))
                 || updateRunning.get())
             return;
-        runUpdate(false);
+        //todo: handle if server is running
+        //runUpdate(false);
     }
 
     public CompletableFuture<Boolean> runUpdate(boolean force) {
         if (!updateRunning.compareAndSet(false, true))
             return CompletableFuture.failedFuture(new RuntimeException("There is already an update running"));
+        if (!force && server.component(FileModule.class).map(FileModule::isJarUpToDate).orElse(false))
+            return CompletableFuture.completedFuture(false);
         var status = server.component(StatusModule.class).assertion();
+        log.info("Updating " + server);
         status.pushStatus(Status.updating);
 
         return CompletableFuture.supplyAsync(() -> {
