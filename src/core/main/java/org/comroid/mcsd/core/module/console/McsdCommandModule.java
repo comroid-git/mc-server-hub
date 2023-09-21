@@ -7,7 +7,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.Command;
 import org.comroid.api.Component;
-import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.module.ServerModule;

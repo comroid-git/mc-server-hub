@@ -2,12 +2,13 @@ package org.comroid.mcsd.core.repo;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpSession;
-import org.comroid.mcsd.core.entity.MinecraftProfile;
+import jakarta.transaction.Transactional;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.util.AlmostComplete;
 import org.comroid.util.Streams;
 import org.comroid.util.Token;
 import org.jetbrains.annotations.ApiStatus;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -19,11 +20,16 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public interface UserRepo extends CrudRepository<User, UUID> {
-    Optional<UserRepo> findByVerification(String verification);
+    Optional<User> findByVerification(String verification);
     Optional<User> findByName(String name);
     Optional<User> findByHubId(UUID id);
     Optional<User> findByMinecraftId(UUID id);
     Optional<User> findByDiscordId(long id);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.verification = null WHERE u.id = :id")
+    void clearVerification(@Param("id") UUID id);
 
     default Optional<User> findByMinecraftName(String username) {
         return findByMinecraftId(findMinecraftId(username));
@@ -31,7 +37,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
 
     default UUID findMinecraftId(String username) {
         var profile = new RestTemplate().getForObject(
-                "https://api.mojang.com/users/profiles/minecraft/" + username,
+                User.getMojangAccountUrl(username),
                 ObjectNode.class);
         assert profile != null : "No profile found for username " + username;
         var raw = profile.get("id").asText();

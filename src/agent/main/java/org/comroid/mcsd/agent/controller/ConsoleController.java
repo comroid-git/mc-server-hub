@@ -10,7 +10,6 @@ import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
-import org.comroid.mcsd.core.entity.UserData;
 import org.comroid.mcsd.core.module.shell.ExecutionModule;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.intellij.lang.annotations.Language;
