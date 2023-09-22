@@ -22,6 +22,7 @@ import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.PrintStream;
@@ -49,6 +50,9 @@ public class AgentRunner implements Command.Handler {
     @Lazy
     @Autowired
     private ServerRepo servers;
+    @Lazy
+    @Autowired
+    private SimpMessagingTemplate ws;
 
     public AgentRunner(@Autowired Agent me) {
         this.me = me;
@@ -268,6 +272,8 @@ public class AgentRunner implements Command.Handler {
 
     @Override
     public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
+        //Stream.of(args).flatMap(Streams.cast(ConsoleController.Connection.class)).findAny()
+        //                .ifPresent(con -> ws.convertAndSendToUser(con.getUser().getName(), response));
         out.println(response);
     }
 
