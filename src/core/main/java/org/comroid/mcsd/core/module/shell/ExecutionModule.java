@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 @Log
 @Getter
 @ToString
-@Component.Requires(FileModule.class)
+@Component.Requires(UpdateModule.class)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public final class ExecutionModule extends ConsoleModule {
     public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?.*?");
@@ -74,10 +74,10 @@ public final class ExecutionModule extends ConsoleModule {
     @Override
     @SneakyThrows
     protected synchronized void $tick() {
-        super.$tick();
         if (server.isEnabled() && (manualShutdown.get() || (process != null && process.isAlive())))
             return;
         log.info("Starting " + server);
+        server.component(UpdateModule.class).ifPresent(mod-> mod.runUpdate(false).join());
         server.component(StatusModule.class).assertion().pushStatus(Status.starting);
         final var stopwatch = Stopwatch.start("startup-" + server.getId());
         var exec = PathUtil.findExec("java").orElseThrow();

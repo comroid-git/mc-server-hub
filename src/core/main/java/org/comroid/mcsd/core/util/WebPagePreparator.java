@@ -22,10 +22,10 @@ public class WebPagePreparator {
         this.page = page;
 
         var users = ApplicationContextProvider.bean(UserRepo.class);
-        var user = users.findBySession(session);
+        var user = users.get(session).assertion();
         var servers = ApplicationContextProvider.bean(ServerRepo.class);
         setAttribute("user", user);
-        setAttribute("servers", StreamSupport.stream(servers.findByPermittedUser(users.findBySession(session).getId()).spliterator(), false).toList());
+        setAttribute("servers", StreamSupport.stream(servers.findByPermittedUser(user.getId()).spliterator(), false).toList());
         setAttribute("connections", StreamSupport.stream(ApplicationContextProvider.bean(ShRepo.class).findAll().spliterator(), false).toList());
     }
 

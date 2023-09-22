@@ -100,8 +100,6 @@ public class ChatModule extends ServerModule {
 
     @Override
     protected void $tick() {
-        super.$tick();
-
         var console = server.component(ConsoleModule.class);
         var msgs = server.getTickerMessages();
         var last = lastTickerMessage.get();

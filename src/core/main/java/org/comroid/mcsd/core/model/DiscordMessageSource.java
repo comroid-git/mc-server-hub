@@ -3,7 +3,7 @@ package org.comroid.mcsd.core.model;
 import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.comroid.api.StreamSupplier;
-import org.comroid.mcsd.core.entity.MinecraftProfile;
+import org.comroid.mcsd.core.entity.User;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 @Data
 public final class DiscordMessageSource implements StreamSupplier<Object> {
     private @Nullable Object data;
-    private @Nullable MinecraftProfile player = null;
+    private @Nullable User player = null;
     private boolean append = false;
 
     public DiscordMessageSource() {
@@ -58,7 +58,7 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
         return this;
     }
 
-    public DiscordMessageSource setPlayer(MinecraftProfile player) {
+    public DiscordMessageSource setPlayer(User player) {
         this.player = player;
         return embed(embed -> embed.setAuthor(player.getName(), player.getNameMcURL(), player.getHeadURL()));
     }

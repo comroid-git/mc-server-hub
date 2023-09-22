@@ -37,15 +37,12 @@ import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.api.Defaults;
 import org.comroid.mcsd.core.entity.DiscordBot;
-import org.comroid.mcsd.core.entity.MinecraftProfile;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.entity.UserData;
 import org.comroid.mcsd.core.module.shell.BackupModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.shell.UpdateModule;
-import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.mcsd.core.repo.UserDataRepo;
+import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.*;
@@ -138,9 +135,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .flatMap(Streams.cast(SlashCommandInteractionEvent.class))
                 .findAny()
                 .orElseThrow();
-        final var mc = bean(UserDataRepo.class)
+        final var user = bean(UserRepo.class)
                 .findByDiscordId(e.getUser().getIdLong())
-                .map(UserData::getMinecraft)
                 .orElse(null);
         if (response instanceof CompletableFuture)
             e.deferReply().setEphemeral(cmd.ephemeral())
@@ -148,7 +144,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     .thenCombine(((CompletableFuture<?>) response), (hook, resp) -> {
                         WebhookMessageCreateAction<Message> req;
                         if (resp instanceof EmbedBuilder)
-                            req = hook.sendMessageEmbeds(embed((EmbedBuilder) resp, mc).build());
+                            req = hook.sendMessageEmbeds(embed((EmbedBuilder) resp, user).build());
                         else req = hook.sendMessage(String.valueOf(resp));
                         return req.submit();
                     })
@@ -157,7 +153,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         else {
             ReplyCallbackAction req;
             if (response instanceof EmbedBuilder)
-                req = e.replyEmbeds(embed((EmbedBuilder) response, mc).build());
+                req = e.replyEmbeds(embed((EmbedBuilder) response, user).build());
             else req = e.reply(String.valueOf(response));
             req.setEphemeral(cmd.ephemeral()).submit();
         }
@@ -189,7 +185,6 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             else
                 embed.addField("Players", "%d out of %d".formatted(stat.getPlayerCount(), server.getMaxPlayers()), false);
             Optional.ofNullable(server.getOwner())
-                    .map(UserData::getMinecraft)
                     .ifPresent(owner -> embed.setAuthor("Owner: " + owner.getName(), owner.getNameMcURL(), owner.getHeadURL()));
             return embed;
         });
@@ -206,7 +201,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     .setTimestamp(stat.getTimestamp());
             if (stat.getPlayers() == null)
                 return embed.setDescription("There are no players online");
-            final var users = bean(UserDataRepo.class);
+            final var users = bean(UserRepo.class);
             stat.getPlayers().forEach(playerName -> embed.addField(
                     playerName,
                     users.findByMinecraftName(playerName).map(user -> user.getDiscordId() == null
@@ -221,16 +216,15 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
     @Command(ephemeral = true)
     public CompletableFuture<String> whois(SlashCommandInteractionEvent e) {
-        final var users = bean(UserDataRepo.class);
-        final var profiles = bean(MinecraftProfileRepo.class);
+        final var users = bean(UserRepo.class);
         var profile = e.getOption("minecraft");
         var discord = e.getOption("discord");
 
         if (profile == null && discord == null)
             return CompletableFuture.completedFuture("Please provide a Minecraft or Discord user");
         else if (profile != null)
-            return profiles.findByName(profile.getAsString())
-                    .flatMap(mc -> users.findByMinecraftId(mc.getId()))
+            //noinspection DataFlowIssue
+            return users.get(profile.getAsString())
                     .filter(data -> data.getDiscordId() != null)
                     .map(data -> jda.retrieveUserById(data.getDiscordId())
                             .useCache(true)
@@ -240,17 +234,17 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         else {
             final long dcid = discord.getAsUser().getIdLong();
             return CompletableFuture.completedFuture(users.findByDiscordId(dcid)
-                    .filter(data -> data.getMinecraft() != null)
-                    .map(data -> discord.getAsUser().getAsMention() + " is " + data.getMinecraft().getName() + " in Minecraft")
+                    .filter(data -> data.getMinecraftId() != null)
+                    .map(data -> discord.getAsUser().getAsMention() + " is " + data.getMinecraftName() + " in Minecraft")
                     .orElseGet(() -> discord.getAsUser().getAsMention() + " has not linked their Accounts"));
         }
     }
 
     @Command(ephemeral = true)
     public String link(SlashCommandInteractionEvent e) {
-        final var profiles = bean(MinecraftProfileRepo.class);
+        final var profiles = bean(UserRepo.class);
         var username = Objects.requireNonNull(e.getOption("username")).getAsString();
-        var profile = profiles.findByName(username)
+        var profile = profiles.get(username)
                 .orElseThrow(() -> new Command.Error("Invalid username"));
         var code = profiles.startMcDcLinkage(profile);
         final var cmd = Tellraw.notify(username, McFormatCode.Blue.text("Account Verification").build(),
@@ -267,14 +261,12 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     @Command(ephemeral = true)
     public String verify(SlashCommandInteractionEvent e) {
         final var code = Objects.requireNonNull(e.getOption("code")).getAsString();
-        final var profiles = bean(MinecraftProfileRepo.class);
-        final var profile = profiles.findByVerification(code)
+        final var users = bean(UserRepo.class);
+        final var profile = users.findByVerification(code)
                 .orElseThrow(() -> new Command.Error("Invalid code"));
-        final var userdata = bean(UserDataRepo.class);
-        userdata.migrate(e.getUser()).complete(user -> user.setMinecraft(profile));
-        profile.setVerification(null);
-        profiles.save(profile);
-        return "Minecraft account " + profile.getName() + " has been linked";
+        final var user = users.merge(users.findByDiscordId(e.getUser().getIdLong()), Optional.of(profile));
+        users.clearVerification(user.getId());
+        return "Minecraft account " + profile.getMinecraftName() + " has been linked";
     }
 
     @Command(ephemeral = true)
@@ -515,9 +507,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         }
     }
 
-    private EmbedBuilder embed(@NotNull EmbedBuilder builder, @Nullable MinecraftProfile mc) {
-        if (mc != null)
-            builder = builder.setAuthor(mc.getName(), mc.getNameMcURL(), mc.getHeadURL());
+    private EmbedBuilder embed(@NotNull EmbedBuilder builder, @Nullable org.comroid.mcsd.core.entity.User player) {
+        if (player != null)
+            builder = builder.setAuthor(player.getName(), player.getNameMcURL(), player.getHeadURL());
         builder.setTimestamp(Instant.now());
         return builder;
     }

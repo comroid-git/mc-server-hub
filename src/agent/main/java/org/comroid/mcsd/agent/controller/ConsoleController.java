@@ -9,9 +9,9 @@ import org.comroid.api.Event;
 import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.entity.UserData;
+import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.module.shell.ExecutionModule;
-import org.comroid.mcsd.core.repo.UserDataRepo;
+import org.comroid.mcsd.core.repo.UserRepo;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,19 +32,19 @@ public class ConsoleController {
     @Autowired
     private SimpMessagingTemplate respond;
     @Autowired
-    private UserDataRepo userRepo;
+    private UserRepo users;
     @Autowired
     private AgentRunner agentRunner;
 
     public Connection con(Map<String, Object> attr) {
         return con(user(attr));
     }
-    public Connection con(final UserData user) {
+    public Connection con(final User user) {
         return connections.computeIfAbsent(user.getId(), $->new Connection(user));
     }
-    public UserData user(Map<String, Object> attr) {
+    public User user(Map<String, Object> attr) {
         var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
-        return userRepo.get(session);
+        return users.get(session).get();
     }
 
     @MessageMapping("/console/connect")
@@ -73,10 +73,10 @@ public class ConsoleController {
     public class Connection extends Event.Bus<String> {
         @Language("html")
         public static final String br = "<br/>";
-        private final UserData user;
+        private final User user;
         private @Nullable Server process;
 
-        private Connection(UserData user) {
+        private Connection(User user) {
             this.user = user;
 
             agentRunner.oe.redirectToEventBus(this);

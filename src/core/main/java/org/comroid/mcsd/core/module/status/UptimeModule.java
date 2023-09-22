@@ -47,7 +47,6 @@ public class UptimeModule extends ServerModule {
 
     @Override
     protected void $tick() {
-        super.$tick();
         pushUptime();
     }
 

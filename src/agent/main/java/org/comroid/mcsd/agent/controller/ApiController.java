@@ -41,7 +41,7 @@ public class ApiController {
     @GetMapping("/webapp")
     public WebAppInfo getUser(HttpSession session) {
         return new WebAppInfo(
-                users.findBySession(session),
+                users.get(session).get(),
                 agentRunner.getMe(),
                 agentRunner.streamServers().toList()
         );

@@ -13,8 +13,7 @@ import org.comroid.mcsd.core.module.player.ChatModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
-import org.comroid.mcsd.core.repo.MinecraftProfileRepo;
-import org.comroid.mcsd.util.McFormatCode;
+import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;
@@ -79,7 +78,7 @@ public class DiscordModule extends ServerModule {
                         // mc -> dc
                         chatBus.filterData(msg -> msg.getType().isFlagSet(server.getPublicChannelEvents()))
                                 .mapData(msg -> {
-                                    var player = bean(MinecraftProfileRepo.class).get(msg.getUsername());
+                                    var player = bean(UserRepo.class).get(msg.getUsername()).get();
                                     return new DiscordMessageSource(msg.toString()).setPlayer(player);
                                 })
                                 .subscribeData(webhook),
@@ -89,10 +88,10 @@ public class DiscordModule extends ServerModule {
                                 .mapData(msg -> Tellraw.Command.builder()
                                         .selector(Tellraw.Selector.Base.ALL_PLAYERS)
                                         .component(White.text("<").build())
-                                        .component(Dark_Aqua.text(bean(MinecraftProfileRepo.class)
+                                        .component(Dark_Aqua.text(bean(UserRepo.class)
                                                         .findByDiscordId(msg.getAuthor().getIdLong())
                                                         .map(AbstractEntity::getName)
-                                                        .orElseGet(()->msg.getAuthor().getEffectiveName()))
+                                                        .orElseGet(() -> msg.getAuthor().getEffectiveName()))
                                                 .hoverEvent(show_text.value("Open in Discord"))
                                                 .clickEvent(open_url.value(msg.getJumpUrl()))
                                                 .format(Underlined)

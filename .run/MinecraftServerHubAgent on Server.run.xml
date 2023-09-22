@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="MinecraftServerHubAgent on Server" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <module name="org.comroid.mcsd.mcsd.agent.main" />
+    <module name="mcsd.agent.main" />
     <selectedOptions>
       <option name="environmentVariables" />
     </selectedOptions>
