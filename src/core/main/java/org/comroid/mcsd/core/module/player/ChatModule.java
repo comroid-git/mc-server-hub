@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
+import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Component;
 import org.comroid.api.Event;
 import org.comroid.mcsd.api.dto.ChatMessage;
@@ -13,6 +14,7 @@ import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
+import org.comroid.util.Switch;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
@@ -35,21 +37,24 @@ public class ChatModule extends ServerModule {
     public static final Duration TickerTimeout = Duration.ofMinutes(15);
     public static final Pattern ChatPattern = ConsoleModule.pattern(
             "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
-            //"([(\\[{<]" +
-            "<" +
-            "(?<username>[\\w\\S_-]+)" +
-            ">\\s?" +
-            //"[>}\\])]\\s?)\\s?" +
-            "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
-            "(?<message>.+)\\r?\\n?.*");
+                    //"([(\\[{<]" +
+                    "<" +
+                    "(?<username>[\\w\\S_-]+)" +
+                    ">\\s?" +
+                    //"[>}\\])]\\s?)\\s?" +
+                    "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
+                    "(?<message>.+)\\r?\\n?.*");
     public static final Pattern BroadcastPattern = ConsoleModule.pattern(
             "(?<username>[\\S\\w_-]+) issued server command: " +
-            "/(?<command>(me)|(say)|(broadcast)) " +
-            "(?<message>.+)\\r?\\n?.*");
-    public static final Pattern PlayerEventPattern = ConsoleModule.pattern(
+                    "/(?<command>(me)|(say)|(broadcast)) " +
+                    "(?<message>.+)\\r?\\n?.*");
+    public static final Pattern JoinLeavePattern = ConsoleModule.pattern(
             "(?<username>[\\S\\w_-]+) " +
-            "(?<message>((joined|left) the game|has (made the advancement|completed the challenge) " +
-            "(\\[(?<advancement>[\\w\\s]+)])))\\r?\\n?");
+                    "(?<message>(joined|left) the game)\\r?\\n?");
+    public static final Pattern AchievementPattern = ConsoleModule.pattern(
+            "(?<username>[\\S\\w_-]+) " +
+                    "(?<message>has (made the advancement|completed the challenge) " +
+                    "(\\[(?<advancement>[\\w\\s]+)]))\\r?\\n?");
     public static final Factory<ChatModule> Factory = new Factory<>(ChatModule.class) {
         @Override
         public ChatModule create(Server server) {
@@ -57,7 +62,7 @@ public class ChatModule extends ServerModule {
         }
     };
 
-    final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(),-1));
+    final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
     protected Event.Bus<ChatMessage> bus;
 
     private ChatModule(Server server) {
@@ -68,8 +73,8 @@ public class ChatModule extends ServerModule {
     @SuppressWarnings({"RedundantCast", "RedundantTypeArguments"})
     protected void $initialize() {
         var console = server.component(ConsoleModule.class)
-                .orElseThrow(()->new InitFailed("No Console module is loaded"));
-        addChildren(bus = console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, PlayerEventPattern)
+                .orElseThrow(() -> new InitFailed("No Console module is loaded"));
+        addChildren(bus = console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)
                         .<Matcher>flatMap(pattern -> {
                             var matcher = pattern.matcher(str);
                             if (matcher.matches())
@@ -77,15 +82,18 @@ public class ChatModule extends ServerModule {
                             return Stream.<Matcher>empty();
                         })
                         .findAny()
-                        .<Matcher>orElse((Matcher)null))
+                        .<Matcher>orElse((Matcher) null))
                 .mapData(matcher -> {
-                    var pattern = matcher.pattern().toString();
-                    var event = !pattern.contains("prefix");
-                    var broadcast = pattern.contains("command");
                     var username = matcher.group("username");
                     var message = matcher.group("message");
-                    if (event) message = StringUtils.capitalize(message);
-                    return new ChatMessage(username, message, event || broadcast);
+                    var type = new Switch<>(() -> ChatMessage.Type.Other)
+                            .option(ChatPattern, ChatMessage.Type.Chat)
+                            .option(JoinLeavePattern, ChatMessage.Type.JoinLeave)
+                            .option(AchievementPattern, ChatMessage.Type.Achievement)
+                            .apply(matcher.pattern());
+                    if (type != ChatMessage.Type.Chat)
+                        message = StringUtils.capitalize(message);
+                    return new ChatMessage(username, message, type);
                 })
                 .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg))));
     }
@@ -110,5 +118,6 @@ public class ChatModule extends ServerModule {
         console.assertion().execute(cmd);
     }
 
-    private record TickerMessage(Instant time, int index) {}
+    private record TickerMessage(Instant time, int index) {
+    }
 }

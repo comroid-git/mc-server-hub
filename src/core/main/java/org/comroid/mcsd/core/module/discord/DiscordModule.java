@@ -76,7 +76,8 @@ public class DiscordModule extends ServerModule {
 
                 addChildren(
                         // mc -> dc
-                        chatBus.mapData(msg -> {
+                        chatBus.filterData(msg -> msg.getType().isFlagSet(server.getPublicChannelEvents()))
+                                .mapData(msg -> {
                                     var player = bean(UserRepo.class).get(msg.getUsername()).get();
                                     return new DiscordMessageSource(msg.toString()).setPlayer(player);
                                 })
@@ -90,7 +91,7 @@ public class DiscordModule extends ServerModule {
                                         .component(Dark_Aqua.text(bean(UserRepo.class)
                                                         .findByDiscordId(msg.getAuthor().getIdLong())
                                                         .map(AbstractEntity::getName)
-                                                        .orElseGet(()->msg.getAuthor().getEffectiveName()))
+                                                        .orElseGet(() -> msg.getAuthor().getEffectiveName()))
                                                 .hoverEvent(show_text.value("Open in Discord"))
                                                 .clickEvent(open_url.value(msg.getJumpUrl()))
                                                 .format(Underlined)
