@@ -22,7 +22,7 @@ function fetch() {
 }
 
 (
-  cd '../japi';
+  cd '../japi' || exit;
   fetch
 )
 
