@@ -5,10 +5,10 @@ export pidFile="unit.pid"
 echo $$ > $pidFile
 trap 'rm -f $pidFile' EXIT
 
-if [ -z $1 ]; then
+if [ -z $2 ]; then
   branch="main"
 else
-  branch="$1"
+  branch="$2"
 fi
 
 function fetch() {
@@ -37,5 +37,5 @@ if [ $branch != "main" ]; then
   debugOptions="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
 fi
 
-$exec --no-daemon ':agent:simplify';
+$exec --no-daemon ":$1:simplify";
 java -Xmx2G $debugOptions -jar agent/build/libs/agent.jar;
