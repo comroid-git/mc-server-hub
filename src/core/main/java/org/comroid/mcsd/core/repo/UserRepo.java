@@ -37,7 +37,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
 
     default UUID findMinecraftId(String username) {
         var raw = REST.get(User.getMojangAccountUrl(username))
-                .thenApply(rsp -> rsp.getBody().get("name").asString())
+                .thenApply(rsp -> rsp.getBody().get("id").asString())
                 .join();
         var sb = new StringBuilder(raw);
         sb.insert(8, "-").insert(13, "-").insert(18, "-").insert(23, "-");

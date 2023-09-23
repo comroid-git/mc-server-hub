@@ -34,17 +34,17 @@ public class User extends AbstractEntity {
 
     @SneakyThrows
     public String getNameMcURL() {
-        return "https://namemc.com/profile/" + getId();
+        return "https://namemc.com/profile/" + getMinecraftId();
     }
 
     @SneakyThrows
     public String getHeadURL() {
-        return "https://mc-heads.net/avatar/" + getId();
+        return "https://mc-heads.net/avatar/" + getMinecraftId();
     }
 
     @SneakyThrows
     public String getIsoBodyURL() {
-        return "https://mc-heads.net/body/" + getId();
+        return "https://mc-heads.net/body/" + getMinecraftId();
     }
 
     public static String getMojangAccountUrl(String username) {
