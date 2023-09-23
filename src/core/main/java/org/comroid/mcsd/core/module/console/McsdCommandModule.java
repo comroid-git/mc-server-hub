@@ -31,22 +31,22 @@ public class McsdCommandModule extends ServerModule implements Command.Handler {
     public static final Pattern McsdPattern = ConsoleModule.commandPattern("mcsd");
     public static final Factory<McsdCommandModule> Factory = new Factory<>(McsdCommandModule.class) {
         @Override
-        public McsdCommandModule create(Server server) {
-            return new McsdCommandModule(server);
+        public McsdCommandModule create(Server parent) {
+            return new McsdCommandModule(parent);
         }
     };
 
     final Command.Manager cmdr = new Command.Manager(this);
     ConsoleModule console;
 
-    protected McsdCommandModule(Server server) {
-        super(server);
+    protected McsdCommandModule(Server parent) {
+        super(parent);
     }
 
     @Override
     protected void $initialize() {
         ;
-        console = server.component(ConsoleModule.class).assertion();
+        console = parent.component(ConsoleModule.class).assertion();
 
         addChildren(Utils.listenForPattern(console.bus, McsdPattern).subscribeData(matcher -> {
             var username = matcher.group("username");

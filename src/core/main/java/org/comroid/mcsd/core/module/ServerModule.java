@@ -6,24 +6,15 @@ import org.comroid.api.Named;
 import org.comroid.mcsd.core.entity.Server;
 import org.jetbrains.annotations.Nullable;
 
-@Data
-public abstract class ServerModule extends Component.Base implements Named {
-    protected final Server server;
-
-    @Override
-    public final @Nullable Component getParent() {
-        return server;
-    }
-
-    @Override
-    public final Component.Base setParent(@Nullable Component parent) {
-        return this; // do nothing, parent is final
+public abstract class ServerModule extends Component.Sub<Server> implements Named {
+    public ServerModule(Server parent) {
+        super(parent);
     }
 
     @Data
     public static abstract class Factory<Module extends ServerModule> {
         protected final Class<Module> type;
 
-        public abstract Module create(Server server);
+        public abstract Module create(Server parent);
     }
 }

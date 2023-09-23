@@ -45,7 +45,7 @@ public class ChatModule extends ServerModule {
                     "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
                     "(?<message>.+)\\r?\\n?.*");
     public static final Pattern BroadcastPattern = ConsoleModule.pattern(
-            "(?<username>[\\S\\w_-]+) issued server command: " +
+            "(?<username>[\\S\\w_-]+) issued parent command: " +
                     "/(?<command>(me)|(say)|(broadcast)) " +
                     "(?<message>.+)\\r?\\n?.*");
     public static final Pattern JoinLeavePattern = ConsoleModule.pattern(
@@ -57,22 +57,22 @@ public class ChatModule extends ServerModule {
                     "(\\[(?<advancement>[\\w\\s]+)]))\\r?\\n?");
     public static final Factory<ChatModule> Factory = new Factory<>(ChatModule.class) {
         @Override
-        public ChatModule create(Server server) {
-            return new ChatModule(server);
+        public ChatModule create(Server parent) {
+            return new ChatModule(parent);
         }
     };
 
     final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
     protected Event.Bus<ChatMessage> bus;
 
-    private ChatModule(Server server) {
-        super(server);
+    private ChatModule(Server parent) {
+        super(parent);
     }
 
     @Override
     @SuppressWarnings({"RedundantCast", "RedundantTypeArguments"})
     protected void $initialize() {
-        var console = server.component(ConsoleModule.class)
+        var console = parent.component(ConsoleModule.class)
                 .orElseThrow(() -> new InitFailed("No Console module is loaded"));
         addChildren(bus = console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)
                         .<Matcher>flatMap(pattern -> {
@@ -95,13 +95,13 @@ public class ChatModule extends ServerModule {
                         message = StringUtils.capitalize(message);
                     return new ChatMessage(username, message, type);
                 })
-                .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg))));
+                .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(parent, msg.getUsername(), msg))));
     }
 
     @Override
     protected void $tick() {
-        var console = server.component(ConsoleModule.class);
-        var msgs = server.getTickerMessages();
+        var console = parent.component(ConsoleModule.class);
+        var msgs = parent.getTickerMessages();
         var last = lastTickerMessage.get();
         if (console.isNull() || msgs.isEmpty() || last.time.plus(TickerTimeout).isAfter(now()))
             return;

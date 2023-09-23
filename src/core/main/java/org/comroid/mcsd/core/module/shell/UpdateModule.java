@@ -32,62 +32,62 @@ import static java.time.Instant.now;
 public class UpdateModule extends ServerModule {
     public static final Factory<UpdateModule> Factory = new Factory<>(UpdateModule.class) {
         @Override
-        public UpdateModule create(Server server) {
-            return new UpdateModule(server);
+        public UpdateModule create(Server parent) {
+            return new UpdateModule(parent);
         }
     };
 
     final AtomicBoolean updateRunning = new AtomicBoolean(false);
     FileModule files;
 
-    private UpdateModule(Server server) {
-        super(server);
+    private UpdateModule(Server parent) {
+        super(parent);
     }
 
     @Override
     protected void $initialize() {
-        files=server.component(FileModule.class).assertion();
+        files=parent.component(FileModule.class).assertion();
     }
 
     @Override
     protected void $tick() {
-        if ((server.getBackupPeriod() == null || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()))
+        if ((parent.getBackupPeriod() == null || parent.getLastBackup().plus(parent.getBackupPeriod()).isAfter(now()))
                 || updateRunning.get())
             return;
-        //todo: handle if server is running
+        //todo: handle if parent is running
         //runUpdate(false);
     }
 
     public CompletableFuture<Boolean> runUpdate(boolean force) {
         if (!updateRunning.compareAndSet(false, true))
             return CompletableFuture.failedFuture(new RuntimeException("There is already an update running"));
-        if (!force && server.component(FileModule.class).map(FileModule::isJarUpToDate).orElse(false))
+        if (!force && parent.component(FileModule.class).map(FileModule::isJarUpToDate).orElse(false))
             return CompletableFuture.completedFuture(false);
-        var status = server.component(StatusModule.class).assertion();
-        log.info("Updating " + server);
+        var status = parent.component(StatusModule.class).assertion();
+        log.info("Updating " + parent);
         status.pushStatus(Status.updating);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // modify server.properties
-                server.component(FileModule.class)
+                // modify parent.properties
+                parent.component(FileModule.class)
                         .assertion()
                         .updateProperties();
 
-                // download server.jar
-                var serverJar = new FileHandle(server.path("server.jar").toFile());
-                if (!serverJar.exists()) {
-                    serverJar.mkdirs();
-                    serverJar.createNewFile();
+                // download parent.jar
+                var parentJar = new FileHandle(parent.path("parent.jar").toFile());
+                if (!parentJar.exists()) {
+                    parentJar.mkdirs();
+                    parentJar.createNewFile();
                 } else if (!force && files.isJarUpToDate())
                     return false;
-                try (var in = new URL(server.getJarUrl()).openStream();
-                     var out = new FileOutputStream(serverJar, false)) {
+                try (var in = new URL(parent.getJarUrl()).openStream();
+                     var out = new FileOutputStream(parentJar, false)) {
                     in.transferTo(out);
                 }
 
                 // eula.txt
-                var eulaTxt = new FileHandle(server.path("eula.txt").toFile());
+                var eulaTxt = new FileHandle(parent.path("eula.txt").toFile());
                 if (!eulaTxt.exists()) {
                     eulaTxt.mkdirs();
                     eulaTxt.createNewFile();

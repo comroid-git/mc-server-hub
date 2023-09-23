@@ -24,8 +24,8 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 public class StatusModule extends ServerModule {
     public static final Factory<StatusModule> Factory = new Factory<>(StatusModule.class) {
         @Override
-        public StatusModule create(Server server) {
-            return new StatusModule(server);
+        public StatusModule create(Server parent) {
+            return new StatusModule(parent);
         }
     };
 
@@ -34,8 +34,8 @@ public class StatusModule extends ServerModule {
 
     Event.Bus<IStatusMessage> bus;
 
-    private StatusModule(Server server) {
-        super(server);
+    private StatusModule(Server parent) {
+        super(parent);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class StatusModule extends ServerModule {
                     previousStatus = currentStatus;
                     currentStatus = message;
                     return message;
-                }).thenCompose(msg -> server.component(UptimeModule.class)
+                }).thenCompose(msg -> parent.component(UptimeModule.class)
                         .ifPresentMapOrElseGet(UptimeModule::pushUptime, () -> CompletableFuture.completedFuture(null)))
                 .thenApply($ -> {
                     bus.publish(message);

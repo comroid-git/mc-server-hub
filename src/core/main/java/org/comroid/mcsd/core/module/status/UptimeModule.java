@@ -13,6 +13,7 @@ import org.comroid.mcsd.core.module.shell.ExecutionModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.ServerUptimeRepo;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Instant.now;
@@ -26,23 +27,24 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 public class UptimeModule extends ServerModule {
     public static final Factory<UptimeModule> Factory = new Factory<>(UptimeModule.class) {
         @Override
-        public UptimeModule create(Server server) {
-            return new UptimeModule(server);
+        public UptimeModule create(Server parent) {
+            return new UptimeModule(parent);
         }
     };
 
     ExecutionModule execution;
     StatusModule statusModule;
+    List<Server> parents;
 
-    private UptimeModule(Server server) {
-        super(server);
+    private UptimeModule(Server parent) {
+        super(parent);
     }
 
     @Override
     protected void $initialize() {
-        ;
         execution = component(ExecutionModule.class).assertion();
         statusModule = component(StatusModule.class).assertion();
+        parents = bean(List.class, "parents");
     }
 
     @Override
@@ -51,11 +53,11 @@ public class UptimeModule extends ServerModule {
     }
 
     public CompletableFuture<Void> pushUptime() {
-        return server.status()
+        return parent.status()
                 .thenCombine(execution.getProcess().isAlive()
                                 ? OS.current.getRamUsage(execution.getProcess().pid())
                                 : CompletableFuture.completedFuture(0L),
-                        (stat, ram) -> new ServerUptimeEntry(server,
+                        (stat, ram) -> new ServerUptimeEntry(parent,
                                 statusModule.getCurrentStatus().getStatus(),
                                 stat.getPlayers() != null ? stat.getPlayers().size() : stat.getPlayerCount(),
                                 ram))

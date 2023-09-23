@@ -31,15 +31,15 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 public class DiscordModule extends ServerModule {
     public static final Factory<DiscordModule> Factory = new Factory<>(DiscordModule.class) {
         @Override
-        public DiscordModule create(Server server) {
-            return new DiscordModule(server);
+        public DiscordModule create(Server parent) {
+            return new DiscordModule(parent);
         }
     };
     protected final DiscordAdapter adapter;
 
-    public DiscordModule(Server server) {
-        super(server);
-        this.adapter = Optional.ofNullable(server.getDiscordBot())
+    public DiscordModule(Server parent) {
+        super(parent);
+        this.adapter = Optional.ofNullable(parent.getDiscordBot())
                 .map(DiscordAdapter::get)
                 .orElseThrow();
     }
@@ -47,25 +47,25 @@ public class DiscordModule extends ServerModule {
     @Override
     @SneakyThrows
     protected void $initialize() {
-        var chat = server.component(ChatModule.class).map(ChatModule::getBus);
-        var consoleModule = server.component(ConsoleModule.class);
+        var chat = parent.component(ChatModule.class).map(ChatModule::getBus);
+        var consoleModule = parent.component(ConsoleModule.class);
 
         adapter.getJda().awaitReady();
 
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
             // public channel
-            Optional.ofNullable(server.getPublicChannelId()).ifPresent(id -> {
-                final var webhook = adapter.getWebhook(server.getPublicChannelWebhook(), id)
+            Optional.ofNullable(parent.getPublicChannelId()).ifPresent(id -> {
+                final var webhook = adapter.getWebhook(parent.getPublicChannelWebhook(), id)
                         .thenApply(adapter::messageTemplate).join();
                 final var bot = adapter.messageTemplate(id);
 
                 // status -> dc
-                server.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
+                parent.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
                         addChildren(bus.mapData(msg -> new EmbedBuilder()
-                                        //.setAuthor(server.getAlternateName(),
-                                        //        Optional.ofNullable(server.getHomepage())
-                                        //                .orElse(server.getViewURL()),
-                                        //        server.getThumbnailURL())
+                                        //.setAuthor(parent.getAlternateName(),
+                                        //        Optional.ofNullable(parent.getHomepage())
+                                        //                .orElse(parent.getViewURL()),
+                                        //        parent.getThumbnailURL())
                                         .setDescription(msg.toStatusMessage())
                                         .setColor(msg.getStatus().getColor())
                                         .setFooter(msg.getMessage())
@@ -76,7 +76,7 @@ public class DiscordModule extends ServerModule {
 
                 addChildren(
                         // mc -> dc
-                        chatBus.filterData(msg -> msg.getType().isFlagSet(server.getPublicChannelEvents()))
+                        chatBus.filterData(msg -> msg.getType().isFlagSet(parent.getPublicChannelEvents()))
                                 .mapData(msg -> {
                                     var player = bean(UserRepo.class).get(msg.getUsername()).get();
                                     return new DiscordMessageSource(msg.toString()).setPlayer(player);
@@ -107,11 +107,11 @@ public class DiscordModule extends ServerModule {
             });
 
             //moderation channel
-            Optional.ofNullable(server.getModerationChannelId()).ifPresent(id -> addChildren(/*todo*/));
+            Optional.ofNullable(parent.getModerationChannelId()).ifPresent(id -> addChildren(/*todo*/));
 
             // console channel
-            Optional.ofNullable(server.getConsoleChannelId()).ifPresent(id -> {
-                final var channel = adapter.channelAsStream(id, server.isFancyConsole());
+            Optional.ofNullable(parent.getConsoleChannelId()).ifPresent(id -> {
+                final var channel = adapter.channelAsStream(id, parent.isFancyConsole());
                 addChildren(
                         // mc -> dc
                         console.getBus().subscribeData(channel::println),
@@ -120,13 +120,13 @@ public class DiscordModule extends ServerModule {
                                 .filterData(msg -> !msg.getAuthor().isBot())
                                 .mapData(msg -> {
                                     var raw = msg.getContentRaw();
-                                    if (server.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                    if (parent.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
                                         msg.delete().queue();
                                     //noinspection RedundantCast //ide error
                                     return (String) raw;
                                 })
-                                .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
-                                .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
+                                .filterData(cmd -> parent.getConsoleChannelPrefix() == null || cmd.startsWith(parent.getConsoleChannelPrefix()))
+                                .mapData(cmd -> parent.getConsoleChannelPrefix() == null ? cmd : cmd.substring(parent.getConsoleChannelPrefix().length()))
                                 .subscribeData(input -> console.execute(input).exceptionally(Polyfill.exceptionLogger(log)))
                 );
             });

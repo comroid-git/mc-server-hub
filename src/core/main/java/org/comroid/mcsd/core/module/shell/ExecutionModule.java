@@ -38,12 +38,12 @@ import java.util.regex.Pattern;
 public final class ExecutionModule extends ConsoleModule {
     public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?.*?");
     public static final Pattern StopPattern = pattern("Closing [sS]erver.*\\r?\\n?.*?");
-    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-server.txt).*.*?");
+    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-parent.txt).*.*?");
 
     public static final Factory<ExecutionModule> Factory = new Factory<>(ExecutionModule.class) {
         @Override
-        public ExecutionModule create(Server server) {
-            return new ExecutionModule(server);
+        public ExecutionModule create(Server parent) {
+            return new ExecutionModule(parent);
         }
     };
 
@@ -54,8 +54,8 @@ public final class ExecutionModule extends ConsoleModule {
     CompletableFuture<Duration> done;
     CompletableFuture<Void> stop;
 
-    private ExecutionModule(Server server) {
-        super(server);
+    private ExecutionModule(Server parent) {
+        super(parent);
     }
 
     @Override
@@ -74,19 +74,19 @@ public final class ExecutionModule extends ConsoleModule {
     @Override
     @SneakyThrows
     protected synchronized void $tick() {
-        if (server.isEnabled() && (manualShutdown.get() || (process != null && process.isAlive())))
+        if (parent.isEnabled() && (manualShutdown.get() || (process != null && process.isAlive())))
             return;
-        log.info("Starting " + server);
-        server.component(UpdateModule.class).ifPresent(mod-> mod.runUpdate(false).join());
-        server.component(StatusModule.class).assertion().pushStatus(Status.starting);
-        final var stopwatch = Stopwatch.start("startup-" + server.getId());
+        log.info("Starting " + parent);
+        parent.component(UpdateModule.class).ifPresent(mod-> mod.runUpdate(false).join());
+        parent.component(StatusModule.class).assertion().pushStatus(Status.starting);
+        final var stopwatch = Stopwatch.start("startup-" + parent.getId());
         var exec = PathUtil.findExec("java").orElseThrow();
-        process = Runtime.getRuntime().exec(server.getCustomCommand() == null ? new String[]{
+        process = Runtime.getRuntime().exec(parent.getCustomCommand() == null ? new String[]{
                         exec.getAbsolutePath(),
-                        "-Xmx%dG".formatted(server.getRamGB()),
-                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : server.getCustomCommand().split(" "),
+                        "-Xmx%dG".formatted(parent.getRamGB()),
+                        "-jar", "parent.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : parent.getCustomCommand().split(" "),
                 new String[0],
-                new FileHandle(server.getDirectory(), true));
+                new FileHandle(parent.getDirectory(), true));
 
         in = new PrintStream(process.getOutputStream(), true);
         oe = DelegateStream.IO.process(process);
@@ -103,20 +103,20 @@ public final class ExecutionModule extends ConsoleModule {
         done.thenCompose(d -> {
             var t = Polyfill.durationString(d);
             var msg = "Took " + t + " to start";
-            return server.component(StatusModule.class).assertion()
-                    .pushStatus((server.isMaintenance() ? Status.in_maintenance_mode : Status.online).new Message(msg));
-        }).thenAccept(msg -> log.info(server + " " + msg.getMessage()))
+            return parent.component(StatusModule.class).assertion()
+                    .pushStatus((parent.isMaintenance() ? Status.in_maintenance_mode : Status.online).new Message(msg));
+        }).thenAccept(msg -> log.info(parent + " " + msg.getMessage()))
                 .exceptionally(Polyfill.exceptionLogger());
 
         this.stop = MultithreadUtil.firstOf(process.onExit(),
                         Utils.listenForPattern(bus, StopPattern).listen().once())
-                .thenRun(server::terminate)
+                .thenRun(parent::terminate)
                 .exceptionally(Polyfill.exceptionLogger());
     }
 
     public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
         return CompletableFuture.supplyAsync(() -> {
-            server.component(StatusModule.class).assertion()
+            parent.component(StatusModule.class).assertion()
                     .pushStatus(Status.shutting_down.new Message(reason));
             final var msg = (IntFunction<String>) t -> "say Server will shut down in %d seconds (%s)".formatted(t, reason);
             int time = warnSeconds;
@@ -156,7 +156,7 @@ public final class ExecutionModule extends ConsoleModule {
         if (process == null || !process.isAlive())
             return;
 
-        server.component(StatusModule.class).assertion()
+        parent.component(StatusModule.class).assertion()
                 .pushStatus(Status.offline);
         if (process.isAlive())
             shutdown("Host shutdown", 2).join();

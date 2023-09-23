@@ -97,7 +97,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                             .toArray(CompletableFuture[]::new)))
                     */
                     .thenCompose($ -> jda.updateCommands().addCommands(
-                            Commands.slash("info", "Shows server information")
+                            Commands.slash("info", "Shows parent information")
                                     .setGuildOnly(true),
                             Commands.slash("list", "Shows list of online players")
                                     .setGuildOnly(true),
@@ -111,14 +111,14 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                             Commands.slash("verify", "Verify Minecraft Account linkage. Used after running link command")
                                     .addOption(OptionType.STRING, "code", "Your verification code", true)
                                     .setGuildOnly(true),
-                            Commands.slash("backup", "Create a backup of the server")
+                            Commands.slash("backup", "Create a backup of the parent")
                                     .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                     .setGuildOnly(true),
-                            Commands.slash("update", "Update the server")
+                            Commands.slash("update", "Update the parent")
                                     .addOption(OptionType.BOOLEAN, "force", "Force the Update")
                                     .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                     .setGuildOnly(true),
-                            Commands.slash("execute", "Run a command on the server")
+                            Commands.slash("execute", "Run a command on the parent")
                                     .addOption(OptionType.STRING, "command", "The command to run", true)
                                     .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                     .setGuildOnly(true)).submit())
@@ -166,25 +166,25 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
     @Command
     public CompletableFuture<EmbedBuilder> info(SlashCommandInteractionEvent e) {
-        var server = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
-                .orElseThrow(() -> new Command.Error("Unable to find server"));
-        return server.status().thenApply(stat -> {
+        var parent = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .orElseThrow(() -> new Command.Error("Unable to find parent"));
+        return parent.status().thenApply(stat -> {
             var embed = new EmbedBuilder()
-                    .setTitle(stat.getStatus().toStatusMessage(), server.getHomepage())
+                    .setTitle(stat.getStatus().toStatusMessage(), parent.getHomepage())
                     .setDescription(TextDecoration.sanitize(stat.getMotd(), McFormatCode.class, Markdown.class))
                     .setColor(stat.getStatus().getColor())
-                    .setThumbnail(server.getThumbnailURL())
-                    .addField("Host", server.getHost(), true)
-                    .addField("Version", server.getMcVersion(), true)
-                    .addField("Game Type", server.getMode().getName(), true)
+                    .setThumbnail(parent.getThumbnailURL())
+                    .addField("Host", parent.getHost(), true)
+                    .addField("Version", parent.getMcVersion(), true)
+                    .addField("Game Type", parent.getMode().getName(), true)
                     .setTimestamp(stat.getTimestamp());
             if (stat.getPlayers() != null)
                 if (!stat.getPlayers().isEmpty())
                     embed.addField("Players", "- " + String.join("\n- ", stat.getPlayers()), false);
                 else embed.addField("Players", "There are no players online", false);
             else
-                embed.addField("Players", "%d out of %d".formatted(stat.getPlayerCount(), server.getMaxPlayers()), false);
-            Optional.ofNullable(server.getOwner())
+                embed.addField("Players", "%d out of %d".formatted(stat.getPlayerCount(), parent.getMaxPlayers()), false);
+            Optional.ofNullable(parent.getOwner())
                     .ifPresent(owner -> embed.setAuthor("Owner: " + owner.getName(), owner.getNameMcURL(), owner.getHeadURL()));
             return embed;
         });
@@ -192,12 +192,12 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
     @Command
     public CompletableFuture<EmbedBuilder> list(SlashCommandInteractionEvent e) {
-        var server = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
-                .orElseThrow(() -> new Command.Error("Unable to find server"));
-        return server.status().thenApply(stat -> {
+        var parent = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+                .orElseThrow(() -> new Command.Error("Unable to find parent"));
+        return parent.status().thenApply(stat -> {
             var embed = new EmbedBuilder()
                     .setDescription(TextDecoration.sanitize(stat.getMotd(), McFormatCode.class, Markdown.class))
-                    .setThumbnail(server.getThumbnailURL())
+                    .setThumbnail(parent.getThumbnailURL())
                     .setTimestamp(stat.getTimestamp());
             if (stat.getPlayers() == null)
                 return embed.setDescription("There are no players online");
@@ -255,7 +255,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .build()
                 .toString();
         // todo: should check if player is online
-        ((List<Server>)bean(List.class, "servers")).stream()
+        ((List<Server>)bean(List.class, "parents")).stream()
                 .flatMap(srv -> srv.component(ConsoleModule.class).stream())
                 .forEach(console -> console.execute(cmd));
         return "Please check Minecraft Chat for the code and then run /verify <code>\n" +
@@ -282,7 +282,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     public CompletableFuture<String> backup(SlashCommandInteractionEvent e) {
         return bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
                 .flatMap(srv -> srv.component(BackupModule.class).wrap())
-                .orElseThrow(() -> new Command.Error("Unable to find server"))
+                .orElseThrow(() -> new Command.Error("Unable to find parent"))
                 .runBackup(true)
                 .thenApply($->"Backup complete");
     }
@@ -291,7 +291,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     public CompletableFuture<String> update(SlashCommandInteractionEvent e) {
         return bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
                 .flatMap(srv -> srv.component(UpdateModule.class).wrap())
-                .orElseThrow(() -> new Command.Error("Unable to find server"))
+                .orElseThrow(() -> new Command.Error("Unable to find parent"))
                 .runUpdate(Optional.ofNullable(e.getOption("force"))
                         .map(OptionMapping::getAsBoolean)
                         .orElse(false))
@@ -302,7 +302,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     public String execute(SlashCommandInteractionEvent e) {
         var console = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
                 .flatMap(srv -> srv.component(ConsoleModule.class).wrap())
-                .orElseThrow(() -> new Command.Error("Unable to find server"));
+                .orElseThrow(() -> new Command.Error("Unable to find parent"));
         var cmd = Objects.requireNonNull(e.getOption("command")).getAsString();
         console.execute(cmd);
         return "Command was sent";
@@ -450,11 +450,11 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
                         .submit()
                         .thenApply(wh -> {
-                            final var servers = bean(ServerRepo.class);
-                            servers.findByDiscordChannel(channelId)
+                            final var parents = bean(ServerRepo.class);
+                            parents.findByDiscordChannel(channelId)
                                     .stream()
                                     .map(srv -> srv.setPublicChannelWebhook(wh.getUrl()))
-                                    .forEach(servers::save);
+                                    .forEach(parents::save);
                             return wh;
                         }));
     }
