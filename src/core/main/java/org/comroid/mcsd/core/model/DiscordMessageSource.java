@@ -1,14 +1,14 @@
-package org.comroid.mcsd.agent.util;
+package org.comroid.mcsd.core.model;
 
-import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.comroid.api.StreamSupplier;
-import org.comroid.mcsd.core.entity.MinecraftProfile;
+import org.comroid.mcsd.core.entity.User;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 @Data
 public final class DiscordMessageSource implements StreamSupplier<Object> {
     private @Nullable Object data;
-    private @Nullable MinecraftProfile player = null;
+    private @Nullable User player = null;
     private boolean append = false;
 
     public DiscordMessageSource() {
@@ -51,13 +51,14 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
     public DiscordMessageSource embed(final Consumer<EmbedBuilder> embedModifier) {
         data = embed().<Object>map(embed -> {
                     embedModifier.accept(embed);
+                    embed.setTimestamp(Instant.now());
                     return embed;
                 })
                 .orElse(data);
         return this;
     }
 
-    public DiscordMessageSource setPlayer(MinecraftProfile player) {
+    public DiscordMessageSource setPlayer(User player) {
         this.player = player;
         return embed(embed -> embed.setAuthor(player.getName(), player.getNameMcURL(), player.getHeadURL()));
     }

@@ -9,17 +9,20 @@ import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.agent.controller.ConsoleController;
-import org.comroid.mcsd.agent.discord.DiscordAdapter;
-import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.*;
+import org.comroid.mcsd.core.module.console.ConsoleModule;
+import org.comroid.mcsd.core.module.shell.BackupModule;
+import org.comroid.mcsd.core.module.shell.ExecutionModule;
+import org.comroid.mcsd.core.module.shell.UpdateModule;
+import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.util.Utils;
-import org.comroid.util.StandardValueType;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.PrintStream;
@@ -27,7 +30,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,19 +39,22 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @Service
 public class AgentRunner implements Command.Handler {
-    public final Map<UUID, ServerProcess> processes = new ConcurrentHashMap<>();
-    public final Map<UUID, DiscordAdapter> adapters = new ConcurrentHashMap<>();
     public final Agent me;
     public final DelegateStream.IO oe;
     public final PrintStream out;
     public final PrintStream err;
     public final Command.Manager cmd;
-    public ServerProcess attached;
+    public Server attached;
     @Autowired
     public Event.Bus<Object> eventBus;
+    @Autowired
+    private List<Server> servers;
     @Lazy
     @Autowired
-    private ServerRepo servers;
+    private ServerRepo serverRepo;
+    @Lazy
+    @Autowired
+    private SimpMessagingTemplate ws;
 
     public AgentRunner(@Autowired Agent me) {
         this.me = me;
@@ -72,22 +77,23 @@ public class AgentRunner implements Command.Handler {
         srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
-        var proc = process(srv);
-        var run = proc.runBackup(true);
-        run.exceptionally(Polyfill.exceptionLogger());
+        srv.component(BackupModule.class).assertion()
+                .runBackup(true)
+                .exceptionally(Polyfill.exceptionLogger());
         return "Backup of "+srv+" started";
     }
 
     @SneakyThrows
-    @Command(usage = "<name> [-r]")
+    @Command(usage = "<name> [-f]")
     public String update(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
         srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
-        var flags = args.length > 1 ? args[1] : "";
-        var proc = process(srv);
-        return proc.runUpdate(flags).join() ? srv + " already up to date" : srv + " updated";
+        var force = args[1].contains("-f");
+        return srv.component(UpdateModule.class).assertion()
+                .runUpdate(force)
+                .join() ? srv + " already up to date" : srv + " updated";
     }
 
     @Command(usage = "<name>")
@@ -95,7 +101,8 @@ public class AgentRunner implements Command.Handler {
         var srv = getServer(args);
         srv.verifyPermission(con.getUser(), AbstractEntity.Permission.View)
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
-        return process(srv).getCurrentStatus();
+        return srv.component(StatusModule.class).assertion()
+                .getCurrentStatus();
     }
 
     @Command(usage = "<name> [-na]")
@@ -105,7 +112,7 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var flags = args.length > 1 ? args[1] : "";
-        servers.setEnabled(srv.getId(), true);
+        serverRepo.setEnabled(srv.getId(), true);
         if (flags.contains("n"))
             return start(args, con);
         return srv + " is now enabled";
@@ -118,7 +125,7 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var flags = args.length > 1 ? args[1] : "";
-        servers.setEnabled(srv.getId(), false);
+        serverRepo.setEnabled(srv.getId(), false);
         if (flags.contains("n"))
             return stop(args, con);
         return srv + " is now disabled";
@@ -131,7 +138,7 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var flags = args.length > 1 ? args[1] : "";
-        process(srv).start();
+        srv.component(ExecutionModule.class).assertion().start();
         if (flags.contains("a"))
             attach(args, con);
         return srv + " was started";
@@ -144,60 +151,54 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var timeout = args.length > 2 ? Integer.parseInt(args[2]) : 10;
-        process(srv).shutdown("Admin shutdown", timeout)
+        srv.component(ExecutionModule.class).assertion()
+                .shutdown("Admin shutdown", timeout)
                 .thenRun(() -> out.println(srv + " was shut down"));
         return srv + " will shut down in " + timeout + " seconds";
     }
 
+    /* todo
     @Command(usage = "<name> [true/false]")
     public Object maintenance(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        var proc = process(srv);
         srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
-        var val = args.length > 1 ? StandardValueType.BOOLEAN.parse(args[2]) : !proc.getServer().isMaintenance();
+        var val = args.length > 1 ? StandardValueType.BOOLEAN.parse(args[2]) : !srv.isMaintenance();
         return srv + (proc.pushMaintenance(val) ? " was " : " could not be ")
                 + (val ? " put into " : " taken out of ") + " Maintenance mode";
     }
+     */
 
     @Command(usage = "<name> <command...>")
     public String execute(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        var proc = process(srv);
         srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
-        if (proc.getState() != ServerProcess.State.Running)
-            throw new Command.MildError("Server is not running");
-
         // forward command
-        var in = proc.getIn();
-        in.println(Arrays.stream(args).skip(1).collect(Collectors.joining(" ")));
+        srv.component(ConsoleModule.class).assertion().execute(Arrays.stream(args).skip(1).collect(Collectors.joining(" ")));
         return "Executing command";
     }
 
     @Command(usage = "<name>")
     public String attach(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        var proc = process(srv);
         srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         if (attached != null)
             con.detach();
 
-        if (proc.getState() != ServerProcess.State.Running)
-            throw new Command.MildError("Server is not running");
-        con.attach(proc);
-        attached = proc;
+        con.attach(srv);
+        attached = srv;
         return "Attached to " + srv;
     }
 
     @Command(usage = "")
     public String detach(String[] args, ConsoleController.Connection con) {
         if (attached == null)
-            throw new Command.MildError("Not attached");
+            throw new Command.Error("Not attached");
         con.detach();
         attached = null;
         return "Detached";
@@ -222,8 +223,11 @@ public class AgentRunner implements Command.Handler {
                 null,
                 null,
                 null,
-                Server.ConsoleMode.ScrollClean,
+                null,
+                0xFFFF_FFFF,
                 true,
+                true,
+                null,
                 version,
                 shCon.getHost(),
                 25565,
@@ -242,26 +246,20 @@ public class AgentRunner implements Command.Handler {
                 Duration.ofDays(7),
                 Instant.EPOCH,
                 Instant.EPOCH,
-                Status.unknown_status,
                 new ArrayList<>()
         );
-        server.setName(name).setOwner(con.getUser());
-        return servers.save(server) + " created";
+        server.setOwner(con.getUser()).setName(name);
+        return serverRepo.save(server) + " created";
     }
 
     @Command(usage = "")
     public String shutdown(ConsoleController.Connection con) {
         if (Arrays.stream(Utils.SuperAdmins).noneMatch(con.getUser().getId()::equals))
             throw new Command.Error("Insufficient permissions");
-        if (Streams.of(servers.findAll())
-                .map(this::process)
-                .anyMatch(srv -> !srv.getCurrentBackup().get().isDone() || srv.getUpdateRunning().get()))
-            throw new Command.MildError("Unable to shutdown while a backup or update is running");
         log.info("Shutting down agent");
-        CompletableFuture.allOf(Streams.of(servers.findAll())
-                .map(this::process)
-                .filter(proc -> proc.getState() == ServerProcess.State.Running)
-                .map(proc -> proc.shutdown("Host shutdown", 10))
+        CompletableFuture.allOf(((List<Server>) bean(List.class, "servers")).stream()
+                .flatMap(srv -> srv.component(ExecutionModule.class).stream())
+                .map(exec -> exec.shutdown("Host shutting down", 10))
                 .toArray(CompletableFuture[]::new))
                 .join();
         System.exit(0);
@@ -269,13 +267,15 @@ public class AgentRunner implements Command.Handler {
     }
 
     private Server getServer(String[] args) {
-        var srv = servers.findByAgentAndName(getMe().getId(), args[0]).orElse(null);
+        var srv = serverRepo.findByAgentAndName(getMe().getId(), args[0]).orElse(null);
         if (srv == null) throw new Command.ArgumentError("name", "Server not found");
         return srv;
     }
 
     @Override
     public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
+        //Stream.of(args).flatMap(Streams.cast(ConsoleController.Connection.class)).findAny()
+        //                .ifPresent(con -> ws.convertAndSendToUser(con.getUser().getName(), response));
         out.println(response);
     }
 
@@ -284,28 +284,20 @@ public class AgentRunner implements Command.Handler {
     }
 
     public Stream<String> streamServerStatusMsgs() {
-        return streamServers().map(this::process).map(ServerProcess::toString);
-    }
-
-    public ServerProcess process(final Server srv) {
-        return processes.computeIfAbsent(srv.getId(), $ -> new ServerProcess(this, srv));
-    }
-
-    public DiscordAdapter adapter(final DiscordBot bot) {
-        return adapters.computeIfAbsent(bot.getId(), $ -> new DiscordAdapter(bot));
+        return streamServers().map(Server::toString);
     }
 
     public void execute(String cmd, ConsoleController.Connection con) {
         if (!"detach".equals(cmd) && con.getProcess() != null && attached != null)
-            con.getProcess().getIn().println(cmd);
+            con.getProcess().component(ConsoleModule.class).assertion().execute(cmd);
         else getCmd().execute(cmd, con);
     }
 
     @PreDestroy
     public void close() {
-        CompletableFuture.allOf(processes.values().stream()
-                        .peek(proc -> proc.pushStatus(Status.offline))
-                        .map(proc -> proc.shutdown("Host shutdown", 5))
+        CompletableFuture.allOf(servers.stream()
+                        .flatMap(srv -> srv.component(ExecutionModule.class).stream())
+                        .map(module -> module.shutdown("Host shutdown", 3))
                         .toArray(CompletableFuture[]::new))
                 .join();
     }

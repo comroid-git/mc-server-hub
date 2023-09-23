@@ -2,40 +2,36 @@ package org.comroid.mcsd.core.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.comroid.api.BitmaskAttribute;
-import org.comroid.mcsd.core.model.IUser;
-import org.comroid.mcsd.core.repo.UserDataRepo;
-import org.comroid.mcsd.core.repo.UserRepo;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
-import org.jetbrains.annotations.NotNull;
+import org.comroid.api.EMailAddress;
+import org.comroid.util.REST;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
-public class User extends AbstractEntity implements IUser {
-    private boolean guest;
-    private @OneToOne @NotNull @Getter(onMethod = @__(@JsonIgnore)) UserData userData = new UserData();
-    private @Deprecated @OneToOne @Nullable MinecraftProfile minecraft;
-    private @Deprecated @Nullable Long discordId;
+public class User extends AbstractEntity {
+    private @Column(unique = true) @Nullable UUID hubId;
+    private @Column(unique = true) @Nullable UUID minecraftId;
+    private @Column(unique = true) @Nullable Long discordId;
+    private @Column(unique = true) @Nullable String email;
+    private @Column(unique = true)
+    @ToString.Exclude
+    @Getter(onMethod = @__(@JsonIgnore))
+    @Nullable String verification;
+    private @Column(unique = true)
+    @ToString.Exclude
+    @Getter(onMethod = @__(@JsonIgnore))
+    @Nullable Instant verificationTimeout;
 
-    public void migrate() {
-        //noinspection ConstantValue
-        if (userData == null || userData.getUser() == null || minecraft != null || discordId != null) {
-            var users = ApplicationContextProvider.bean(UserRepo.class);
-            var data = ApplicationContextProvider.bean(UserDataRepo.class);
-            data.save(userData = data.findByUserId(getId()).orElseGet(UserData::new)
-                    .setUser(this)
-                    .setMinecraft(minecraft)
-                    .setDiscordId(discordId));
-            minecraft = null;
-            discordId = null;
-            users.save(this);
-        }
+    public String getMinecraftName() {
+        return REST.get(getMojangAccountUrl(minecraftId))
+                .thenApply(rsp -> rsp.getBody().get("name").asString())
+                .join();
     }
 
     @Override
@@ -43,11 +39,29 @@ public class User extends AbstractEntity implements IUser {
         return "User " + getName();
     }
 
-    @Override
-    public UUID getUserId() {
-        return getId();
+    @SneakyThrows
+    public String getNameMcURL() {
+        return "https://namemc.com/profile/" + getMinecraftId();
+    }
+
+    @SneakyThrows
+    public String getHeadURL() {
+        return "https://mc-heads.net/avatar/" + getMinecraftId();
+    }
+
+    @SneakyThrows
+    public String getIsoBodyURL() {
+        return "https://mc-heads.net/body/" + getMinecraftId();
+    }
+
+    public static String getMojangAccountUrl(String username) {
+        return "https://api.mojang.com/users/profiles/minecraft/" + username;
+    }
+
+    public static String getMojangAccountUrl(UUID id) {
+        return "https://api.mojang.com/user/profile/" + id;
     }
 
     @Deprecated
-    public enum Perm implements BitmaskAttribute<Perm> {None, ManageServers, ManageShConnections, Admin}
+    public enum Perm implements BitmaskAttribute<Perm> {None, ManageServers, ManageShConnections, Admin;}
 }

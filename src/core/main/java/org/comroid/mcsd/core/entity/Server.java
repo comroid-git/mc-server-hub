@@ -8,14 +8,16 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
 import org.comroid.api.BitmaskAttribute;
+import org.comroid.api.Component;
 import org.comroid.api.IntegerAttribute;
+import org.comroid.api.Named;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
-import org.comroid.mcsd.core.model.ServerConnection;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.util.Token;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,21 +40,24 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Entity
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class Server extends AbstractEntity {
-    public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
-
+public class Server extends AbstractEntity implements Component {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
+    private final @Transient @lombok.experimental.Delegate(excludes = Named.class) Component.Base delegate = new Component.Base();
+    private static final Duration TickRate = Duration.ofMinutes(1);
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
     private @Nullable String homepage;
     private @Nullable String PublicChannelWebhook;
-    private @Nullable Long PublicChannelId;
-    private @Nullable Long ModerationChannelId;
-    private @Nullable Long ConsoleChannelId;
-    private @Deprecated ConsoleMode consoleMode = ConsoleMode.Scroll;
+    private @Nullable @Column(unique = true) Long PublicChannelId;
+    private @Nullable @Column(unique = true) Long ModerationChannelId;
+    private @Nullable @Column(unique = true) Long ConsoleChannelId;
+    private @Nullable String ConsoleChannelPrefix;
+    private int publicChannelEvents = 0xFFFF_FFFF;
     private boolean fancyConsole = true;
+    private boolean forceCustomJar = false;
+    private @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
     private String mcVersion = "1.19.4";
     private String host;
     private int port = 25565;
@@ -66,18 +71,12 @@ public class Server extends AbstractEntity {
     private int maxPlayers = 20;
     private int queryPort = 25565;
     private int rConPort = Defaults.RCON_PORT;
-    private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = UUID.randomUUID().toString();
-    private Duration backupPeriod = Duration.ofHours(12);
+    private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
+    private @Nullable Duration backupPeriod = Duration.ofHours(12);
     private Duration updatePeriod = Duration.ofDays(7);
     private Instant lastBackup = Instant.ofEpochMilli(0);
     private Instant lastUpdate = Instant.ofEpochMilli(0);
-    private @Basic(fetch = FetchType.EAGER) Status lastStatus = Status.unknown_status;
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
-
-    @JsonIgnore
-    public ServerConnection con() {
-        return ServerConnection.getInstance(this);
-    }
 
     @JsonIgnore
     public boolean isVanilla() {
@@ -108,56 +107,10 @@ public class Server extends AbstractEntity {
         return this;
     }
 
-    public String getUnitName() {
-        return "mcsd-" + getName();
-    }
-
-    @Language("sh")
-    public String wrapCmd(@Language("sh") String cmd) {
-        return wrapDevNull(
-                "(cd '"+getDirectory()+"' &&\n" +
-                "echo '"+ServerConnection.OutputBeginMarker +"' &&\n" +
-                "("+cmd+") || echo 'command failed'>&2) &&\n" +
-                "echo '"+ServerConnection.OutputEndMarker +"' &&\n" +
-                "exit");
-        /*
-        return "(cd '" + getDirectory() + "' && " +
-                //"chmod 755 "+ServerConnection.RunScript+" && " +
-                "echo '" + ServerConnection.OutputMarker + "' && " +
-                "(" + cmd + ")" +
-                " || echo 'Command finished with non-zero exit code'>&2" +
-                ") && " +
-                "echo '" + ServerConnection.EndMarker + "' && " +
-                "exit";
-         */
-    }
     @Language("sh")
     private String wrapDevNull(@Language("sh") String cmd) {
         return "export TERM='xterm' && script -q /dev/null < <(echo \""+cmd+"\"; cat)";
         //return "export TERM='xterm' && echo \""+cmd+"\" | script /dev/null";
-    }
-
-    public String cmdStart() {
-        return wrapCmd("./"+ServerConnection.RunScript+" start ");
-    }
-
-    public String cmdAttach() {
-        return wrapCmd("./"+ServerConnection.RunScript+" attach ");
-    }
-
-    public String cmdBackup() {
-        return wrapCmd("./"+ServerConnection.RunScript+" backup " + ApplicationContextProvider.bean(ShRepo.class)
-                .findById(UUID.randomUUID())
-                .orElseThrow(() -> new EntityNotFoundException(ShConnection.class, "Server " + getId()))
-                .getBackupsDir() + '/' + getUnitName());
-    }
-
-    public String cmdUpdate() {
-        return wrapCmd("./"+ServerConnection.RunScript+" update");
-    }
-
-    public String cmdDisable() {
-        return wrapCmd("./"+ServerConnection.RunScript+" disable");
     }
 
     @Override
@@ -207,27 +160,6 @@ public class Server extends AbstractEntity {
         return Paths.get(getDirectory(), extra);
     }
 
-    public Properties updateProperties(InputStream input) throws IOException {
-        var prop = new Properties();
-        prop.load(input);
-
-        prop.setProperty("server-port", String.valueOf(getPort()));
-        prop.setProperty("max-players", String.valueOf(getMaxPlayers()));
-        prop.setProperty("white-list", String.valueOf(isWhitelist() || isMaintenance()));
-
-        // query
-        prop.setProperty("enable-query", String.valueOf(true));
-        prop.setProperty("query.port", String.valueOf(getQueryPort()));
-
-        // rcon
-        prop.setProperty("enable-rcon", String.valueOf(false));
-        //prop.setProperty("enable-rcon", String.valueOf(getRConPassword() != null && !getRConPassword().isBlank()));
-        prop.setProperty("rcon.port", String.valueOf(getRConPort()));
-        prop.setProperty("rcon.password", Objects.requireNonNullElse(getRConPassword(), ""));
-
-        return prop;
-    }
-
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
         log.trace("Getting status of Server %s".formatted(this));
@@ -246,7 +178,7 @@ public class Server extends AbstractEntity {
                                 //todo
                                 //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
                                 //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
-                                .withStatus(isMaintenance() ? Status.maintenance : Status.online)
+                                .withStatus(isMaintenance() ? Status.in_maintenance_mode : Status.online)
                                 .withPlayerCount(stat.getOnlinePlayers())
                                 .withPlayerMax(stat.getMaxPlayers())
                                 .withMotd(stat.getMOTD())
@@ -263,7 +195,7 @@ public class Server extends AbstractEntity {
                             //todo
                             //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
                             //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
-                            .withStatus(stat.isServerUp() ? isMaintenance() ? Status.maintenance : Status.online : Status.offline)
+                            .withStatus(stat.isServerUp() ? isMaintenance() ? Status.in_maintenance_mode : Status.online : Status.offline)
                             .withPlayerCount(stat.getCurrentPlayers())
                             .withPlayerMax(stat.getMaximumPlayers())
                             .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), ""))
@@ -298,4 +230,5 @@ public class Server extends AbstractEntity {
     public enum Permission implements BitmaskAttribute<Permission> {
         Status, Start, Stop, Console, Backup, Files
     }
+    public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }
 }

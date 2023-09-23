@@ -7,12 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.mcsd.agent.AgentRunner;
-import org.comroid.mcsd.agent.ServerProcess;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
+import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
-import org.comroid.mcsd.core.entity.UserData;
-import org.comroid.mcsd.core.model.ServerConnection;
-import org.comroid.mcsd.core.repo.UserDataRepo;
+import org.comroid.mcsd.core.module.shell.ExecutionModule;
+import org.comroid.mcsd.core.repo.UserRepo;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
@@ -32,19 +32,19 @@ public class ConsoleController {
     @Autowired
     private SimpMessagingTemplate respond;
     @Autowired
-    private UserDataRepo userRepo;
+    private UserRepo users;
     @Autowired
     private AgentRunner agentRunner;
 
     public Connection con(Map<String, Object> attr) {
         return con(user(attr));
     }
-    public Connection con(final UserData user) {
+    public Connection con(final User user) {
         return connections.computeIfAbsent(user.getId(), $->new Connection(user));
     }
-    public UserData user(Map<String, Object> attr) {
+    public User user(Map<String, Object> attr) {
         var session = (HttpSession) attr.get(WebSocketConfig.HTTP_SESSION_KEY);
-        return userRepo.get(session);
+        return users.get(session).get();
     }
 
     @MessageMapping("/console/connect")
@@ -71,18 +71,20 @@ public class ConsoleController {
 
     @Getter
     public class Connection extends Event.Bus<String> {
-        private final UserData user;
-        private @Nullable ServerProcess process;
+        @Language("html")
+        public static final String br = "<br/>";
+        private final User user;
+        private @Nullable Server process;
 
-        private Connection(UserData user) {
+        private Connection(User user) {
             this.user = user;
 
             agentRunner.oe.redirectToEventBus(this);
         }
 
-        public void attach(ServerProcess process) {
+        public void attach(Server process) {
             this.process = process;
-            process.getOe().redirect(agentRunner.oe);
+            process.component(ExecutionModule.class).assertion().getOe().redirect(agentRunner.oe);
         }
 
         public void detach() {
@@ -97,7 +99,7 @@ public class ConsoleController {
             respond.convertAndSendToUser(user.getName(), "/console/output",
                     e.getData().replace("<","&lt;")
                             .replace(">","&gt;")
-                            .replaceAll("\r?\n",ServerConnection.br));
+                            .replaceAll("\r?\n",br));
         }
 
         @Event.Subscriber(DelegateStream.IO.EventKey_Error)
@@ -105,7 +107,7 @@ public class ConsoleController {
             respond.convertAndSendToUser(user.getName(), "/console/error",
                     e.getData().replace("<","&lt;")
                             .replace(">","&gt;")
-                            .replaceAll("\r?\n",ServerConnection.br));
+                            .replaceAll("\r?\n",br));
         }
 
         @Override
