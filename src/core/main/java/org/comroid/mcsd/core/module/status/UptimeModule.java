@@ -34,7 +34,6 @@ public class UptimeModule extends ServerModule {
 
     ExecutionModule execution;
     StatusModule statusModule;
-    List<Server> parents;
 
     private UptimeModule(Server parent) {
         super(parent);
@@ -44,7 +43,6 @@ public class UptimeModule extends ServerModule {
     protected void $initialize() {
         execution = component(ExecutionModule.class).assertion();
         statusModule = component(StatusModule.class).assertion();
-        parents = bean(List.class, "parents");
     }
 
     @Override
