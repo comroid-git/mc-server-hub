@@ -47,9 +47,11 @@ public class AgentRunner implements Command.Handler {
     public Server attached;
     @Autowired
     public Event.Bus<Object> eventBus;
+    @Autowired
+    private List<Server> servers;
     @Lazy
     @Autowired
-    private ServerRepo servers;
+    private ServerRepo serverRepo;
     @Lazy
     @Autowired
     private SimpMessagingTemplate ws;
@@ -110,7 +112,7 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var flags = args.length > 1 ? args[1] : "";
-        servers.setEnabled(srv.getId(), true);
+        serverRepo.setEnabled(srv.getId(), true);
         if (flags.contains("n"))
             return start(args, con);
         return srv + " is now enabled";
@@ -123,7 +125,7 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var flags = args.length > 1 ? args[1] : "";
-        servers.setEnabled(srv.getId(), false);
+        serverRepo.setEnabled(srv.getId(), false);
         if (flags.contains("n"))
             return stop(args, con);
         return srv + " is now disabled";
@@ -247,7 +249,7 @@ public class AgentRunner implements Command.Handler {
                 new ArrayList<>()
         );
         server.setOwner(con.getUser()).setName(name);
-        return servers.save(server) + " created";
+        return serverRepo.save(server) + " created";
     }
 
     @Command(usage = "")
@@ -265,7 +267,7 @@ public class AgentRunner implements Command.Handler {
     }
 
     private Server getServer(String[] args) {
-        var srv = servers.findByAgentAndName(getMe().getId(), args[0]).orElse(null);
+        var srv = serverRepo.findByAgentAndName(getMe().getId(), args[0]).orElse(null);
         if (srv == null) throw new Command.ArgumentError("name", "Server not found");
         return srv;
     }
@@ -293,7 +295,7 @@ public class AgentRunner implements Command.Handler {
 
     @PreDestroy
     public void close() {
-        CompletableFuture.allOf(Streams.of(servers.findAll())
+        CompletableFuture.allOf(servers.stream()
                         .flatMap(srv -> srv.component(ExecutionModule.class).stream())
                         .map(module -> module.shutdown("Host shutdown", 3))
                         .toArray(CompletableFuture[]::new))

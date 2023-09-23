@@ -16,6 +16,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -86,6 +88,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
         do {
             code = Token.random(6, false);
         } while (findByVerification(code).isPresent());
+        user.setVerificationTimeout(Instant.now().plus(Duration.ofMinutes(15)));
         user.setVerification(code);
         save(user);
         return code;
@@ -105,6 +108,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
             return users[0];
         var base = Stream.of(users)
                 .filter(usr -> usr.getHubId()!=null)
+                .distinct()
                 .collect(Streams.oneOrNone(()->new IllegalStateException("cannot merge users; more than one hubUser was found")))
                 .orElse(users[0]);
         for (var other : users) {

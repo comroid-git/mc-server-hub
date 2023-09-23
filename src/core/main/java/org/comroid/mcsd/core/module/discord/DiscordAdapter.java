@@ -73,7 +73,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener, Command.Handler {
     private static final Map<UUID, DiscordAdapter> adapters = new ConcurrentHashMap<>();
     public static final int MaxBulkDelete = 100;
-    public static final int MaxEditBacklog = 10;
+    public static final int MaxEditBacklog = 20;
     private final JDA jda;
 
     @Contract("null -> null; _ -> _")
@@ -248,14 +248,18 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .orElseThrow(() -> new Command.Error("Invalid username"));
         var code = profiles.startMcDcLinkage(profile);
         final var cmd = Tellraw.notify(username, McFormatCode.Blue.text("Account Verification").build(),
-                        "Use code %s to link this Minecraft Account to Discord User %s".formatted(code, e.getUser().getEffectiveName()))
+                        "Use code ")
+                .component(McFormatCode.Aqua.text(code).build())
+                .component(McFormatCode.Reset.text(" to link this Minecraft Account to Discord User ").build())
+                .component(McFormatCode.Aqua.text(e.getUser().getEffectiveName()).build())
                 .build()
                 .toString();
         // todo: should check if player is online
         ((List<Server>)bean(List.class, "servers")).stream()
                 .flatMap(srv -> srv.component(ConsoleModule.class).stream())
                 .forEach(console -> console.execute(cmd));
-        return "Please check Minecraft Chat for the code and then run /verify <code>";
+        return "Please check Minecraft Chat for the code and then run /verify <code>\n" +
+                "The code runs out in 15 Minutes";
     }
 
     @Command(ephemeral = true)
@@ -264,6 +268,11 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         final var users = bean(UserRepo.class);
         final var profile = users.findByVerification(code)
                 .orElseThrow(() -> new Command.Error("Invalid code"));
+        // if a timeout exists that is before now(), throw
+        if (Optional.ofNullable(profile.getVerificationTimeout())
+                .filter(x->x.isBefore(Instant.now()))
+                .isPresent())
+            throw new Command.Error("Verification timeout");
         final var user = users.merge(users.findByDiscordId(e.getUser().getIdLong()), Optional.of(profile));
         users.clearVerification(user.getId());
         return "Minecraft account " + profile.getMinecraftName() + " has been linked";
@@ -485,6 +494,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     .thenCombine(defaultAuthorName(), (chl, name) -> chl.getIterableHistory().stream()
                             .limit(MaxEditBacklog)
                             .filter(msg -> msg.getAuthor().getEffectiveName().equals(name))
+                            .filter(msg -> msg.getReferencedMessage() == null)
                             .findAny()
                             .orElse(null))
                     .thenApply((OptionalFunction<Message, Long>)Message::getIdLong);

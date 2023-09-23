@@ -3,6 +3,7 @@ package org.comroid.mcsd.agent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.common.aliasing.qual.Unique;
 import org.comroid.api.Event;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
@@ -23,11 +24,13 @@ import org.comroid.mcsd.core.module.shell.ExecutionModule;
 import org.comroid.mcsd.core.module.shell.FileModule;
 import org.comroid.mcsd.core.module.shell.UpdateModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
+import org.comroid.mcsd.core.module.status.UptimeModule;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
@@ -72,6 +75,7 @@ public class MinecraftServerHubAgent implements ApplicationRunner {
         return List.of(
                 StatusModule.Factory,
                 FileModule.Factory,
+                UptimeModule.Factory,
                 UpdateModule.Factory,
                 ExecutionModule.Factory,
                 //todo: fix BackupModule.Factory,
@@ -81,6 +85,7 @@ public class MinecraftServerHubAgent implements ApplicationRunner {
     }
 
     @Bean
+    @Unique
     public List<Server> servers(@Autowired ServerRepo servers, @Autowired Agent me) {
         return Streams.of(servers.findAllForAgent(me.getId())).toList();
     }

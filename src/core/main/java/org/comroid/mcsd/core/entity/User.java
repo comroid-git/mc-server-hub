@@ -8,6 +8,7 @@ import org.comroid.api.EMailAddress;
 import org.comroid.util.REST;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
@@ -22,6 +23,10 @@ public class User extends AbstractEntity {
     @ToString.Exclude
     @Getter(onMethod = @__(@JsonIgnore))
     @Nullable String verification;
+    private @Column(unique = true)
+    @ToString.Exclude
+    @Getter(onMethod = @__(@JsonIgnore))
+    @Nullable Instant verificationTimeout;
 
     public String getMinecraftName() {
         return REST.get(getMojangAccountUrl(minecraftId))
