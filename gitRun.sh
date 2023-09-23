@@ -38,4 +38,4 @@ if [ $branch != "main" ]; then
 fi
 
 $exec --no-daemon ":$1:simplify";
-java -Xmx2G $debugOptions -jar agent/build/libs/agent.jar;
+java -Xmx2G $debugOptions -jar "$1/build/libs/$1.jar";
