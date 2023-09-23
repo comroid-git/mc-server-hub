@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.comroid.api.BitmaskAttribute;
+import org.comroid.api.EMailAddress;
 import org.comroid.util.REST;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,6 +17,7 @@ public class User extends AbstractEntity {
     private @Column(unique = true) @Nullable UUID hubId;
     private @Column(unique = true) @Nullable UUID minecraftId;
     private @Column(unique = true) @Nullable Long discordId;
+    private @Column(unique = true) @Nullable String email;
     private @Column(unique = true)
     @ToString.Exclude
     @Getter(onMethod = @__(@JsonIgnore))
