@@ -46,8 +46,6 @@ public class AgentRunner implements Command.Handler {
     public final Command.Manager cmd;
     public Server attached;
     @Autowired
-    public Event.Bus<Object> eventBus;
-    @Autowired
     private List<Server> servers;
     @Lazy
     @Autowired

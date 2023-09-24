@@ -52,7 +52,7 @@ public class UptimeModule extends ServerModule {
 
     public CompletableFuture<Void> pushUptime() {
         return parent.status()
-                .thenCombine(execution.getProcess().isAlive()
+                .thenCombine(execution.getProcess()!=null&&execution.getProcess().isAlive()
                                 ? OS.current.getRamUsage(execution.getProcess().pid())
                                 : CompletableFuture.completedFuture(0L),
                         (stat, ram) -> new ServerUptimeEntry(parent,
