@@ -13,6 +13,8 @@ import org.comroid.mcsd.core.entity.Backup;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
+import org.comroid.mcsd.core.module.shell.LocalShellModule;
+import org.comroid.mcsd.core.module.shell.ShellModule;
 import org.comroid.mcsd.core.repo.BackupRepo;
 import org.comroid.util.Archiver;
 import org.comroid.util.PathUtil;
@@ -34,7 +36,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Component.Requires(ConsoleModule.class)
+@Component.Requires(LocalShellModule.class)
 public class BackupModule extends ServerModule {
     public static final Pattern SaveCompletePattern = ConsoleModule.pattern("Saved the game");
     public static final Factory<BackupModule> Factory = new Factory<>(BackupModule.class) {
