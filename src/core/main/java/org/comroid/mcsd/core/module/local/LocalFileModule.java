@@ -26,7 +26,8 @@ public class LocalFileModule extends FileModule {
 
     @Override
     public boolean mkDir(String path) {
-        return new FileHandle(path).mkdirs();
+        var prnt = new FileHandle(path).getParentFile();
+        return prnt.exists() || prnt.mkdirs();
     }
 
     @Override
