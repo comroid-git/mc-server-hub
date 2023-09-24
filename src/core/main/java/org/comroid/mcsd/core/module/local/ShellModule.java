@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.module.shell;
+package org.comroid.mcsd.core.module.local;
 
 import org.comroid.api.DelegateStream;
 import org.comroid.mcsd.core.entity.Server;

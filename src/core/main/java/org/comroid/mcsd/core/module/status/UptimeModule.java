@@ -9,7 +9,7 @@ import org.comroid.api.Component;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.ServerUptimeEntry;
-import org.comroid.mcsd.core.module.shell.LocalExecutionModule;
+import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.ServerUptimeRepo;
 

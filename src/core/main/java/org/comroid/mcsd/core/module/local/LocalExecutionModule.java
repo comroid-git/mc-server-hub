@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.module.shell;
+package org.comroid.mcsd.core.module.local;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

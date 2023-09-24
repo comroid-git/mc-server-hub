@@ -10,7 +10,7 @@ import org.comroid.mcsd.agent.controller.ConsoleController;
 import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
-import org.comroid.mcsd.core.module.shell.LocalExecutionModule;
+import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.repo.ServerRepo;

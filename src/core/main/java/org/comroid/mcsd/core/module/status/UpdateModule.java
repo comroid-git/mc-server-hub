@@ -7,14 +7,11 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.Component;
 import org.comroid.api.DelegateStream;
-import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.mcsd.core.module.shell.ShellModule;
 
-import java.io.FileOutputStream;
 import java.io.StringReader;
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;

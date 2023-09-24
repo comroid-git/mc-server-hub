@@ -10,7 +10,7 @@ import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
-import org.comroid.mcsd.core.module.shell.LocalExecutionModule;
+import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
