@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Hub + Agent" type="CompoundRunConfigurationType">
+    <toRun name="MinecraftServerHub" type="SpringBootApplicationConfigurationType" />
+    <toRun name="MinecraftServerHubAgent" type="SpringBootApplicationConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>
