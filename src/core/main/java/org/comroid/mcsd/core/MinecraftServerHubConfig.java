@@ -3,16 +3,12 @@ package org.comroid.mcsd.core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.jdbc.Driver;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.dto.DBInfo;
 import org.comroid.mcsd.api.dto.OAuth2Info;
-import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.util.Streams;
+import org.comroid.util.REST;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -24,11 +20,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.logging.Logger;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Configuration
@@ -76,6 +71,25 @@ public class MinecraftServerHubConfig {
     @Bean
     public ScheduledExecutorService scheduler() {
         return Executors.newScheduledThreadPool(32);
+    }
+
+    @Bean
+    @Lazy(false)
+    public ScheduledFuture<?> shutdownForAutoUpdateTask(@Autowired ScheduledExecutorService scheduler) {
+        return scheduler.scheduleAtFixedRate(()->{
+            try {
+                var info = REST.get("https://api.github.com/repos/comroid-git/mc-server-hub/commits/main?per_page=1")
+                        .join().getBody();
+                var recent = info.get("sha").asString();
+                var current = DelegateStream.readAll(ClassLoader.getSystemResourceAsStream("commit.txt"));
+                if (!current.equals(recent)) {
+                    log.info("Shutting down for auto update");
+                    System.exit(0);
+                }
+            } catch (Throwable t) {
+                log.error("Unable to fetch latest commit", t);
+            }
+        }, 72, 72, TimeUnit.HOURS);
     }
 }
 

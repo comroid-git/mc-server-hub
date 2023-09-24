@@ -16,6 +16,19 @@ sourceSets {
     test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/core/test/java")
 }
 
+tasks.register('gitCommitResource') {
+    doLast {
+        def commitHash = 'git rev-parse HEAD'.execute().text.trim()
+        def outputFile = file(parent.projectDir.toString() + "/src/core/main/resources/commit.txt")
+        outputFile.text = commitHash
+        println "Git commit hash has been written to ${outputFile}"
+    }
+}
+
+compileJava {
+    dependsOn 'gitCommitResource'
+}
+
 repositories {
     maven { url 'https://maven.comroid.org' }
     mavenLocal()
