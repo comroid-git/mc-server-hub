@@ -9,11 +9,10 @@ import org.comroid.api.Component;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.ServerUptimeEntry;
-import org.comroid.mcsd.core.module.shell.ExecutionModule;
+import org.comroid.mcsd.core.module.shell.LocalExecutionModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.ServerUptimeRepo;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Instant.now;
@@ -23,7 +22,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Component.Requires({ExecutionModule.class, StatusModule.class})
+@Component.Requires({LocalExecutionModule.class, StatusModule.class})
 public class UptimeModule extends ServerModule {
     public static final Factory<UptimeModule> Factory = new Factory<>(UptimeModule.class) {
         @Override
@@ -32,7 +31,7 @@ public class UptimeModule extends ServerModule {
         }
     };
 
-    ExecutionModule execution;
+    LocalExecutionModule execution;
     StatusModule statusModule;
 
     private UptimeModule(Server parent) {
@@ -41,7 +40,7 @@ public class UptimeModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        execution = component(ExecutionModule.class).assertion();
+        execution = component(LocalExecutionModule.class).assertion();
         statusModule = component(StatusModule.class).assertion();
     }
 

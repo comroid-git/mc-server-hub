@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.module.shell;
+package org.comroid.mcsd.core.module.status;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -13,7 +13,6 @@ import org.comroid.mcsd.core.entity.Backup;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.repo.BackupRepo;
 import org.comroid.util.Archiver;
 import org.comroid.util.PathUtil;

@@ -1,19 +1,17 @@
 package org.comroid.mcsd.agent;
 
-import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
-import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.agent.controller.ConsoleController;
 import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
-import org.comroid.mcsd.core.module.shell.BackupModule;
-import org.comroid.mcsd.core.module.shell.ExecutionModule;
-import org.comroid.mcsd.core.module.shell.UpdateModule;
+import org.comroid.mcsd.core.module.status.BackupModule;
+import org.comroid.mcsd.core.module.shell.LocalExecutionModule;
+import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ShRepo;
@@ -136,7 +134,7 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var flags = args.length > 1 ? args[1] : "";
-        srv.component(ExecutionModule.class).assertion().start();
+        srv.component(LocalExecutionModule.class).assertion().start();
         if (flags.contains("a"))
             attach(args, con);
         return srv + " was started";
@@ -149,7 +147,7 @@ public class AgentRunner implements Command.Handler {
                 .orElseThrow(()->new Command.Error("Insufficient permissions"));
 
         var timeout = args.length > 2 ? Integer.parseInt(args[2]) : 10;
-        srv.component(ExecutionModule.class).assertion()
+        srv.component(LocalExecutionModule.class).assertion()
                 .shutdown("Admin shutdown", timeout)
                 .thenRun(() -> out.println(srv + " was shut down"));
         return srv + " will shut down in " + timeout + " seconds";
@@ -256,7 +254,7 @@ public class AgentRunner implements Command.Handler {
             throw new Command.Error("Insufficient permissions");
         log.info("Shutting down agent");
         CompletableFuture.allOf(((List<Server>) bean(List.class, "servers")).stream()
-                .flatMap(srv -> srv.component(ExecutionModule.class).stream())
+                .flatMap(srv -> srv.component(LocalExecutionModule.class).stream())
                 .map(exec -> exec.shutdown("Host shutting down", 10))
                 .toArray(CompletableFuture[]::new))
                 .join();

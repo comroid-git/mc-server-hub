@@ -13,6 +13,7 @@ import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
+import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Debug;
 import org.comroid.util.MultithreadUtil;
@@ -35,15 +36,15 @@ import java.util.regex.Pattern;
 @ToString
 @Component.Requires(UpdateModule.class)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public final class ExecutionModule extends ConsoleModule {
+public final class LocalExecutionModule extends ConsoleModule {
     public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?.*?");
     public static final Pattern StopPattern = pattern("Closing [sS]erver.*\\r?\\n?.*?");
     public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-parent.txt).*.*?");
 
-    public static final Factory<ExecutionModule> Factory = new Factory<>(ExecutionModule.class) {
+    public static final Factory<LocalExecutionModule> Factory = new Factory<>(LocalExecutionModule.class) {
         @Override
-        public ExecutionModule create(Server parent) {
-            return new ExecutionModule(parent);
+        public LocalExecutionModule create(Server parent) {
+            return new LocalExecutionModule(parent);
         }
     };
 
@@ -54,7 +55,7 @@ public final class ExecutionModule extends ConsoleModule {
     CompletableFuture<Duration> done;
     CompletableFuture<Void> stop;
 
-    private ExecutionModule(Server parent) {
+    private LocalExecutionModule(Server parent) {
         super(parent);
     }
 

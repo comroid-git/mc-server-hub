@@ -12,7 +12,6 @@ import org.comroid.util.MD5;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.Objects;
 import java.util.Properties;
@@ -21,14 +20,14 @@ import java.util.Properties;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class FileModule extends ServerModule {
-    public static final Factory<FileModule> Factory = new Factory<>(FileModule.class) {
+public class LocalFileModule extends ServerModule {
+    public static final Factory<LocalFileModule> Factory = new Factory<>(LocalFileModule.class) {
         @Override
-        public FileModule create(Server parent) {
-            return new FileModule(parent);
+        public LocalFileModule create(Server parent) {
+            return new LocalFileModule(parent);
         }
     };
-    protected FileModule(Server parent) {
+    protected LocalFileModule(Server parent) {
         super(parent);
     }
 
