@@ -30,7 +30,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.verification = null WHERE u.id = :id")
+    @Query("UPDATE User u SET u.verification = null, u.verificationTimeout = null WHERE u.id = :id")
     void clearVerification(@Param("id") UUID id);
 
     default Optional<User> findByMinecraftName(String username) {
@@ -94,6 +94,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
         return code;
     }
 
+    @Transactional
     default User merge(Optional<?>... users) {
         return merge(Stream.of(users)
                 .flatMap(Optional::stream)
@@ -101,14 +102,15 @@ public interface UserRepo extends CrudRepository<User, UUID> {
                 .toArray(User[]::new));
     }
 
+    @Transactional
     default User merge(User... users) {
+        users = Stream.of(users).distinct().toArray(User[]::new);
         if (users.length == 0)
             throw new IllegalArgumentException("users must not be empty");
         if (users.length == 1)
             return users[0];
         var base = Stream.of(users)
                 .filter(usr -> usr.getHubId()!=null)
-                .distinct()
                 .collect(Streams.oneOrNone(()->new IllegalStateException("cannot merge users; more than one hubUser was found")))
                 .orElse(users[0]);
         for (var other : users) {

@@ -86,6 +86,7 @@ public class MinecraftServerHubAgent implements ApplicationRunner {
 
     @Bean
     @Unique
+    @Lazy(false)
     public List<Server> servers(@Autowired ServerRepo servers, @Autowired Agent me) {
         return Streams.of(servers.findAllForAgent(me.getId())).toList();
     }

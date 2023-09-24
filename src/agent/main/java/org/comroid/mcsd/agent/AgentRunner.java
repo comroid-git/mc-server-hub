@@ -292,13 +292,4 @@ public class AgentRunner implements Command.Handler {
             con.getProcess().component(ConsoleModule.class).assertion().execute(cmd);
         else getCmd().execute(cmd, con);
     }
-
-    @PreDestroy
-    public void close() {
-        CompletableFuture.allOf(servers.stream()
-                        .flatMap(srv -> srv.component(ExecutionModule.class).stream())
-                        .map(module -> module.shutdown("Host shutdown", 3))
-                        .toArray(CompletableFuture[]::new))
-                .join();
-    }
 }

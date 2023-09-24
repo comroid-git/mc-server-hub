@@ -255,7 +255,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .build()
                 .toString();
         // todo: should check if player is online
-        ((List<Server>)bean(List.class, "parents")).stream()
+        ((List<Server>)bean(List.class, "servers")).stream()
                 .flatMap(srv -> srv.component(ConsoleModule.class).stream())
                 .forEach(console -> console.execute(cmd));
         return "Please check Minecraft Chat for the code and then run /verify <code>\n" +
@@ -271,8 +271,10 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         // if a timeout exists that is before now(), throw
         if (Optional.ofNullable(profile.getVerificationTimeout())
                 .filter(x->x.isBefore(Instant.now()))
-                .isPresent())
+                .isPresent()) {
+            users.clearVerification(profile.getId());
             throw new Command.Error("Verification timeout");
+        }
         final var user = users.merge(users.findByDiscordId(e.getUser().getIdLong()), Optional.of(profile));
         users.clearVerification(user.getId());
         return "Minecraft account " + profile.getMinecraftName() + " has been linked";

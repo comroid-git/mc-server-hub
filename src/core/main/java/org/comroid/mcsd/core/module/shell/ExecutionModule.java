@@ -159,7 +159,7 @@ public final class ExecutionModule extends ConsoleModule {
         parent.component(StatusModule.class).assertion()
                 .pushStatus(Status.offline);
         if (process.isAlive())
-            shutdown("Host shutdown", 2).join();
+            terminate();
         if (process.isAlive())
             process.destroy();
     }
