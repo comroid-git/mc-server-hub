@@ -1,8 +1,7 @@
-package org.comroid.mcsd.core.module.local;
+package org.comroid.mcsd.core.module;
 
 import org.comroid.api.DelegateStream;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.module.ServerModule;
 
 public abstract class ShellModule extends ServerModule {
     public ShellModule(Server parent) {

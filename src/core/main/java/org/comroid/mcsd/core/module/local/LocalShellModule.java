@@ -2,6 +2,7 @@ package org.comroid.mcsd.core.module.local;
 
 import org.comroid.api.DelegateStream;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.module.ShellModule;
 
 public class LocalShellModule extends ShellModule {
     public static final Factory<LocalShellModule> Factory = new Factory<>(LocalShellModule.class) {
