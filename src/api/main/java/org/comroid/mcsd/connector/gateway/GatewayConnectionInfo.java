@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.comroid.annotations.Convert;
-import org.comroid.mcsd.connector.HubConnector;
 import org.comroid.util.EncryptionUtil;
 import org.intellij.lang.annotations.MagicConstant;
 import org.jetbrains.annotations.NotNull;

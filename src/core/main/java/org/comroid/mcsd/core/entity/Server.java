@@ -98,6 +98,7 @@ public class Server extends AbstractEntity implements Component {
         return mode == Mode.Fabric;
     }
 
+    @Deprecated
     public Server requireUserAccess(User user, Permission... permissions) {
         var insufficient = Arrays.stream(permissions)
                 .filter(x -> !x.isFlagSet(getPermissions().getOrDefault(user.getId(), 0)))

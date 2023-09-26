@@ -7,6 +7,7 @@ import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.dto.DBInfo;
 import org.comroid.mcsd.api.dto.OAuth2Info;
+import org.comroid.util.Debug;
 import org.comroid.util.REST;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -31,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 @EntityScan(basePackages = "org.comroid.mcsd.core.entity")
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
 public class MinecraftServerHubConfig {
+    public static final String BaseUrl = Debug.isDebug() ? "http://localhost:42064" : "https://mc.comroid.org/api";
 
     @Bean(name = "configDir")
     @Order(Ordered.HIGHEST_PRECEDENCE)

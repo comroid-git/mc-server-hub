@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.common.aliasing.qual.Unique;
+import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
+import org.comroid.mcsd.core.MinecraftServerHubConfig;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
@@ -32,6 +34,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 
 import java.time.Duration;
 import java.util.List;
@@ -93,6 +96,9 @@ public class MinecraftServerHubAgent implements ApplicationRunner {
                             .toArray());
                     srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
                 });
+        REST.get(MinecraftServerHubConfig.BaseUrl+"/agent/hello/"+bean(Agent.class, "me").getId())
+                .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
+                .exceptionally(Polyfill.exceptionLogger());
     }
 }
 
