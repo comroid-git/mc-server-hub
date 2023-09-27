@@ -19,7 +19,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests()
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/**")).permitAll()
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/open/**")).permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .csrf().disable()

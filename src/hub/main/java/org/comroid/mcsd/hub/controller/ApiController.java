@@ -13,12 +13,15 @@ import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -34,9 +37,14 @@ public class ApiController {
     @Autowired
     private ShRepo shRepo;
 
-    @GetMapping("/agent/hello/{id}")
-    public void agentHello(@PathVariable UUID id, HttpServletRequest request) {
-        agents.setHostname(id, request.getRemoteHost());
+    @GetMapping("/open/agent/hello/{id}")
+    public void agentHello(
+            @PathVariable UUID id,
+            @Nullable @RequestParam(value = "hostname",required = false) String hostname,
+            HttpServletRequest request
+    ) {
+        var host = Optional.ofNullable(hostname).orElseGet(request::getRemoteHost);
+        agents.setHostname(id, host);
     }
 
     @GetMapping("/findUserByName/{name}")

@@ -1,5 +1,6 @@
 package org.comroid.mcsd.agent.config;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.comroid.mcsd.api.dto.OAuth2Info;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +13,8 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -19,7 +22,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests()
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/**")).permitAll()
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/open/**")).permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .csrf().disable()

@@ -96,7 +96,7 @@ public class MinecraftServerHubAgent implements ApplicationRunner {
                             .toArray());
                     srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
                 });
-        REST.get(MinecraftServerHubConfig.BaseUrl+"/agent/hello/"+bean(Agent.class, "me").getId())
+        REST.get(MinecraftServerHubConfig.BaseUrl+"/open/agent/hello/"+bean(Agent.class, "me").getId())
                 .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
                 .exceptionally(Polyfill.exceptionLogger());
     }
