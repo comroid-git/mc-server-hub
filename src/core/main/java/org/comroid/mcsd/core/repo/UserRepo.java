@@ -47,12 +47,13 @@ public interface UserRepo extends CrudRepository<User, UUID> {
     }
 
     default AlmostComplete<User> get(String minecraftUsername) {
-        return findByMinecraftName(minecraftUsername).map(AlmostComplete::of)
-                .orElseGet(() -> new AlmostComplete<>(() -> {
+        return findByMinecraftName(minecraftUsername).map(AlmostComplete::of).orElseGet(() -> new AlmostComplete<>(() -> {
             var usr = new User();
+            var id = findMinecraftId(minecraftUsername);
+            usr.setId(id);
             usr.setName(minecraftUsername);
-            usr.setDisplayName(usr.getName()+" McUser");
-            usr.setMinecraftId(findMinecraftId(minecraftUsername));
+            usr.setDisplayName(usr.getName() + " McUser");
+            usr.setMinecraftId(id);
             return usr;
         }, this::save));
     }
@@ -62,7 +63,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
         return findByDiscordId(id).map(AlmostComplete::of).orElseGet(() -> new AlmostComplete<>(() -> {
             var usr = new User();
             usr.setName(discordUser.getName());
-            usr.setDisplayName(usr.getName()+" DiscordUser");
+            usr.setDisplayName(usr.getName() + " DiscordUser");
             usr.setDiscordId(id);
             return usr;
         }, this::save));

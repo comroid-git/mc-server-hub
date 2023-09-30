@@ -19,6 +19,7 @@ import org.comroid.mcsd.core.module.discord.DiscordModule;
 import org.comroid.mcsd.core.module.player.ChatModule;
 import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.local.LocalFileModule;
+import org.comroid.mcsd.core.module.player.PlayerListModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UptimeModule;
@@ -75,6 +76,7 @@ public class MinecraftServerHubAgent implements ApplicationRunner {
                 LocalExecutionModule.Factory,
                 //todo: fix BackupModule.Factory,
                 ChatModule.Factory,
+                PlayerListModule.Factory,
                 DiscordModule.Factory
         );
     }

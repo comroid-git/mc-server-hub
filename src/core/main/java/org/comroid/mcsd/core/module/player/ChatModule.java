@@ -5,10 +5,9 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Component;
 import org.comroid.api.Event;
-import org.comroid.mcsd.api.dto.ChatMessage;
+import org.comroid.mcsd.api.dto.PlayerEvent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
@@ -63,7 +62,7 @@ public class ChatModule extends ServerModule {
     };
 
     final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
-    protected Event.Bus<ChatMessage> bus;
+    protected Event.Bus<PlayerEvent> bus;
 
     private ChatModule(Server parent) {
         super(parent);
@@ -86,14 +85,14 @@ public class ChatModule extends ServerModule {
                 .mapData(matcher -> {
                     var username = matcher.group("username");
                     var message = matcher.group("message");
-                    var type = new Switch<>(() -> ChatMessage.Type.Other)
-                            .option(ChatPattern, ChatMessage.Type.Chat)
-                            .option(JoinLeavePattern, ChatMessage.Type.JoinLeave)
-                            .option(AchievementPattern, ChatMessage.Type.Achievement)
+                    var type = new Switch<>(() -> PlayerEvent.Type.Other)
+                            .option(ChatPattern, PlayerEvent.Type.Chat)
+                            .option(JoinLeavePattern, PlayerEvent.Type.JoinLeave)
+                            .option(AchievementPattern, PlayerEvent.Type.Achievement)
                             .apply(matcher.pattern());
-                    if (type != ChatMessage.Type.Chat)
+                    if (type != PlayerEvent.Type.Chat)
                         message = StringUtils.capitalize(message);
-                    return new ChatMessage(username, message, type);
+                    return new PlayerEvent(username, message, type);
                 })
                 .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(parent, msg.getUsername(), msg))));
     }

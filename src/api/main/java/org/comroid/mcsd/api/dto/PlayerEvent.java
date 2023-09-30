@@ -5,7 +5,7 @@ import org.comroid.api.BitmaskAttribute;
 import org.comroid.util.Markdown;
 
 @Value
-public class ChatMessage {
+public class PlayerEvent {
     String username;
     String message;
     Type type;
