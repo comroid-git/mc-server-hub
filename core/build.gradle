@@ -22,7 +22,7 @@ tasks.register('gitCommitResource') {
         def commitDateTime = new Date().format('yyyy-MM-dd HH:mm:ss')
         def commitInfo = "${commitDateTime} - ${commitHash}"
 
-        def commitDir = file(parent.projectDir.toString() + "/src/core/main/resources")
+        def commitDir = file(parent.projectDir.toString() + "/src/core/main/resources/static/info")
         def commitFile = file("${commitDir}/commit.txt")
         def historyFile = file("${commitDir}/build_history.txt")
 
