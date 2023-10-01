@@ -48,4 +48,5 @@ fi
 $exec --no-daemon ":$1:simplify";
 jarfile="$1/build/libs/$1.jar"
 echo "Executing $jarfile"
+java --version
 java -Xmx2G "$debugOptions" -jar "$jarfile";
