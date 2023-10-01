@@ -33,8 +33,8 @@ function fetch() {
   fetch
 )
 
-if [ -f "force_commit.txt" ]
-  fetch $(cat "force_commit.txt")
+if [ -f "force_commit.txt" ]; then
+  fetch "$(cat "force_commit.txt")"
 else
   fetch
 fi
