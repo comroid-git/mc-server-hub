@@ -17,19 +17,31 @@ sourceSets {
 }
 
 tasks.register('gitCommitResource') {
-    doLast {
-        def commitHash = 'git rev-parse HEAD'.execute().text.trim()
-        def commitDateTime = new Date().format('yyyy-MM-dd HH:mm:ss')
-        def commitInfo = "${commitDateTime} - ${commitHash}"
+    def currentCommitHash = 'git rev-parse HEAD'.execute().text.trim()
+    def commitDir = file(parent.projectDir.toString() + "/src/core/main/resources/static/api/open/info")
+    def commitFile = file("${commitDir}/commit.txt")
 
-        def commitDir = file(parent.projectDir.toString() + "/src/core/main/resources/static/api/open/info")
-        def commitFile = file("${commitDir}/commit.txt")
+    outputs.upToDateWhen { task ->
+        // Determine if the task is up to date based on the condition
+        if (commitFile.exists()) {
+            def existingCommitHash = commitFile.text.trim()
+            return existingCommitHash == currentCommitHash
+        }
+
+        // If commit.txt doesn't exist, the task is not up to date
+        return false
+    }
+
+    doLast {
+        def commitDateTime = new Date().format('yyyy-MM-dd HH:mm:ss')
+        def commitInfo = "${commitDateTime} - ${currentCommitHash}"
+
         def historyFile = file("${commitDir}/build_history.txt")
 
         // Ensure the directory exists
         commitDir.mkdirs()
 
-        commitFile.text = commitHash
+        commitFile.text = currentCommitHash
         println "Git commit hash has been written to ${commitFile}"
 
         if (historyFile.exists()) {
@@ -41,6 +53,8 @@ tasks.register('gitCommitResource') {
         println "Git commit info has been appended to ${historyFile}"
     }
 }
+
+
 
 compileJava {
     dependsOn 'gitCommitResource'
