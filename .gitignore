@@ -166,3 +166,4 @@ gradle-app.setting
 latest.log
 src/core/main/resources/static/commit.txt
 src/core/main/resources/static/build_history.txt
+force_commit.txt

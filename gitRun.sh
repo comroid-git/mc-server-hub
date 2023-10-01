@@ -13,10 +13,12 @@ fi
 
 function fetch() {
   prevBranch="$branch"
-  if [ "$(git show-ref --verify --quiet "refs/heads/$branch")" ]; then
+  if [ -n "$1" ]; then
+    git checkout "$1"
+  elif [ "$(git show-ref --verify --quiet "refs/heads/$branch")" ]; then
     branch="main"
+    git checkout "$branch"
   fi
-  git checkout "$branch"
   git pull
   branch="$prevBranch"
 }
@@ -26,7 +28,11 @@ function fetch() {
   fetch
 )
 
-fetch
+if [ -f "force_commit.txt" ]
+  fetch $(cat "force_commit.txt")
+else
+  fetch
+fi
 
 exec="gradle"
 debugOptions=""
