@@ -12,9 +12,9 @@ else
 fi
 
 function fetch() {
-  if [ -n "$1" ]; then
-    echo "Checking out commit: $1"
-    git checkout "$1"
+  if [ -f "force_commit.txt" ]; then
+    echo "Checking out commit: $(cat "force_commit.txt")"
+    git checkout "$(cat "force_commit.txt")"
     return
   fi
   prevBranch="$branch"
@@ -35,11 +35,7 @@ function fetch() {
   fetch
 )
 
-if [ -f "force_commit.txt" ]; then
-  fetch "$(cat "force_commit.txt")"
-else
-  fetch
-fi
+fetch
 
 exec="gradle"
 if [ -z "$(which "$exec")" ]; then
