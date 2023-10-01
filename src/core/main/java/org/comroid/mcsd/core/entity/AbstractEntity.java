@@ -86,9 +86,7 @@ public abstract class AbstractEntity implements Named {
 
         private final int value;
 
-        Permission(int value) {
-            this.value = value;
-        }
+        Permission(int base, Permission... members) {this.value = base | Bitmask.combine(members);}
 
         @Override
         public @NotNull Integer getValue() {
