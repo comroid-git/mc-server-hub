@@ -14,13 +14,18 @@ fi
 function fetch() {
   prevBranch="$branch"
   if [ -n "$1" ]; then
+    echo "Checking out commit: $1"
     git checkout "$1"
   elif [ "$(git show-ref --verify --quiet "refs/heads/$branch")" ]; then
     branch="main"
+    echo "Checking out default branch: $branch"
     git checkout "$branch"
   fi
+
+  echo "Pulling changes..."
   git pull
   branch="$prevBranch"
+  echo "Restoring branch: $branch"
 }
 
 (
