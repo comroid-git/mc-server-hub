@@ -19,11 +19,33 @@ sourceSets {
 tasks.register('gitCommitResource') {
     doLast {
         def commitHash = 'git rev-parse HEAD'.execute().text.trim()
-        def outputFile = file(parent.projectDir.toString() + "/src/core/main/resources/commit.txt")
-        outputFile.text = commitHash
-        println "Git commit hash has been written to ${outputFile}"
+        def commitDateTime = new Date().format('yyyy-MM-dd HH:mm:ss')
+        def commitInfo = "${commitDateTime} - ${commitHash}"
+
+        def commitDir = file(parent.projectDir.toString() + "/src/core/main/resources/static")
+        def commitFile = file("${commitDir}/commit.txt")
+        def historyFile = file("${commitDir}/build_history.txt")
+
+        // Ensure the directory exists
+        commitDir.mkdirs()
+
+        commitFile.text = commitHash
+        println "Git commit hash has been written to ${commitFile}"
+
+        if (historyFile.exists()) {
+            historyFile.append("\n$commitInfo")
+        } else {
+            historyFile.text = commitInfo
+        }
+
+        println "Git commit info has been appended to ${historyFile}"
     }
 }
+
+compileJava {
+    dependsOn 'gitCommitResource'
+}
+
 
 compileJava {
     dependsOn 'gitCommitResource'
