@@ -44,13 +44,6 @@ public class WebPagePreparator {
     }
 
     public String complete() {
-        return complete($ -> true);
-    }
-
-    public String complete(Predicate<User> permissionCheck) {
-        User user = getAttribute("user");
-        if (!permissionCheck.test(user))
-            throw new InsufficientPermissionsException(user, User.Perm.None);
         setAttribute("page", page);
         return frame;
     }

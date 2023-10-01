@@ -98,16 +98,6 @@ public class Server extends AbstractEntity implements Component {
         return mode == Mode.Fabric;
     }
 
-    @Deprecated
-    public Server requireUserAccess(User user, Permission... permissions) {
-        var insufficient = Arrays.stream(permissions)
-                .filter(x -> !x.isFlagSet(getPermissions().getOrDefault(user.getId(), 0)))
-                .toArray(Permission[]::new);
-        if (insufficient.length > 0)
-            throw new InsufficientPermissionsException(user, this, insufficient);
-        return this;
-    }
-
     @Language("sh")
     private String wrapDevNull(@Language("sh") String cmd) {
         return "export TERM='xterm' && script -q /dev/null < <(echo \""+cmd+"\"; cat)";
