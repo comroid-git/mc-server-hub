@@ -10,7 +10,7 @@ import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
-import org.comroid.mcsd.core.MinecraftServerHubConfig;
+import org.comroid.mcsd.core.Config;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
@@ -47,11 +47,11 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ImportResource({"classpath:beans.xml"})
 @SpringBootApplication(scanBasePackages = "org.comroid.mcsd.*")
 @ComponentScan(basePackageClasses = {AgentRunner.class, ApiController.class, WebSocketConfig.class})
-public class MinecraftServerHubAgent implements ApplicationRunner {
+public class Program implements ApplicationRunner {
     public static void main(String[] args) {
         if (!Debug.isDebug() && !OS.isUnix)
             throw new RuntimeException("Only Unix operation systems are supported");
-        SpringApplication.run(MinecraftServerHubAgent.class, args);
+        SpringApplication.run(Program.class, args);
     }
 
     @Bean
@@ -98,7 +98,7 @@ public class MinecraftServerHubAgent implements ApplicationRunner {
                             .toArray());
                     srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
                 });
-        REST.get(MinecraftServerHubConfig.BaseUrl+"/open/agent/hello/"+bean(Agent.class, "me").getId())
+        REST.get(Config.BaseUrl+"/open/agent/hello/"+bean(Agent.class, "me").getId())
                 .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
                 .exceptionally(Polyfill.exceptionLogger());
     }

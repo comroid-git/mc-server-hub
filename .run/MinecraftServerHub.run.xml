@@ -4,7 +4,7 @@
       <env name="DEBUG" value="true" />
     </envs>
     <module name="mcsd.hub.main" />
-    <option name="SPRING_BOOT_MAIN_CLASS" value="org.comroid.mcsd.hub.MinecraftServerHub" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="org.comroid.mcsd.hub.Program" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

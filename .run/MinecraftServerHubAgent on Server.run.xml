@@ -4,7 +4,7 @@
     <selectedOptions>
       <option name="environmentVariables" />
     </selectedOptions>
-    <option name="SPRING_BOOT_MAIN_CLASS" value="org.comroid.mcsd.agent.MinecraftServerHubAgent" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="org.comroid.mcsd.agent.Program" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
