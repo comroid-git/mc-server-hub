@@ -40,7 +40,6 @@ else
 fi
 
 exec="gradle"
-debugOptions=""
 if [ -z "$(which "$exec")" ]; then
   exec="gradlew"
 fi
@@ -49,4 +48,6 @@ if [ $branch != "main" ]; then
 fi
 
 $exec --no-daemon ":$1:simplify";
-java -Xmx2G $debugOptions -jar "$1/build/libs/$1.jar";
+jarfile="$1/build/libs/$1.jar"
+echo "Executing $jarfile"
+java -Xmx2G "$debugOptions" -jar $jarfile;

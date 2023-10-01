@@ -15,6 +15,7 @@ tasks.register('simplify', Copy) {
     from bootJar.outputs.files.singleFile
     into "$buildDir/libs"
     rename { "${project.name}.jar" }
+    doLast { System.out.println("Boot Jar saved as $buildDir/libs/${project.name}.jar") }
 }
 
 sourceSets {

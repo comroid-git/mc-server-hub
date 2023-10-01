@@ -1,6 +1,6 @@
 plugins {
     id 'war'
-    id 'java'
+    id 'application'
     id 'org.springframework.boot' version '3.0.+'
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
 }
@@ -9,13 +9,14 @@ group = 'org.comroid.mcsd'
 version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
+mainClassName = 'org.comroid.mcsd.agent.MinecraftServerHub'
 
-tasks.register('simplifyDist', Copy) {
-    dependsOn 'bootWar'
-    from bootWar.outputs.files.singleFile
-    def target = file("$buildDir/dist")
-    into target
-    rename { String filename -> return "mc-server-hub.war" }
+tasks.register('simplify', Copy) {
+    dependsOn 'bootJar'
+    from bootJar.outputs.files.singleFile
+    into "$buildDir/libs"
+    rename { "${project.name}.jar" }
+    doLast { System.out.println("Boot Jar saved as $buildDir/libs/${project.name}.jar") }
 }
 
 sourceSets {
