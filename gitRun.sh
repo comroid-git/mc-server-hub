@@ -43,7 +43,7 @@ exec="gradle"
 if [ -z "$(which "$exec")" ]; then
   exec="gradlew"
 fi
-if [ $branch != "main" ]; then
+if [ "$branch" != "main" ]; then
   debugOptions="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
 fi
 
