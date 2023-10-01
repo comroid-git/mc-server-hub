@@ -8,7 +8,7 @@ group = 'org.comroid.mcsd'
 version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
-mainClassName = 'org.comroid.mcsd.agent.MinecraftServerHubAgent'
+mainClassName = 'org.comroid.mcsd.agent.Program'
 
 tasks.register('simplify', Copy) {
     dependsOn 'bootJar'

@@ -50,4 +50,4 @@ fi
 $exec --no-daemon ":$1:simplify";
 jarfile="$1/build/libs/$1.jar"
 echo "Executing $jarfile"
-java -Xmx2G "$debugOptions" -jar "$jarfile" "org.comroid.mcsd.$1.Program";
+java -Xmx2G "$debugOptions" -cp "$jarfile" "org.comroid.mcsd.$1.Program";

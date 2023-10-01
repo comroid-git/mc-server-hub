@@ -9,11 +9,11 @@ group = 'org.comroid.mcsd'
 version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
-mainClassName = 'org.comroid.mcsd.agent.MinecraftServerHub'
+mainClassName = 'org.comroid.mcsd.hub.Program'
 
 tasks.register('simplify', Copy) {
-    dependsOn 'bootJar'
-    from bootJar.outputs.files.singleFile
+    dependsOn 'bootWar'
+    from bootWar.outputs.files.singleFile
     into "$buildDir/libs"
     rename { "${project.name}.jar" }
     doLast { System.out.println("Boot Jar saved as $buildDir/libs/${project.name}.jar") }
