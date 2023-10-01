@@ -579,7 +579,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     var add = oneString(raw.length(), queue);
                     RestAction<Message> chain;
                     if (fancy) {
-                        var content = raw + add;
+                        var content = raw + add.getFirst();
                         chain = msg.editMessage(wrapContent(content));
                     } else chain = newMsg(add.getFirst());
                     if (!fancy && !add.getSecond())
