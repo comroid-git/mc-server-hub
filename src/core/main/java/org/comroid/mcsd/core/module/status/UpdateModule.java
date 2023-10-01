@@ -2,6 +2,7 @@ package org.comroid.mcsd.core.module.status;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Synchronized;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
@@ -11,11 +12,13 @@ import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.StringReader;
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import static java.time.Instant.now;
@@ -24,7 +27,7 @@ import static java.time.Instant.now;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Component.Requires({FileModule.class})
+@Component.Requires({FileModule.class, StatusModule.class})
 public class UpdateModule extends ServerModule {
     public static final Factory<UpdateModule> Factory = new Factory<>(UpdateModule.class) {
         @Override
@@ -33,7 +36,7 @@ public class UpdateModule extends ServerModule {
         }
     };
 
-    final AtomicBoolean updateRunning = new AtomicBoolean(false);
+    final AtomicReference<@Nullable CompletableFuture<Boolean>> updateRunning = new AtomicReference<>();
     FileModule files;
 
     private UpdateModule(Server parent) {
@@ -48,22 +51,23 @@ public class UpdateModule extends ServerModule {
     @Override
     protected void $tick() {
         if ((parent.getBackupPeriod() == null || parent.getLastBackup().plus(parent.getBackupPeriod()).isAfter(now()))
-                || updateRunning.get())
+                || (updateRunning.get()!=null&&!updateRunning.get().isDone()))
             return;
         //todo: handle if parent is running
         //runUpdate(false);
     }
 
+    @Synchronized("updateRunning")
     public CompletableFuture<Boolean> runUpdate(boolean force) {
-        if (!updateRunning.compareAndSet(false, true))
-            return CompletableFuture.failedFuture(new RuntimeException("There is already an update running"));
+        if (updateRunning.get()!=null)
+            return updateRunning.get();
         if (!force && parent.component(FileModule.class).map(FileModule::isJarUpToDate).orElse(false))
             return CompletableFuture.completedFuture(false);
         var status = parent.component(StatusModule.class).assertion();
         log.info("Updating " + parent);
         status.pushStatus(Status.updating);
 
-        return CompletableFuture.supplyAsync(() -> {
+        var fut = CompletableFuture.supplyAsync(() -> {
             try {
                 // modify parent.properties
                 files.updateProperties();
@@ -94,8 +98,10 @@ public class UpdateModule extends ServerModule {
                 status.pushStatus(Status.in_Trouble.new Message("Update failed"));
                 return false;
             } finally {
-                updateRunning.set(false);
+                updateRunning.set(null);
             }
         });
+        updateRunning.set(fut);
+        return fut;
     }
 }
