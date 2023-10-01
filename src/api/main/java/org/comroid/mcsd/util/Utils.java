@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
@@ -15,9 +16,9 @@ import java.util.regex.Pattern;
 
 @UtilityClass
 public class Utils {
-    public static final UUID[] SuperAdmins = new UUID[]{
+    public static final Set<UUID> SuperAdmins = Set.of(
             UUID.fromString("48a84b30-df71-4cff-91bd-e82fd8e58c35")
-    };
+    );
 
     @Contract("null -> null; _ -> _")
     public static String removeAnsiEscapeSequences(@Nullable String input) {

@@ -7,7 +7,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Named;
+import org.comroid.api.Polyfill;
 import org.comroid.api.Rewrapper;
+import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Bitmask;
 import org.jetbrains.annotations.NotNull;
@@ -36,18 +38,25 @@ public abstract class AbstractEntity implements Named {
     @ManyToOne
     private User owner;
     @ElementCollection(fetch = FetchType.EAGER)
-    private Map<UUID, @NotNull Integer> permissions;
+    private Map<User, @NotNull Integer> permissions;
+
+    public boolean isUser() {
+        return owner == null;
+    }
 
     public final boolean hasPermission(@NotNull User user, AbstractEntity.Permission... permissions) {
-        if (owner != null && user.getId().equals(owner.getId())
-                || Arrays.asList(Utils.SuperAdmins).contains(user.getId()))
-            return true;
-        final var mask = this.permissions.getOrDefault(user.getId(), 0);
-        return Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag));
+        final var mask = this.permissions.getOrDefault(user, 0);
+        return (owner != null && user.getId().equals(owner.getId()))
+                || Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag))
+                || Utils.SuperAdmins.contains(user.getId());
     }
 
     public final Rewrapper<AbstractEntity> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
         return () -> hasPermission(user, permissions) ? this : null;
+    }
+
+    public final void requirePermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
+        verifyPermission(user, permissions).orElseThrow(()->new InsufficientPermissionsException(user,this,permissions));
     }
 
     @Override

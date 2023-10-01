@@ -70,8 +70,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name>")
     public String backup(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Manage);
 
         srv.component(BackupModule.class).assertion()
                 .runBackup(true)
@@ -83,8 +82,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [-f]")
     public String update(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Manage);
 
         var force = args[1].contains("-f");
         return srv.component(UpdateModule.class).assertion()
@@ -95,8 +93,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name>")
     public Object status(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.View)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.View);
         return srv.component(StatusModule.class).assertion()
                 .getCurrentStatus();
     }
@@ -104,8 +101,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [-na]")
     public Object enable(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Administrate);
 
         var flags = args.length > 1 ? args[1] : "";
         serverRepo.setEnabled(srv.getId(), true);
@@ -117,8 +113,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [-nt]")
     public Object disable(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Administrate);
 
         var flags = args.length > 1 ? args[1] : "";
         serverRepo.setEnabled(srv.getId(), false);
@@ -130,8 +125,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [-a]")
     public Object start(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Manage);
 
         var flags = args.length > 1 ? args[1] : "";
         srv.component(LocalExecutionModule.class).assertion().start();
@@ -143,8 +137,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [time]")
     public Object stop(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Manage);
 
         var timeout = args.length > 2 ? Integer.parseInt(args[2]) : 10;
         srv.component(LocalExecutionModule.class).assertion()
@@ -157,8 +150,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [true/false]")
     public Object maintenance(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Manage)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Manage);
 
         var val = args.length > 1 ? StandardValueType.BOOLEAN.parse(args[2]) : !srv.isMaintenance();
         return srv + (proc.pushMaintenance(val) ? " was " : " could not be ")
@@ -169,8 +161,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> <command...>")
     public String execute(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Administrate);
 
         // forward command
         srv.component(ConsoleModule.class).assertion().execute(Arrays.stream(args).skip(1).collect(Collectors.joining(" ")));
@@ -180,8 +171,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name>")
     public String attach(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.verifyPermission(con.getUser(), AbstractEntity.Permission.Administrate)
-                .orElseThrow(()->new Command.Error("Insufficient permissions"));
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Administrate);
 
         if (attached != null)
             con.detach();
@@ -202,7 +192,7 @@ public class AgentRunner implements Command.Handler {
 
     @Command(usage = "<name> <version> <mode> [-na]")
     public Object create(String[] args, ConsoleController.Connection con) {
-        if (Arrays.stream(Utils.SuperAdmins).noneMatch(con.getUser().getId()::equals))
+        if (!Utils.SuperAdmins.contains(con.getUser().getId()))
             throw new Command.Error("Insufficient permissions");
         String name = args[0];
         String version = null;
@@ -250,7 +240,7 @@ public class AgentRunner implements Command.Handler {
 
     @Command(usage = "")
     public String shutdown(ConsoleController.Connection con) {
-        if (Arrays.stream(Utils.SuperAdmins).noneMatch(con.getUser().getId()::equals))
+        if (!Utils.SuperAdmins.contains(con.getUser().getId()))
             throw new Command.Error("Insufficient permissions");
         log.info("Shutting down agent");
         CompletableFuture.allOf(((List<Server>) bean(List.class, "servers")).stream()
