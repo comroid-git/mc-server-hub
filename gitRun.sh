@@ -45,8 +45,5 @@ if [ "$branch" != "main" ]; then
   debugOptions="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
 fi
 
-$exec --no-daemon ":$1:simplify";
-jarfile="$1/build/libs/$1.jar"
-echo "Executing $jarfile"
-java --version
-java -Xmx2G "$debugOptions" -jar "$jarfile";
+$exec --no-daemon ":$1:installDist";
+"$1/build/install/$1/bin/$1"
