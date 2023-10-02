@@ -100,7 +100,9 @@ public abstract class AbstractEntity implements Named {
         Moderate(0x0200_0000, View, Whitelist, Kick, Mute),
         Manage(0x0400_0000, Moderate, Ban, Start, Stop, Backup, Update, Maintenance, Enable),
         Administrate(0x0800_0000, Manage, Console, Execute, Files, ForceOP, TriggerCron),
-        Delete(0x1000_0000, Administrate);
+        Delete(0x1000_0000, Administrate),
+
+        Any(0xffff_ffff);
 
         static {
             log.info("Registered permissions up to "+Delete);

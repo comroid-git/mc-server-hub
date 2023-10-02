@@ -100,11 +100,13 @@ public class Program implements ApplicationRunner {
                             .toArray());
                     srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
                 });
-        REST.get(Config.BaseUrl + "/open/agent/hello/"
+        REST.request(REST.Method.GET, Config.BaseUrl + "/open/agent/hello/"
                         + bean(Agent.class, "me").getId()
                         + (wrap(OS.Host.class, "hostname")
                         .map(host -> "?hostname=" + host.name())
                         .orElse("")))
+                .addHeader("Authorization", "token") // todo
+                .execute()
                 .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
                 .exceptionally(Polyfill.exceptionLogger());
     }

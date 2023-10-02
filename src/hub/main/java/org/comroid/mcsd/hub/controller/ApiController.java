@@ -9,17 +9,17 @@ import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
+import org.comroid.mcsd.core.exception.StatusCode;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -41,9 +41,12 @@ public class ApiController {
     public void agentHello(
             @PathVariable UUID id,
             @Nullable @RequestParam(value = "hostname",required = false) String hostname,
+            @NotNull @RequestHeader("Authorization") String token,
             HttpServletRequest request
     ) {
         var host = Optional.ofNullable(hostname).orElseGet(request::getRemoteHost);
+        if (!agents.isTokenValid(id, token))
+            throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
         agents.setHostname(id, host);
     }
 
