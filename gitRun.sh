@@ -45,5 +45,5 @@ if [ "$branch" != "main" ]; then
 fi
 
 #$exec --no-daemon ":$1:bootRun";
-$exec ":$1:installDist";
+$exec --no-daemon ":$1:installDist";
 "$1/build/install/$1/bin/$1"
