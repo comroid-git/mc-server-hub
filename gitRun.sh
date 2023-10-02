@@ -27,7 +27,6 @@ function fetch() {
   git pull
 
   branch="$prevBranch"
-  echo "Restoring branch: $branch"
 }
 
 (
