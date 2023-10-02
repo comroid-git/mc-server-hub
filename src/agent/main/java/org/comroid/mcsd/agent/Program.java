@@ -11,7 +11,6 @@ import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.api.dto.AgentInfo;
-import org.comroid.mcsd.core.Config;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
@@ -26,7 +25,6 @@ import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UptimeModule;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -105,7 +103,7 @@ public class Program implements ApplicationRunner {
         var info = bean(AgentInfo.class, "agentInfo");
         REST.request(REST.Method.GET, info.getHubBaseUrl() + "/api/open/agent/hello/"
                         + bean(Agent.class, "me").getId()
-                        + (Optional.ofNullable(info.getHostname())
+                        + (Optional.ofNullable(info.getBaseUrl())
                         .or(() -> wrap(OS.Host.class, "hostname")
                                 .map(OS.Host::name))
                         .map(hostname -> "?hostname=" + hostname)
