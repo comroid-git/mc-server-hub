@@ -26,10 +26,6 @@ sourceSets {
     test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/hub/test/java")
 }
 
-bootWar {
-    webAppDirectory = file(parent.projectDir.toString() + "/src/hub/main/webapp")
-}
-
 repositories {
     maven { url 'https://maven.comroid.org' }
     mavenLocal()
