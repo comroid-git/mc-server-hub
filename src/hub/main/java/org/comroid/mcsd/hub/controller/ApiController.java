@@ -3,6 +3,7 @@ package org.comroid.mcsd.hub.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.mcsd.core.Config;
+import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.StatusCode;
@@ -48,6 +49,10 @@ public class ApiController {
                         .or(() -> Optional.of(request.getRemoteHost()))
                         .map(Config::wrapHostname))
                 .orElseThrow();
+        final var agent = agents.findById(id).orElseThrow();
+        if ($baseUrl.equals(agent.getBaseUrl()))
+            return;
+        log.info("Agent %s registered with new base url: %s".formatted(agent, baseUrl));
         agents.setBaseUrl(id, $baseUrl);
     }
 
