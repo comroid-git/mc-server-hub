@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.common.aliasing.qual.Unique;
 import org.comroid.api.Polyfill;
+import org.comroid.api.info.Log;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
@@ -112,7 +113,7 @@ public class Program implements ApplicationRunner {
                 .addHeader("Authorization", info.getToken())
                 .execute()
                 .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
-                .exceptionally(Polyfill.exceptionLogger());
+                .exceptionally(Polyfill.exceptionLogger(Log.get(), "Could not connect to Hub"));
     }
 }
 
