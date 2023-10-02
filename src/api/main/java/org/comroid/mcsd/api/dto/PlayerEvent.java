@@ -15,6 +15,6 @@ public class PlayerEvent {
     }
 
     public enum Type implements BitmaskAttribute<Type> {
-        Other, JoinLeave, Achievement, Chat
+        Other, JoinLeave, Achievement, Death, Chat
     }
 }

@@ -1,5 +1,7 @@
 package org.comroid.mcsd.core.module.player;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.ToString;
@@ -13,11 +15,18 @@ import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
+import org.comroid.util.Streams;
 import org.comroid.util.Switch;
+import org.intellij.lang.annotations.Language;
 import org.springframework.util.StringUtils;
 
+import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
@@ -60,6 +69,11 @@ public class ChatModule extends ServerModule {
             return new ChatModule(parent);
         }
     };
+    public static final Pattern DeathPatternBase = Pattern.compile("^%1\\$s (?<message>[\\w\\s%$]+)$");
+    public static final @Language("RegExp") String DeathPatternScheme = ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>%s)\\r?\\n?.*";
+    @SuppressWarnings("RegExpDuplicateCharacterInClass")
+    public static final @Language("RegExp") String CleanWord_Spaced = "\\[?([\\\\s\\\\w\\-_]+)]?";
+    public static final List<Pattern> DeathMessagePatterns = new ArrayList<>();
 
     final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
     protected Event.Bus<PlayerEvent> bus;
@@ -71,9 +85,32 @@ public class ChatModule extends ServerModule {
     @Override
     @SuppressWarnings({"RedundantCast", "RedundantTypeArguments"})
     protected void $initialize() {
+        try (var url = new URL("https://raw.githubusercontent.com/misode/mcmeta/assets-json/assets/minecraft/lang/en_us.json").openStream()) {
+            var obj = bean(ObjectMapper.class).readTree(url);
+            Streams.of(obj.fields(),obj.size())
+                    .filter(e->e.getKey().startsWith("death."))
+                    .map(Map.Entry::getValue)
+                    .map(JsonNode::asText)
+                    .filter(Objects::nonNull)
+                    .flatMap(str -> {
+                        var matcher = DeathPatternBase.matcher(str);
+                        if (!matcher.matches())
+                            return Stream.empty();
+                        var msg = matcher.group("message");
+                        //noinspection RedundantEscapeInRegexReplacement
+                        var out = DeathPatternScheme.formatted(msg).replaceAll("%\\d\\$s", CleanWord_Spaced);
+                        return Stream.of(out);
+                    })
+                    .map(Pattern::compile)
+                    .forEach(DeathMessagePatterns::add);
+        } catch (Throwable t) {
+            log.log(Level.INFO, "Unable to fetch death messages; disabling support for it", t);
+        }
+
         var console = parent.component(ConsoleModule.class)
                 .orElseThrow(() -> new InitFailed("No Console module is loaded"));
         addChildren(bus = console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)
+                        .collect(Streams.append(DeathMessagePatterns))
                         .<Matcher>flatMap(pattern -> {
                             var matcher = pattern.matcher(str);
                             if (matcher.matches())
@@ -85,10 +122,12 @@ public class ChatModule extends ServerModule {
                 .mapData(matcher -> {
                     var username = matcher.group("username");
                     var message = matcher.group("message");
+                    //noinspection SuspiciousMethodCalls
                     var type = new Switch<>(() -> PlayerEvent.Type.Other)
                             .option(ChatPattern, PlayerEvent.Type.Chat)
                             .option(JoinLeavePattern, PlayerEvent.Type.JoinLeave)
                             .option(AchievementPattern, PlayerEvent.Type.Achievement)
+                            .option(DeathMessagePatterns::contains, PlayerEvent.Type.Death)
                             .apply(matcher.pattern());
                     if (type != PlayerEvent.Type.Chat)
                         message = StringUtils.capitalize(message);
