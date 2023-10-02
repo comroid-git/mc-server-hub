@@ -105,8 +105,11 @@ public class Program implements ApplicationRunner {
                         + bean(Agent.class, "me").getId()
                         + (Optional.ofNullable(info.getBaseUrl())
                         .or(() -> wrap(OS.Host.class, "hostname")
-                                .map(OS.Host::name))
-                        .map(hostname -> "?hostname=" + hostname)
+                                .map(host -> "http%s://%s%s".formatted(
+                                        Debug.isDebug() ? "" : "s",
+                                        host.name(),
+                                        Debug.isDebug() ? ":42064" : "")))
+                        .map(baseUrl -> "?baseUrl=" + baseUrl)
                         .orElse("")))
                 .addHeader("Authorization", info.getToken())
                 .execute()
