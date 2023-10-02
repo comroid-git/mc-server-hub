@@ -11,6 +11,7 @@ import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.api.dto.AgentInfo;
+import org.comroid.mcsd.core.Config;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
@@ -105,10 +106,8 @@ public class Program implements ApplicationRunner {
                         + bean(Agent.class, "me").getId()
                         + (Optional.ofNullable(info.getBaseUrl())
                         .or(() -> wrap(OS.Host.class, "hostname")
-                                .map(host -> "http%s://%s%s".formatted(
-                                        Debug.isDebug() ? "" : "s",
-                                        host.name(),
-                                        Debug.isDebug() ? ":42064" : "")))
+                                .map(OS.Host::name)
+                                .map(Config::wrapHostname))
                         .map(baseUrl -> "?baseUrl=" + baseUrl)
                         .orElse("")))
                 .addHeader("Authorization", info.getToken())

@@ -1,14 +1,10 @@
 package org.comroid.mcsd.hub.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.mcsd.core.entity.AbstractEntity;
-import org.comroid.mcsd.core.entity.Agent;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.Config;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
-import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.exception.StatusCode;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
@@ -40,14 +36,19 @@ public class ApiController {
     @GetMapping("/open/agent/hello/{id}")
     public void agentHello(
             @PathVariable UUID id,
-            @Nullable @RequestParam(value = "hostname",required = false) String hostname,
+            @Nullable @RequestParam(value = "baseUrl",required = false) String baseUrl,
             @NotNull @RequestHeader("Authorization") String token,
             HttpServletRequest request
     ) {
-        var host = Optional.ofNullable(hostname).orElseGet(request::getRemoteHost);
         if (!agents.isTokenValid(id, token))
             throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
-        agents.setHostname(id, host);
+        var $baseUrl = Optional.ofNullable(baseUrl)
+                .or(() -> Optional.ofNullable(request.getHeader("X-Forwarded-Host"))
+                        .or(() -> Optional.ofNullable(request.getHeader("Host")))
+                        .or(() -> Optional.of(request.getRemoteHost()))
+                        .map(Config::wrapHostname))
+                .orElseThrow();
+        agents.setBaseUrl(id, $baseUrl);
     }
 
     @GetMapping("/findUserByName/{name}")

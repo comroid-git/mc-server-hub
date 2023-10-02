@@ -97,5 +97,9 @@ public class Config {
             }
         }, 72, 72, TimeUnit.HOURS);
     }
+
+    public static String wrapHostname(String hostname) {
+        return "http%s://%s%s".formatted(Debug.isDebug() ? "" : "s", hostname, Debug.isDebug() ? ":42064" : "");
+    }
 }
 
