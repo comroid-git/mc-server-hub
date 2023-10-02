@@ -1,11 +1,16 @@
 package org.comroid.mcsd.core.exception;
 
-import org.comroid.api.Command;
+import org.springframework.http.HttpStatus;
 
 import java.util.UUID;
 
-public class EntityNotFoundException extends Command.Error {
-    public EntityNotFoundException(Class<?> type, UUID id) {
+public class EntityNotFoundException extends CommandStatusError {
+    public EntityNotFoundException(Class<?> type, Object id) {
         super("Entity of type %s with ID %s not found".formatted(type.getName(), id));
+    }
+
+    @Override
+    protected HttpStatus getStatus() {
+        return HttpStatus.NOT_FOUND;
     }
 }

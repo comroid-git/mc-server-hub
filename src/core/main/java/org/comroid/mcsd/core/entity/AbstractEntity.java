@@ -78,19 +78,50 @@ public abstract class AbstractEntity implements Named {
 
     // todo: ungroup permissions?
     public enum Permission implements BitmaskAttribute<Permission> {
-        View(1), // Status
-        Moderate(3), // view + Whitelist, Kick, Mute
-        Manage(7), // moderate + Ban, Start, Stop, Backup, Update, Maintenance, Enable
-        Administrate(15), // manage + Console, Execute, Enable, Files, ForceOP, TriggerCron
-        Delete(16); // Wipe
+        None,
+        Status,
+        Whitelist,
+        Kick,
+        Mute,
+        Ban,
+        Start,
+        Stop,
+        Backup,
+        Update,
+        Maintenance,
+        Enable,
+        Console,
+        Execute,
+        Files,
+        ForceOP,
+        TriggerCron,
+
+        View(0x0100_0000, None, Status),
+        Moderate(0x0200_0000, View, Whitelist, Kick, Mute),
+        Manage(0x0400_0000, Moderate, Ban, Start, Stop, Backup, Update, Maintenance, Enable),
+        Administrate(0x0800_0000, Manage, Console, Execute, Files, ForceOP, TriggerCron),
+        Delete(0x1000_0000, Administrate);
+
+        static {
+            log.info("Registered permissions up to "+Delete);
+        }
 
         private final int value;
+
+        Permission() {
+            this(Bitmask.nextFlag());
+        }
 
         Permission(int base, Permission... members) {this.value = base | Bitmask.combine(members);}
 
         @Override
         public @NotNull Integer getValue() {
             return value;
+        }
+
+        @Override
+        public String toString() {
+            return "%s(0x%x)".formatted(name(),value);
         }
     }
 }

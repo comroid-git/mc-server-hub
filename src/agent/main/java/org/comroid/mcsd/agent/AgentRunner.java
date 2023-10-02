@@ -70,7 +70,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name>")
     public String backup(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Manage);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Backup);
 
         srv.component(BackupModule.class).assertion()
                 .runBackup(true)
@@ -82,7 +82,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [-f]")
     public String update(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Manage);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Update);
 
         var force = args[1].contains("-f");
         return srv.component(UpdateModule.class).assertion()
@@ -93,7 +93,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name>")
     public Object status(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.View);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Status);
         return srv.component(StatusModule.class).assertion()
                 .getCurrentStatus();
     }
@@ -101,7 +101,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [-na]")
     public Object enable(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Administrate);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Enable);
 
         var flags = args.length > 1 ? args[1] : "";
         serverRepo.setEnabled(srv.getId(), true);
@@ -113,7 +113,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [-nt]")
     public Object disable(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Administrate);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Enable);
 
         var flags = args.length > 1 ? args[1] : "";
         serverRepo.setEnabled(srv.getId(), false);
@@ -125,7 +125,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [-a]")
     public Object start(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Manage);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Start);
 
         var flags = args.length > 1 ? args[1] : "";
         srv.component(LocalExecutionModule.class).assertion().start();
@@ -137,7 +137,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> [time]")
     public Object stop(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Manage);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Stop);
 
         var timeout = args.length > 2 ? Integer.parseInt(args[2]) : 10;
         srv.component(LocalExecutionModule.class).assertion()
@@ -161,7 +161,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> <command...>")
     public String execute(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Administrate);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Execute);
 
         // forward command
         srv.component(ConsoleModule.class).assertion().execute(Arrays.stream(args).skip(1).collect(Collectors.joining(" ")));
@@ -171,7 +171,7 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name>")
     public String attach(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Administrate);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Console);
 
         if (attached != null)
             con.detach();
