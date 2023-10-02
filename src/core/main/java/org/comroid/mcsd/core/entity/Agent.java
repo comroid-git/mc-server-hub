@@ -30,5 +30,6 @@ public class Agent extends AbstractEntity {
     public static final int TokenLength = 64;
     private @NotNull @Setter @Basic UUID target;
     private @Nullable @Setter @Basic String hostname;
+    private @Nullable @Setter @Basic String hubBaseUrl;
     private @Nullable @Getter(onMethod = @__(@JsonIgnore)) @Basic @ToString.Exclude String token = Token.random(32, true);
 }

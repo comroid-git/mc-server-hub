@@ -109,7 +109,7 @@ public class Program implements ApplicationRunner {
                                 .map(OS.Host::name))
                         .map(hostname -> "?hostname=" + hostname)
                         .orElse("")))
-                .addHeader("Authorization", info.getToken()) // todo
+                .addHeader("Authorization", info.getToken())
                 .execute()
                 .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
                 .exceptionally(Polyfill.exceptionLogger());
