@@ -7,11 +7,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-@Data
+@Value
 @Builder
 @AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PROTECTED)
-public final class AgentInfo {
+public class AgentInfo {
     @NotNull UUID target;
     @NotNull UUID agent;
     @NotNull String hubBaseUrl;
