@@ -5,6 +5,7 @@ import com.mysql.jdbc.Driver;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
+import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.DBInfo;
 import org.comroid.mcsd.api.dto.OAuth2Info;
 import org.comroid.util.Debug;
@@ -73,6 +74,11 @@ public class Config {
     @Bean
     public ScheduledExecutorService scheduler() {
         return Executors.newScheduledThreadPool(32);
+    }
+
+    @Bean
+    public OS.Host hostname() {
+        return OS.current.getPrimaryHost();
     }
 
     @Bean

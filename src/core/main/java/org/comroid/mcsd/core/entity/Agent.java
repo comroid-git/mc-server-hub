@@ -11,6 +11,7 @@ import org.comroid.api.info.Log;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Debug;
+import org.comroid.util.Token;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,15 +30,5 @@ public class Agent extends AbstractEntity {
     public static final int TokenLength = 64;
     private @NotNull @Setter @Basic UUID target;
     private @Nullable @Setter @Basic String hostname;
-    private @Nullable @Getter(onMethod = @__(@JsonIgnore)) @Basic @ToString.Exclude String token = generateToken();
-
-    public Agent setToken(String token) {
-        this.token = token;
-        return this;
-    }
-    public static String generateToken() {
-        var randomBytes = new byte[TokenLength];
-        new SecureRandom().nextBytes(randomBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-    }
+    private @Nullable @Getter(onMethod = @__(@JsonIgnore)) @Basic @ToString.Exclude String token = Token.random(32, true);
 }

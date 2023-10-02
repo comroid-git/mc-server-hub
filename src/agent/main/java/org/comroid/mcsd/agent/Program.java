@@ -25,6 +25,7 @@ import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UptimeModule;
 import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.wrap;
 
 @Slf4j
 @ImportResource({"classpath:beans.xml"})
@@ -90,15 +92,19 @@ public class Program implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        ((List<Server>)bean(List.class, "servers"))
+        ((List<Server>) bean(List.class, "servers"))
                 .forEach(srv -> {
-                    srv.addChildren(((List<ServerModule.Factory<?>>)bean(List.class, "serverModuleFactories"))
+                    srv.addChildren(((List<ServerModule.Factory<?>>) bean(List.class, "serverModuleFactories"))
                             .stream()
                             .map(factory -> factory.create(srv))
                             .toArray());
                     srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
                 });
-        REST.get(Config.BaseUrl+"/open/agent/hello/"+bean(Agent.class, "me").getId())
+        REST.get(Config.BaseUrl + "/open/agent/hello/"
+                        + bean(Agent.class, "me").getId()
+                        + (wrap(OS.Host.class, "hostname")
+                        .map(host -> "?hostname=" + host.name())
+                        .orElse("")))
                 .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
                 .exceptionally(Polyfill.exceptionLogger());
     }
