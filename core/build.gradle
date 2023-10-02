@@ -11,7 +11,8 @@ targetCompatibility = '17'
 
 sourceSets {
     main.java.srcDirs       = files(parent.projectDir.toString() + "/src/core/main/java")
-    main.resources.srcDirs  = files(parent.projectDir.toString() + "/src/core/main/resources")
+    main.resources.srcDirs  = files(parent.projectDir.toString() + "/src/core/main/resources",
+                                        "/opt/mcsd","/srv/mcsd","/srv/mcsd-dev")
     test.java.srcDirs       = files(parent.projectDir.toString() + "/src/core/test/java")
     test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/core/test/java")
 }
