@@ -16,9 +16,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ServerRepo extends CrudRepository<Server, UUID> {
-    @Query("SELECT s FROM Server s JOIN s.permissions p WHERE s.owner.id = :userId OR (KEY(p) = :userId AND VALUE(p) > 0)")
-    Iterable<Server> findByPermittedUser(@Param("userId") UUID userId);
-
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
             " JOIN ShConnection sh" +

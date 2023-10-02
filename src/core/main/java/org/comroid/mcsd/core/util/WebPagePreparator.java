@@ -2,6 +2,7 @@ package org.comroid.mcsd.core.util;
 
 import jakarta.servlet.http.HttpSession;
 import org.comroid.api.Polyfill;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.repo.ShRepo;
@@ -25,7 +26,9 @@ public class WebPagePreparator {
         var user = users.get(session).assertion();
         var servers = ApplicationContextProvider.bean(ServerRepo.class);
         setAttribute("user", user);
-        setAttribute("servers", StreamSupport.stream(servers.findByPermittedUser(user.getId()).spliterator(), false).toList());
+        setAttribute("servers", StreamSupport.stream(servers.findAll().spliterator(), false)
+                .filter(srv->user.equals(srv.getOwner())||srv.getPermissions().getOrDefault(user,0)!=0)
+                .toList());
         setAttribute("connections", StreamSupport.stream(ApplicationContextProvider.bean(ShRepo.class).findAll().spliterator(), false).toList());
     }
 

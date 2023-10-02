@@ -33,8 +33,6 @@ import java.util.concurrent.TimeUnit;
 @EntityScan(basePackages = "org.comroid.mcsd.core.entity")
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
 public class Config {
-    public static final String BaseUrl = Debug.isDebug() ? "http://localhost:42064/api" : "https://mc.comroid.org/api";
-
     @Bean(name = "configDir")
     @Order(Ordered.HIGHEST_PRECEDENCE)
     @ConditionalOnExpression(value = "environment.containsProperty('DEBUG')")

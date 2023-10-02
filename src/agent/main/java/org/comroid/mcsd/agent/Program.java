@@ -9,7 +9,7 @@ import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
-import org.comroid.mcsd.connector.gateway.GatewayConnectionInfo;
+import org.comroid.mcsd.api.dto.AgentInfo;
 import org.comroid.mcsd.core.Config;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
@@ -40,6 +40,7 @@ import org.springframework.http.HttpStatus;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -58,14 +59,14 @@ public class Program implements ApplicationRunner {
 
     @Bean
     @SneakyThrows
-    public GatewayConnectionInfo gatewayConnectionInfo(@Autowired ObjectMapper mapper, @Autowired FileHandle configDir) {
-        return mapper.readValue(configDir.createSubFile("gateway.json"), GatewayConnectionInfo.class);
+    public AgentInfo agentInfo(@Autowired ObjectMapper mapper, @Autowired FileHandle configDir) {
+        return mapper.readValue(configDir.createSubFile("agent.json"), AgentInfo.class);
     }
 
     @Bean
-    public Agent me(@Autowired GatewayConnectionInfo connectionData, @Autowired AgentRepo agents) {
-        return agents.findById(connectionData.getAgent())
-                .orElseThrow(() -> new EntityNotFoundException(Agent.class, connectionData.getAgent()));
+    public Agent me(@Autowired AgentInfo agentInfo, @Autowired AgentRepo agents) {
+        return agents.findById(agentInfo.getAgent())
+                .orElseThrow(() -> new EntityNotFoundException(Agent.class, agentInfo.getAgent()));
     }
 
     @Bean
@@ -100,11 +101,16 @@ public class Program implements ApplicationRunner {
                             .toArray());
                     srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
                 });
-        REST.get(Config.BaseUrl + "/open/agent/hello/"
+        var info = bean(AgentInfo.class, "agentInfo");
+        REST.request(REST.Method.GET, info.getHubBaseUrl() + "/api/open/agent/hello/"
                         + bean(Agent.class, "me").getId()
-                        + (wrap(OS.Host.class, "hostname")
-                        .map(host -> "?hostname=" + host.name())
+                        + (Optional.ofNullable(info.getHostname())
+                        .or(() -> wrap(OS.Host.class, "hostname")
+                                .map(OS.Host::name))
+                        .map(hostname -> "?hostname=" + hostname)
                         .orElse("")))
+                .addHeader("Authorization", info.getToken()) // todo
+                .execute()
                 .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
                 .exceptionally(Polyfill.exceptionLogger());
     }
