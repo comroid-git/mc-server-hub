@@ -16,20 +16,23 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ServerRepo extends CrudRepository<Server, UUID> {
-    @Query("SELECT s FROM Server s JOIN s.userPermissions p WHERE KEY(p) = :userId AND VALUE(p) > 0")
-    Iterable<Server> findByPermittedUser(@Param("userId") UUID userId);
-
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
-            " JOIN ShConnection sh ON sh.id = a.target OR sh.id = s.shConnection")
-    // todo this shit wont work in spring but in mysql its totally fine...
+            " JOIN ShConnection sh" +
+            " WHERE sh.id = a.target AND sh.id = s.shConnection.id")
     Iterable<Server> findAllForAgent(@Param("agentId") UUID agentId);
 
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
-            " JOIN ShConnection sh ON sh.id = a.target OR sh.id = s.shConnection" +
-            " WHERE s.name = :name")
+            " JOIN ShConnection sh" +
+            " WHERE (sh.id = a.target AND sh.id = s.shConnection.id) AND s.name = :name")
     Optional<Server> findByAgentAndName(@Param("agentId") UUID agentId, @Param("name") String name);
+
+    @Query("SELECT s FROM Server s" +
+            " WHERE s.PublicChannelId = :id" +
+            " OR s.ModerationChannelId = :id" +
+            " OR s.ConsoleChannelId = :id")
+    Optional<Server> findByDiscordChannel(@Param("id") long id);
 
     @Modifying
     @Transactional
@@ -40,11 +43,6 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
     @Transactional
     @Query("UPDATE Server s SET s.maintenance = :maintenance WHERE s.id = :srvId")
     void setMaintenance(@Param("srvId") UUID srvId, @Param("maintenance") boolean maintenance);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE Server s SET s.lastStatus = :status WHERE s.id = :srvId")
-    void setStatus(@Param("srvId") UUID srvId, @Param("status") Status status);
 
     @Modifying
     @Transactional

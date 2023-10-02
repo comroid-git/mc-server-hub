@@ -1,45 +1,67 @@
 package org.comroid.mcsd.core.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.comroid.api.BitmaskAttribute;
-import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
+import org.comroid.api.EMailAddress;
+import org.comroid.util.REST;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "user")
 public class User extends AbstractEntity {
-    private String name;
-    private boolean guest;
-    private int permissions;
-    private @ManyToOne @Nullable MinecraftProfile minecraft;
-    private @Nullable Long discordId;
+    private @Column(unique = true) @Nullable UUID hubId;
+    private @Column(unique = true) @Nullable UUID minecraftId;
+    private @Column(unique = true) @Nullable Long discordId;
+    private @Column(unique = true) @Nullable String email;
+    private @Column(unique = true)
+    @ToString.Exclude
+    @Getter(onMethod = @__(@JsonIgnore))
+    @Nullable String verification;
+    private @Column(unique = true)
+    @ToString.Exclude
+    @Getter(onMethod = @__(@JsonIgnore))
+    @Nullable Instant verificationTimeout;
 
-    public boolean canManageServers() {
-        return Perm.ManageServers.isFlagSet(permissions);
-    }
-
-    public boolean canManageShConnections() {
-        return Perm.ManageShConnections.isFlagSet(permissions);
-    }
-
-    public User require(Perm perm) throws InsufficientPermissionsException {
-        if (!perm.isFlagSet(permissions))
-            throw new InsufficientPermissionsException(this, perm);
-        return this;
+    public String getMinecraftName() {
+        return REST.get(getMojangAccountUrl(minecraftId))
+                .thenApply(rsp -> rsp.getBody().get("name").asString())
+                .join();
     }
 
     @Override
     public String toString() {
-        return "User " + name;
+        return "User " + getName();
     }
 
-    public enum Perm implements BitmaskAttribute<Perm> {None, ManageServers, ManageShConnections, Admin}
+    @SneakyThrows
+    public String getNameMcURL() {
+        return "https://namemc.com/profile/" + getMinecraftId();
+    }
+
+    @SneakyThrows
+    public String getHeadURL() {
+        return "https://mc-heads.net/avatar/" + getMinecraftId();
+    }
+
+    @SneakyThrows
+    public String getIsoBodyURL() {
+        return "https://mc-heads.net/body/" + getMinecraftId();
+    }
+
+    public static String getMojangAccountUrl(String username) {
+        return "https://api.mojang.com/users/profiles/minecraft/" + username;
+    }
+
+    public static String getMojangAccountUrl(UUID id) {
+        return "https://api.mojang.com/user/profile/" + id;
+    }
+
+    @Deprecated
+    public enum Perm implements BitmaskAttribute<Perm> {None, ManageServers, ManageShConnections, Admin;}
 }

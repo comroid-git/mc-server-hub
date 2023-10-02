@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id "de.undercouch.download" version "5.5.0"
 }
 
 group = 'org.comroid.mcsd'
@@ -13,8 +14,20 @@ sourceSets {
     test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/spigot/test/java")
 }
 
+tasks.register('dlServerJar', Download).configure {
+    src 'https://serverjars.com/api/fetchJar/servers/paper/1.19.4'
+    dest "${buildDir}/libs"
+}
+
+tasks.register('serverJar', Copy) {
+    dependsOn dlServerJar
+    from dlServerJar.outputs.files.singleFile
+    into "$projectDir/run"
+    rename { "server.jar" }
+}
+
 tasks.register('testPlugin', Copy).configure {
-    dependsOn shadowJar
+    dependsOn shadowJar, serverJar
     from shadowJar.outputs.files.singleFile
     into "${projectDir}/run/plugins"
 }

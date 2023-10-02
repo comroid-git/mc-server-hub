@@ -164,3 +164,6 @@ gradle-app.setting
 
 .idea/
 latest.log
+src/core/main/resources/static/api/open/info/commit.txt
+src/core/main/resources/static/api/open/info/build_history.txt
+force_commit.txt

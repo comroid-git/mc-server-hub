@@ -1,6 +1,6 @@
 plugins {
-    id 'war'
-    id 'java'
+    //id 'war'
+    id 'application'
     id 'org.springframework.boot' version '3.0.+'
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
 }
@@ -9,13 +9,14 @@ group = 'org.comroid.mcsd'
 version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
+mainClassName = 'org.comroid.mcsd.hub.Program'
 
-tasks.register('simplifyDist', Copy) {
-    dependsOn 'bootWar'
-    from bootWar.outputs.files.singleFile
-    def target = file("$buildDir/dist")
-    into target
-    rename { String filename -> return "mc-server-hub.war" }
+tasks.register('simplify', Copy) {
+    dependsOn 'bootJar'
+    from bootJar.outputs.files.singleFile
+    into "$buildDir/libs"
+    rename { "${project.name}.jar" }
+    doLast { System.out.println("Boot Jar saved as $buildDir/libs/${project.name}.jar") }
 }
 
 sourceSets {
@@ -23,10 +24,6 @@ sourceSets {
     main.resources.srcDirs  = files(parent.projectDir.toString() + "/src/hub/main/resources")
     test.java.srcDirs       = files(parent.projectDir.toString() + "/src/hub/test/java")
     test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/hub/test/java")
-}
-
-bootWar {
-    webAppDirectory = file(parent.projectDir.toString() + "/src/hub/main/webapp")
 }
 
 repositories {
@@ -49,13 +46,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework:spring-messaging:6.0.0'
-
-    // jstl
-    compileOnly 'jstl:jstl:1.2'
-    implementation 'org.glassfish.web:jakarta.servlet.jsp.jstl'
-    implementation 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api'
-    providedRuntime 'org.apache.tomcat.embed:tomcat-embed-jasper'
-    providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
 
     // security
     implementation 'org.springframework.session:spring-session-core'

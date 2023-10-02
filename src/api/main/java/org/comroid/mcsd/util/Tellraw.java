@@ -13,12 +13,23 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.comroid.mcsd.util.McFormatCode.*;
+
 public interface Tellraw {
+    static Command.Builder notify(Object selector, Component title, String content) {
+        return Command.builder()
+                .selector(selector)
+                .component(White.text("<").build())
+                .component(title)
+                .component(White.text("> ").build())
+                .component(Reset.text(content).build());
+    }
+
     @With
     @Value
     @Builder
     class Command implements Tellraw {
-        ISelector selector;
+        Object selector;
         @Singular
         List<Component> components;
 
@@ -31,14 +42,12 @@ public interface Tellraw {
         }
     }
 
-    interface ISelector extends Tellraw {}
-
     @With
     @Value
     @Builder
-    class Selector implements ISelector {
+    class Selector {
         @Getter
-        public enum Base implements ISelector {
+        public enum Base {
             NEAREST_PLAYER("@p"),
             RANDOM_PLAYER("@r"),
             ALL_PLAYERS("@a"),
@@ -103,7 +112,7 @@ public interface Tellraw {
                 else if (code.isReset()) {
                     for (var format : McFormatCode.FORMATS)
                         json.set(format.name().toLowerCase(), false);
-                    json.set("color", McFormatCode.White.name().toLowerCase());
+                    json.set("color", White.name().toLowerCase());
                 }
             }
             if (clickEvent!=null)json.put("clickEvent", clickEvent.json());

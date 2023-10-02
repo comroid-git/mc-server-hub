@@ -16,6 +16,55 @@ sourceSets {
     test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/core/test/java")
 }
 
+tasks.register('gitCommitResource') {
+    def currentCommitHash = 'git rev-parse HEAD'.execute().text.trim()
+    def commitDir = file(parent.projectDir.toString() + "/src/core/main/resources/static/api/open/info")
+    def commitFile = file("${commitDir}/commit.txt")
+
+    outputs.upToDateWhen { task ->
+        // Determine if the task is up to date based on the condition
+        if (commitFile.exists()) {
+            def existingCommitHash = commitFile.text.trim()
+            return existingCommitHash == currentCommitHash
+        }
+
+        // If commit.txt doesn't exist, the task is not up to date
+        return false
+    }
+
+    doLast {
+        def commitDateTime = new Date().format('yyyy-MM-dd HH:mm:ss')
+        def commitInfo = "${commitDateTime} - ${currentCommitHash}"
+
+        def historyFile = file("${commitDir}/build_history.txt")
+
+        // Ensure the directory exists
+        commitDir.mkdirs()
+
+        commitFile.text = currentCommitHash
+        println "Git commit hash has been written to ${commitFile}"
+
+        if (historyFile.exists()) {
+            historyFile.append("\n$commitInfo")
+        } else {
+            historyFile.text = commitInfo
+        }
+
+        println "Git commit info has been appended to ${historyFile}"
+    }
+}
+
+
+
+compileJava {
+    dependsOn 'gitCommitResource'
+}
+
+
+compileJava {
+    dependsOn 'gitCommitResource'
+}
+
 repositories {
     maven { url 'https://maven.comroid.org' }
     mavenLocal()
@@ -54,6 +103,10 @@ dependencies {
     implementation 'io.github.fragland:MineStat:3.+'
     implementation 'io.github.MrGraversen:minecraft-rcon:0.+'
     //implementation "dev.jaqobb:namemcapi:2.+" // not actually available ...
+
+    // discord
+    api 'net.dv8tion:JDA:5.+'
+    api 'club.minnced:discord-webhooks:0.+'
 
     // utility
     developmentOnly 'org.springframework.boot:spring-boot-starter-actuator'

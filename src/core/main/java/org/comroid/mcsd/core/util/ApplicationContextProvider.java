@@ -33,7 +33,7 @@ public class ApplicationContextProvider implements ApplicationContextAware {
         return bean(type, null);
     }
 
-    public static <T, R extends T> R bean(Class<T> type, @Nullable String name) {
+    public static <T, R extends T> R bean(Class<?super T> type, @Nullable String name) {
         try {
             var context = get().assertion("Context not set");
             return Polyfill.uncheckedCast(name == null ? context.getBean(type) : context.getBean(name, type));

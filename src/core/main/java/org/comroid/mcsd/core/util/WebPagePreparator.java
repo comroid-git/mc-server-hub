@@ -2,6 +2,7 @@ package org.comroid.mcsd.core.util;
 
 import jakarta.servlet.http.HttpSession;
 import org.comroid.api.Polyfill;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.repo.ShRepo;
@@ -22,10 +23,12 @@ public class WebPagePreparator {
         this.page = page;
 
         var users = ApplicationContextProvider.bean(UserRepo.class);
-        var user = users.findBySession(session);
+        var user = users.get(session).assertion();
         var servers = ApplicationContextProvider.bean(ServerRepo.class);
         setAttribute("user", user);
-        setAttribute("servers", StreamSupport.stream(servers.findByPermittedUser(users.findBySession(session).getId()).spliterator(), false).toList());
+        setAttribute("servers", StreamSupport.stream(servers.findAll().spliterator(), false)
+                .filter(srv->user.equals(srv.getOwner())||srv.getPermissions().getOrDefault(user,0)!=0)
+                .toList());
         setAttribute("connections", StreamSupport.stream(ApplicationContextProvider.bean(ShRepo.class).findAll().spliterator(), false).toList());
     }
 
@@ -44,13 +47,6 @@ public class WebPagePreparator {
     }
 
     public String complete() {
-        return complete($ -> true);
-    }
-
-    public String complete(Predicate<User> permissionCheck) {
-        User user = getAttribute("user");
-        if (!permissionCheck.test(user))
-            throw new InsufficientPermissionsException(user, User.Perm.None);
         setAttribute("page", page);
         return frame;
     }
