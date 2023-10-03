@@ -82,7 +82,9 @@ public class DiscordModule extends ServerModule {
                                 .mapData(msg -> {
                                     var player = bean(UserRepo.class).get(msg.getUsername()).assertion();
                                     return new DiscordMessageSource(msg.toString())
-                                            .setDisplayUser(player.getDisplayUser(User.DisplayUser.Type.Discord, User.DisplayUser.Type.Minecraft).assertion());
+                                            .setDisplayUser(player.getDisplayUser(User.DisplayUser.Type.Discord, User.DisplayUser.Type.Minecraft)
+                                                    .assertion())
+                                            .setAppend(true);
                                 })
                                 .subscribeData(webhook),
                         // dc -> mc
