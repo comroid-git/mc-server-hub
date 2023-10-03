@@ -74,7 +74,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener, Command.Handler {
     private static final Map<UUID, DiscordAdapter> adapters = new ConcurrentHashMap<>();
     public static final int MaxBulkDelete = 100;
-    public static final int MaxEditBacklog = 20;
+    public static final int MaxEditBacklog = 15;
     private final JDA jda;
 
     @Contract("null -> null; _ -> _")
