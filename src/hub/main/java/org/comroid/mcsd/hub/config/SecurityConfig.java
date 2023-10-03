@@ -1,6 +1,6 @@
 package org.comroid.mcsd.hub.config;
 
-import org.comroid.mcsd.api.dto.OAuth2Info;
+import org.comroid.mcsd.api.dto.McsdConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +28,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public ClientRegistrationRepository clientRegistrationRepository(@Autowired OAuth2Info info) {
+    public ClientRegistrationRepository clientRegistrationRepository(@Autowired McsdConfig config) {
+        var info = config.getOAuth();
         return new InMemoryClientRegistrationRepository(ClientRegistration.withRegistrationId(info.getName())
                 .clientId(info.getClientId())
                 .clientSecret(info.getSecret())

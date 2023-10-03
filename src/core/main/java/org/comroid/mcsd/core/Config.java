@@ -1,13 +1,12 @@
 package org.comroid.mcsd.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mysql.jdbc.Driver;
+import com.mysql.cj.jdbc.Driver;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
-import org.comroid.mcsd.api.dto.DBInfo;
-import org.comroid.mcsd.api.dto.OAuth2Info;
+import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.util.Debug;
 import org.comroid.util.REST;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.jdbc.DataSourceBuilder;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -50,22 +52,18 @@ public class Config {
     }
 
     @Bean
-    public DBInfo dataSourceInfo(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
-        return objectMapper.readValue(configDir.createSubFile("db.json"), DBInfo.class);
+    public McsdConfig config(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
+        return objectMapper.readValue(configDir.createSubFile("config.json"), McsdConfig.class);
     }
 
     @Bean
-    public OAuth2Info oAuthInfo(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
-        return objectMapper.readValue(configDir.createSubFile("oauth2.json"), OAuth2Info.class);
-    }
-
-    @Bean
-    public DataSource dataSource(@Autowired DBInfo dbInfo) {
+    public DataSource dataSource(@Autowired McsdConfig config) {
+        var db = config.getDatabase();
         return DataSourceBuilder.create()
                 .driverClassName(Driver.class.getCanonicalName())
-                .url(dbInfo.getUrl())
-                .username(dbInfo.getUsername())
-                .password(dbInfo.getPassword())
+                .url(db.getUrl())
+                .username(db.getUsername())
+                .password(db.getPassword())
                 .build();
     }
 

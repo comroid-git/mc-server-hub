@@ -11,6 +11,7 @@ import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.api.dto.AgentInfo;
+import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.core.Config;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
@@ -59,8 +60,8 @@ public class Program implements ApplicationRunner {
 
     @Bean
     @SneakyThrows
-    public AgentInfo agentInfo(@Autowired ObjectMapper mapper, @Autowired FileHandle configDir) {
-        return mapper.readValue(configDir.createSubFile("agent.json"), AgentInfo.class);
+    public AgentInfo agentInfo(@Autowired McsdConfig config) {
+        return config.getAgent();
     }
 
     @Bean

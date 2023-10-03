@@ -1,7 +1,6 @@
 package org.comroid.mcsd.agent.config;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.comroid.mcsd.api.dto.OAuth2Info;
+import org.comroid.mcsd.api.dto.McsdConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,8 +12,6 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -31,7 +28,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public ClientRegistrationRepository clientRegistrationRepository(@Autowired OAuth2Info info) {
+    public ClientRegistrationRepository clientRegistrationRepository(@Autowired McsdConfig config) {
+        var info = config.getOAuth();
         return new InMemoryClientRegistrationRepository(ClientRegistration.withRegistrationId(info.getName())
                 .clientId(info.getClientId())
                 .clientSecret(info.getSecret())

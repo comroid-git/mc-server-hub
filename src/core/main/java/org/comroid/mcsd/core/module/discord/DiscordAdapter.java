@@ -234,10 +234,10 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                     .orElseGet(() -> CompletableFuture.completedFuture(profile.getAsString() + " has not linked their Accounts"));
         else {
             final long dcid = discord.getAsUser().getIdLong();
-            return CompletableFuture.completedFuture(users.findByDiscordId(dcid)
-                    .filter(data -> data.getMinecraftId() != null)
-                    .map(data -> discord.getAsUser().getAsMention() + " is " + data.getMinecraftName() + " in Minecraft")
-                    .orElseGet(() -> discord.getAsUser().getAsMention() + " has not linked their Accounts"));
+            return users.findByDiscordId(dcid)
+                    .filter(user -> user.getMinecraftId() != null)
+                    .map(user -> user.getMinecraftName().thenApply(mc->discord.getAsUser().getAsMention() + " is " + mc + " in Minecraft") )
+                    .orElseGet(() -> CompletableFuture.completedFuture(discord.getAsUser().getAsMention() + " has not linked their Accounts"));
         }
     }
 
@@ -278,7 +278,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         }
         final var user = users.merge(users.findByDiscordId(e.getUser().getIdLong()), Optional.of(profile));
         users.clearVerification(user.getId());
-        return "Minecraft account " + profile.getMinecraftName() + " has been linked";
+        return "Minecraft account " + profile.getMinecraftName().join() + " has been linked";
     }
 
     @Command(ephemeral = true)
