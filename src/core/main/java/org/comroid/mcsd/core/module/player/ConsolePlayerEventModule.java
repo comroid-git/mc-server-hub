@@ -41,7 +41,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Component.Requires(ConsoleModule.class)
-public class ChatModule extends ServerModule {
+public class ConsolePlayerEventModule extends ServerModule {
     public static final Duration TickerTimeout = Duration.ofMinutes(15);
     public static final Pattern ChatPattern = ConsoleModule.pattern(
             "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
@@ -63,10 +63,10 @@ public class ChatModule extends ServerModule {
             "(?<username>[\\S\\w_-]+) " +
                     "(?<message>has (made the advancement|completed the challenge) " +
                     "(\\[(?<advancement>[\\w\\s]+)]))\\r?\\n?");
-    public static final Factory<ChatModule> Factory = new Factory<>(ChatModule.class) {
+    public static final Factory<ConsolePlayerEventModule> Factory = new Factory<>(ConsolePlayerEventModule.class) {
         @Override
-        public ChatModule create(Server parent) {
-            return new ChatModule(parent);
+        public ConsolePlayerEventModule create(Server parent) {
+            return new ConsolePlayerEventModule(parent);
         }
     };
     public static final Pattern DeathPatternBase = Pattern.compile("^%1\\$s (?<message>[\\w\\s%$]+)$");
@@ -78,7 +78,7 @@ public class ChatModule extends ServerModule {
     final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
     protected Event.Bus<PlayerEvent> bus;
 
-    private ChatModule(Server parent) {
+    private ConsolePlayerEventModule(Server parent) {
         super(parent);
     }
 

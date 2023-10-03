@@ -9,7 +9,7 @@ import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.module.player.ChatModule;
+import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
@@ -27,7 +27,7 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 @Log
 @Getter
 @ToString
-@Component.Requires({ChatModule.class,ConsoleModule.class})
+@Component.Requires({ConsolePlayerEventModule.class,ConsoleModule.class})
 public class DiscordModule extends ServerModule {
     public static final Factory<DiscordModule> Factory = new Factory<>(DiscordModule.class) {
         @Override
@@ -47,7 +47,7 @@ public class DiscordModule extends ServerModule {
     @Override
     @SneakyThrows
     protected void $initialize() {
-        var chat = parent.component(ChatModule.class).map(ChatModule::getBus);
+        var chat = parent.component(ConsolePlayerEventModule.class).map(ConsolePlayerEventModule::getBus);
         var consoleModule = parent.component(ConsoleModule.class);
 
         adapter.getJda().awaitReady();

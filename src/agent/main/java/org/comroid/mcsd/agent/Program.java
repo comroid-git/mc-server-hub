@@ -17,7 +17,7 @@ import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.module.*;
 import org.comroid.mcsd.core.module.discord.DiscordModule;
-import org.comroid.mcsd.core.module.player.ChatModule;
+import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.local.LocalFileModule;
 import org.comroid.mcsd.core.module.player.PlayerListModule;
@@ -78,7 +78,7 @@ public class Program implements ApplicationRunner {
                 UpdateModule.Factory,
                 LocalExecutionModule.Factory,
                 //todo: fix BackupModule.Factory,
-                ChatModule.Factory,
+                ConsolePlayerEventModule.Factory,
                 PlayerListModule.Factory,
                 DiscordModule.Factory
         );
