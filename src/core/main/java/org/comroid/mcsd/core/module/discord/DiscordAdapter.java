@@ -83,7 +83,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     @SneakyThrows
-    private DiscordAdapter(DiscordBot bot) {
+    public DiscordAdapter(DiscordBot bot) {
         this.jda = JDABuilder.createDefault(bot.getToken(), GatewayIntent.getIntents(GatewayIntent.ALL_INTENTS))
                 .setActivity(Activity.playing("Minecraft"))
                 .setCompression(Compression.ZLIB)

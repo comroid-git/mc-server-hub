@@ -7,6 +7,7 @@ import lombok.extern.java.Log;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Rewrapper;
 import org.comroid.mcsd.api.dto.McsdConfig;
+import org.comroid.mcsd.core.module.discord.DiscordAdapter;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Constraint;
 import org.comroid.util.REST;
@@ -18,6 +19,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 
+import static org.comroid.api.Rewrapper.empty;
+import static org.comroid.api.Rewrapper.of;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
@@ -52,8 +55,13 @@ public class User extends AbstractEntity {
     public CompletableFuture<DisplayUser> getDiscordDisplayUser() {
         Constraint.notNull(discordId, this+".discordId").run();
         assert discordId != null;
+        return bean(DiscordAdapter.class).getJda()
+                .retrieveUserById(discordId)
+                .map(usr->new DisplayUser(DisplayUser.Type.Discord,usr.getEffectiveName(),usr.getEffectiveAvatarUrl(),null))
+                .submit();
+        /*
         return REST.request(REST.Method.GET, getDiscordUserUrl(discordId))
-                .addHeader("Authorization", "Bearer "+bean(McsdConfig.class).getDiscordToken())
+                .addHeader("Authorization", "Bot "+bean(McsdConfig.class).getDiscordToken())
                 .execute()
                 .thenApply(REST.Response::validate2xxOK)
                 .thenApply(rsp -> {
@@ -71,6 +79,7 @@ public class User extends AbstractEntity {
                             "https://cdn.discordapp.com/embed/avatars/0.png",
                             null);
                 });
+         */
     }
 
     @Override
@@ -90,19 +99,29 @@ public class User extends AbstractEntity {
 
     public Rewrapper<DisplayUser> getDisplayUser(DisplayUser.Type... types) {
         Constraint.Length.min(1, types, "types").run();
-        DisplayUser.Type type;
+        Rewrapper<DisplayUser> result = null;
+        DisplayUser.Type type = DisplayUser.Type.Hub;
         int i = -1;
         do {
-            if (i + 1 >= types.length)
-                return Rewrapper.empty();
-            type = types[++i];
-        } while (!type.test(this));
-        return Rewrapper.of(type == DisplayUser.Type.Discord
-                ? getDiscordDisplayUser().join()
-                : new DisplayUser(type,
-                type == DisplayUser.Type.Minecraft ? getMinecraftName().join() : getName(),
-                getHeadURL(),
-                getNameMcURL()));
+            try {
+                do {
+                    if (i + 1 >= types.length)
+                        result = empty();
+                    type = types[++i];
+                } while (!type.test(this));
+                result = type == DisplayUser.Type.Discord
+                        ? of(getDiscordDisplayUser().join())
+                        : of(new DisplayUser(type,
+                        type == DisplayUser.Type.Minecraft
+                                ? getMinecraftName().join()
+                                : getName(),
+                        getHeadURL(),
+                        getNameMcURL()));
+            } catch (Throwable t) {
+                log.log(Level.WARNING, "Could not retrieve " + type + " display for for user " + getId(), t);
+            }
+        } while (result == null || result.isNull());
+        return result;
     }
 
     public static String getMojangAccountUrl(String username) {

@@ -3,12 +3,16 @@ package org.comroid.mcsd.core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.cj.jdbc.Driver;
 import lombok.extern.slf4j.Slf4j;
+import net.dv8tion.jda.api.JDA;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.McsdConfig;
+import org.comroid.mcsd.core.entity.DiscordBot;
+import org.comroid.mcsd.core.module.discord.DiscordAdapter;
 import org.comroid.util.Debug;
 import org.comroid.util.REST;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -54,6 +58,14 @@ public class Config {
     @Bean
     public McsdConfig config(@Autowired ObjectMapper objectMapper, @Autowired FileHandle configDir) throws IOException {
         return objectMapper.readValue(configDir.createSubFile("config.json"), McsdConfig.class);
+    }
+
+    @Bean
+    @Nullable
+    public DiscordAdapter bot(@Autowired McsdConfig config) {
+        return config.getDiscordToken() != null ? new DiscordAdapter(new DiscordBot()
+                .setToken(config.getDiscordToken())
+                .setShardCount(1)) : null;
     }
 
     @Bean
