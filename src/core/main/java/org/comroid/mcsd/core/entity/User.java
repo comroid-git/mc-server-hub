@@ -58,7 +58,7 @@ public class User extends AbstractEntity {
         return bean(DiscordAdapter.class).getJda()
                 .retrieveUserById(discordId)
                 .map(usr->new DisplayUser(DisplayUser.Type.Discord,usr.getEffectiveName(),usr.getEffectiveAvatarUrl(),null))
-                .submit();
+                .submit()
         /*
         return REST.request(REST.Method.GET, getDiscordUserUrl(discordId))
                 .addHeader("Authorization", "Bot "+bean(McsdConfig.class).getDiscordToken())
@@ -72,6 +72,7 @@ public class User extends AbstractEntity {
                         data.get("username").asString(),
                         getDiscordAvatarUrl(discordId, data.get("avatar").asString()),
                         null))
+         */
                 .exceptionally(t-> {
                     log.log(Level.WARNING, "Could not retrieve Discord User data for user " + discordId, t);
                     return new DisplayUser(DisplayUser.Type.Discord,
@@ -79,7 +80,6 @@ public class User extends AbstractEntity {
                             "https://cdn.discordapp.com/embed/avatars/0.png",
                             null);
                 });
-         */
     }
 
     @Override
