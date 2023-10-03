@@ -9,6 +9,8 @@ import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.model.DiscordMessageSource;
 import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
@@ -78,8 +80,9 @@ public class DiscordModule extends ServerModule {
                         // mc -> dc
                         chatBus.filterData(msg -> msg.getType().isFlagSet(parent.getPublicChannelEvents()))
                                 .mapData(msg -> {
-                                    var player = bean(UserRepo.class).get(msg.getUsername()).get();
-                                    return new DiscordMessageSource(msg.toString()).setPlayer(player);
+                                    var player = bean(UserRepo.class).get(msg.getUsername()).assertion();
+                                    return new DiscordMessageSource(msg.toString())
+                                            .setDisplayUser(player.getDisplayUser(User.DisplayUser.Type.Discord, User.DisplayUser.Type.Minecraft).assertion());
                                 })
                                 .subscribeData(webhook),
                         // dc -> mc
@@ -90,7 +93,10 @@ public class DiscordModule extends ServerModule {
                                         .component(White.text("<").build())
                                         .component(Dark_Aqua.text(bean(UserRepo.class)
                                                         .findByDiscordId(msg.getAuthor().getIdLong())
-                                                        .map(AbstractEntity::getName)
+                                                        // prefer effective name here; only try minecraft variant now
+                                                        .flatMap(usr->usr.getDisplayUser(User.DisplayUser.Type.Minecraft).wrap())
+                                                        .map(User.DisplayUser::username)
+                                                        // otherwise use effective name
                                                         .orElseGet(() -> msg.getAuthor().getEffectiveName()))
                                                 .hoverEvent(show_text.value("Open in Discord"))
                                                 .clickEvent(open_url.value(msg.getJumpUrl()))

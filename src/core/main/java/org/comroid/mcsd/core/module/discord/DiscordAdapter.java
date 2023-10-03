@@ -38,6 +38,7 @@ import org.comroid.api.Polyfill;
 import org.comroid.mcsd.api.Defaults;
 import org.comroid.mcsd.core.entity.DiscordBot;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.model.DiscordMessageSource;
 import org.comroid.mcsd.core.module.status.BackupModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
@@ -358,11 +359,11 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             }
 
             private CompletableFuture<@NotNull Long> send(DiscordMessageSource msg, String text) {
-                var player = msg.getPlayer();
+                var player = msg.getDisplayUser();
                 return sender.send(whMsg()
                                 .setContent(text)
-                                .setAvatarUrl(player != null ? player.getHeadURL() : null)
-                                .setUsername(player != null ? player.getName() : null)
+                                .setAvatarUrl(player != null ? player.avatarUrl() : null)
+                                .setUsername(player != null ? player.username() : null)
                                 .build())
                         .thenApply(ReadonlyMessage::getId);
             }

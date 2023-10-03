@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 @Data
 public final class DiscordMessageSource implements StreamSupplier<Object> {
     private @Nullable Object data;
-    private @Nullable User player = null;
+    private @Nullable User.DisplayUser displayUser = null;
     private boolean append = false;
 
     public DiscordMessageSource() {
@@ -29,13 +29,19 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
         this.data = data;
     }
 
-    public boolean isEmbed() {return embed().isPresent();}
-    public boolean isString() {return string().isPresent();}
+    public boolean isEmbed() {
+        return embed().isPresent();
+    }
+
+    public boolean isString() {
+        return string().isPresent();
+    }
 
     @Override
     public Stream<Object> stream() {
         return Optional.ofNullable(data).stream();
     }
+
     public Optional<String> string() {
         return stream()
                 .map(String::valueOf)
@@ -58,9 +64,11 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
         return this;
     }
 
-    public DiscordMessageSource setPlayer(User player) {
-        this.player = player;
-        return embed(embed -> embed.setAuthor(player.getName(), player.getNameMcURL(), player.getHeadURL()));
+    public DiscordMessageSource setDisplayUser(User.DisplayUser displayUser) {
+        this.displayUser = displayUser;
+        return embed(embed -> {
+            embed.setAuthor(displayUser.username(), this.displayUser.url(), displayUser.avatarUrl());
+        });
     }
 
     public CompletableFuture<?> send(Sender sender) {
@@ -99,6 +107,7 @@ public final class DiscordMessageSource implements StreamSupplier<Object> {
 
     public interface Sender {
         CompletableFuture<@NotNull Long> sendString(DiscordMessageSource source);
+
         CompletableFuture<@NotNull Long> sendEmbed(DiscordMessageSource source);
     }
 }

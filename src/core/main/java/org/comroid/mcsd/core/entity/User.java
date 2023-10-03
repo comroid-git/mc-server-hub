@@ -4,12 +4,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.comroid.api.BitmaskAttribute;
-import org.comroid.api.EMailAddress;
+import org.comroid.api.Rewrapper;
+import org.comroid.util.Constraint;
 import org.comroid.util.REST;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Range;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 @Getter
 @Setter
@@ -39,19 +45,29 @@ public class User extends AbstractEntity {
         return "User " + getName();
     }
 
-    @SneakyThrows
-    public String getNameMcURL() {
-        return "https://namemc.com/profile/" + getMinecraftId();
-    }
+    public String getNameMcURL() {return minecraftId==null
+            ?"https://github.com/comroid-git/mc-server-hub/blob/main/docs/account_not_linked.md"
+            :"https://namemc.com/profile/" + minecraftId;}
+    public String getHeadURL() {return minecraftId==null
+            ?"https://github.com/comroid-git/mc-server-hub/blob/main/docs/account_not_linked.md"
+            :"https://mc-heads.net/avatar/" + minecraftId;}
+    public String getIsoBodyURL() {return minecraftId==null
+            ?"https://github.com/comroid-git/mc-server-hub/blob/main/docs/account_not_linked.md"
+            :"https://mc-heads.net/body/" + minecraftId;}
 
-    @SneakyThrows
-    public String getHeadURL() {
-        return "https://mc-heads.net/avatar/" + getMinecraftId();
-    }
-
-    @SneakyThrows
-    public String getIsoBodyURL() {
-        return "https://mc-heads.net/body/" + getMinecraftId();
+    public Rewrapper<DisplayUser> getDisplayUser(DisplayUser.Type... types) {
+        Constraint.Length.min(1, types, "types");
+        DisplayUser.Type type;
+        int i = -1;
+        do {
+            if (i+1>=types.length)
+                return Rewrapper.empty();
+            type = types[++i];
+        } while (!type.test(this));
+        return Rewrapper.of(new DisplayUser(type,
+                type == DisplayUser.Type.Minecraft ? getMinecraftName() : getName(),
+                getHeadURL(),
+                getNameMcURL()));
     }
 
     public static String getMojangAccountUrl(String username) {
@@ -60,6 +76,32 @@ public class User extends AbstractEntity {
 
     public static String getMojangAccountUrl(UUID id) {
         return "https://api.mojang.com/user/profile/" + id;
+    }
+
+    public record DisplayUser(Type type, String username, String avatarUrl, @Nullable String url) {
+        public enum Type implements Predicate<User> {
+            Minecraft {
+                @Override
+                public boolean test(User user) {
+                    return user.minecraftId != null;
+                }
+            },
+            Discord {
+                @Override
+                public boolean test(User user) {
+                    return user.discordId != null;
+                }
+            },
+            Hub {
+                @Override
+                public boolean test(User user) {
+                    return user.hubId != null;
+                }
+            };
+
+            @Override
+            public abstract boolean test(User user);
+        }
     }
 
     @Deprecated
