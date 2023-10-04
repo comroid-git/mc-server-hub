@@ -72,7 +72,7 @@ public class ConsolePlayerEventModule extends ServerModule {
     public static final Pattern DeathPatternBase = Pattern.compile("^%1\\$s (?<message>[\\w\\s%$]+)$");
     public static final @Language("RegExp") String DeathPatternScheme = ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>%s)\\r?\\n?.*";
     @SuppressWarnings("RegExpDuplicateCharacterInClass")
-    public static final @Language("RegExp") String CleanWord_Spaced = "\\\\[?([\\\\s\\\\w\\\\-_]+)]?";
+    public static final @Language("RegExp") String CleanWord_Spaced = "\\\\[?([\\\\s\\\\w\\\\-_'?!.]+)]?";
     public static final List<Pattern> DeathMessagePatterns = new ArrayList<>();
 
     final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
