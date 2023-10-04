@@ -114,7 +114,7 @@ public class Program implements ApplicationRunner {
                 .addHeader("Authorization", info.getToken())
                 .execute()
                 .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
-                .exceptionally(Polyfill.exceptionLogger(Log.get(), "Could not connect to Hub"));
+                .exceptionally(Polyfill.exceptionLogger(Log.get(), "Could not connect to Hub at " + info.getHubBaseUrl()));
     }
 }
 
