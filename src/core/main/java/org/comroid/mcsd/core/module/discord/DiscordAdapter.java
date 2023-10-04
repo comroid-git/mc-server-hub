@@ -601,7 +601,10 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
             private MessageCreateAction newMsg(@Nullable String content) {
                 log.finest("new message with start content:\n" + content);
-                return channel.sendMessage(wrapContent(content));
+                var wrap = wrapContent(content);
+                if (wrap.length() <= 6) // empty codeblock
+                    throw new RuntimeException("Invalid console channel output");
+                return channel.sendMessage(wrap);
             }
 
             private String wrapContent(@Nullable String content) {
