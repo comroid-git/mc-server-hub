@@ -2,7 +2,6 @@ package org.comroid.mcsd.hub.controller;
 
 import jakarta.servlet.http.HttpSession;
 import org.comroid.mcsd.core.repo.ShRepo;
-import org.comroid.mcsd.core.util.WebPagePreparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
