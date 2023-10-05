@@ -6,16 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.IntegerAttribute;
 import org.comroid.api.Named;
 import org.comroid.mcsd.core.MCSD;
-import org.comroid.mcsd.core.entity.AbstractEntity;
-import org.comroid.mcsd.core.entity.Agent;
-import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.StatusCode;
-import org.comroid.mcsd.core.repo.AgentRepo;
-import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.mcsd.core.repo.ShRepo;
-import org.comroid.mcsd.core.repo.UserRepo;
+import org.comroid.mcsd.core.repo.*;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,6 +33,8 @@ public class ApiController {
     private AgentRepo agents;
     @Autowired
     private ShRepo shRepo;
+    @Autowired
+    private DiscordBotRepo discordBotRepo;
 
     @ResponseBody
     @GetMapping("/webapp/user")
@@ -58,6 +54,22 @@ public class ApiController {
     @GetMapping("/webapp/agents")
     public List<Agent> agents(HttpSession session) {
         return Streams.of(agents.findAll())
+                .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
+                .toList();
+    }
+
+    @ResponseBody
+    @GetMapping("/webapp/shells")
+    public List<ShConnection> shells(HttpSession session) {
+        return Streams.of(shRepo.findAll())
+                .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
+                .toList();
+    }
+
+    @ResponseBody
+    @GetMapping("/webapp/bots")
+    public List<DiscordBot> bots(HttpSession session) {
+        return Streams.of(discordBotRepo.findAll())
                 .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
                 .toList();
     }
