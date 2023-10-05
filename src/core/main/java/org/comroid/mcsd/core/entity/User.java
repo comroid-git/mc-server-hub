@@ -41,6 +41,7 @@ public class User extends AbstractEntity {
     @Getter(onMethod = @__(@JsonIgnore))
     @Nullable Instant verificationTimeout;
 
+    @JsonIgnore
     public CompletableFuture<String> getMinecraftName() {
         Constraint.notNull(minecraftId, this+".minecraftId").run();
         return REST.get(getMojangAccountUrl(minecraftId))
@@ -52,6 +53,7 @@ public class User extends AbstractEntity {
                 });
     }
 
+    @JsonIgnore
     public CompletableFuture<DisplayUser> getDiscordDisplayUser() {
         Constraint.notNull(discordId, this+".discordId").run();
         assert discordId != null;

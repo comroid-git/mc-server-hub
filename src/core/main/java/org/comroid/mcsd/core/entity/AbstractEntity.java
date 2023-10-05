@@ -12,6 +12,7 @@ import org.comroid.api.Rewrapper;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Bitmask;
+import org.comroid.util.Constraint;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +46,7 @@ public abstract class AbstractEntity implements Named {
     }
 
     public final boolean hasPermission(@NotNull User user, AbstractEntity.Permission... permissions) {
+        Constraint.Length.min(1, permissions, "permissions").run();
         final var mask = this.permissions.getOrDefault(user, 0);
         return (owner != null && user.getId().equals(owner.getId()))
                 || Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag))

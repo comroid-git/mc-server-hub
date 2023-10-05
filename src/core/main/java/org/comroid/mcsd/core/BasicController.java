@@ -2,30 +2,40 @@ package org.comroid.mcsd.core;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import org.comroid.api.IntegerAttribute;
+import org.comroid.api.Named;
 import org.comroid.api.info.Log;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.exception.CommandStatusError;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.NestedServletException;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 @Controller
+@RequestMapping
 @ControllerAdvice
-public class ErrorController implements org.springframework.boot.web.servlet.error.ErrorController {
+public class BasicController implements org.springframework.boot.web.servlet.error.ErrorController {
+    @ResponseBody
+    @GetMapping("/api/webapp/permissions")
+    public Map<@NotNull Integer, String> permissions() {
+        return Arrays.stream(AbstractEntity.Permission.values())
+                .collect(Collectors.toMap(IntegerAttribute::getAsInt, Named::getName));
+    }
+
     @Deprecated
     @GetMapping("/error")
     public ErrorInfo error(HttpServletRequest request) {

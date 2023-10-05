@@ -1,18 +1,16 @@
 package org.comroid.mcsd.agent;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.common.aliasing.qual.Unique;
 import org.comroid.api.Polyfill;
 import org.comroid.api.info.Log;
-import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.api.dto.AgentInfo;
 import org.comroid.mcsd.api.dto.McsdConfig;
-import org.comroid.mcsd.core.Config;
+import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
@@ -108,7 +106,7 @@ public class Program implements ApplicationRunner {
                         + (Optional.ofNullable(info.getBaseUrl())
                         .or(() -> wrap(OS.Host.class, "hostname")
                                 .map(OS.Host::name)
-                                .map(Config::wrapHostname))
+                                .map(MCSD::wrapHostname))
                         .map(baseUrl -> "?baseUrl=" + baseUrl)
                         .orElse("")))
                 .addHeader("Authorization", info.getToken())

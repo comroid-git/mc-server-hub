@@ -3,7 +3,6 @@ package org.comroid.mcsd.core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.cj.jdbc.Driver;
 import lombok.extern.slf4j.Slf4j;
-import net.dv8tion.jda.api.JDA;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
@@ -18,10 +17,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.jdbc.DataSourceBuilder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportResource;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -36,9 +32,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Configuration
 @ImportResource({"classpath:baseBeans.xml"})
+@ComponentScan(basePackages = "org.comroid.mcsd.core")
 @EntityScan(basePackages = "org.comroid.mcsd.core.entity")
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
-public class Config {
+public class MCSD {
     @Bean(name = "configDir")
     @Order(Ordered.HIGHEST_PRECEDENCE)
     @ConditionalOnExpression(value = "environment.containsProperty('DEBUG')")

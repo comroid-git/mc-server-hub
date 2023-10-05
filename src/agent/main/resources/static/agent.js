@@ -92,10 +92,9 @@ async function runBackup(id) {
 
 async function load() {
     writeLine('Connecting...')
-    let app = await (await fetch('/api/webapp')).json();
-    user = app.user;
-    agent = app.agent;
-    servers = app.servers;
+    user = await (await fetch('/api/webapp/user')).json();
+    agent = await (await fetch('/api/webapp/agent')).json();
+    servers = await (await fetch('/api/webapp/servers')).json();
 
     connect();
 

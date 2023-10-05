@@ -1,9 +1,14 @@
 package org.comroid.mcsd.hub.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.mcsd.core.Config;
+import org.comroid.api.IntegerAttribute;
+import org.comroid.api.Named;
+import org.comroid.mcsd.core.MCSD;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.Agent;
+import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.StatusCode;
@@ -11,6 +16,7 @@ import org.comroid.mcsd.core.repo.AgentRepo;
 import org.comroid.mcsd.core.repo.ServerRepo;
 import org.comroid.mcsd.core.repo.ShRepo;
 import org.comroid.mcsd.core.repo.UserRepo;
+import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +24,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Controller
@@ -34,6 +40,28 @@ public class ApiController {
     @Autowired
     private ShRepo shRepo;
 
+    @ResponseBody
+    @GetMapping("/webapp/user")
+    public User user(HttpSession session) {
+        return users.get(session).get();
+    }
+
+    @ResponseBody
+    @GetMapping("/webapp/servers")
+    public List<Server> servers(HttpSession session) {
+        return Streams.of(servers.findAll())
+                .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
+                .toList();
+    }
+
+    @ResponseBody
+    @GetMapping("/webapp/agents")
+    public List<Agent> agents(HttpSession session) {
+        return Streams.of(agents.findAll())
+                .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
+                .toList();
+    }
+
     @GetMapping("/open/agent/hello/{id}")
     public void agentHello(
             @PathVariable UUID id,
@@ -47,7 +75,7 @@ public class ApiController {
                 .or(() -> Optional.ofNullable(request.getHeader("X-Forwarded-Host"))
                         .or(() -> Optional.ofNullable(request.getHeader("Host")))
                         .or(() -> Optional.of(request.getRemoteHost()))
-                        .map(Config::wrapHostname))
+                        .map(MCSD::wrapHostname))
                 .orElseThrow();
         final var agent = agents.findById(id).orElseThrow();
         if ($baseUrl.equals(agent.getBaseUrl()))
