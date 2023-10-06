@@ -1,3 +1,4 @@
+const url = window.location.hash.substring(1);
 let stompClient = null;
 let subscriptionDisconnect;
 let subscriptionHandshake;
@@ -8,7 +9,7 @@ let user;
 let agent;
 
 function connect() {
-    let socket = new SockJS('/console');
+    let socket = new SockJS(url+'/console');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function () {
         subscriptionDisconnect = stompClient.subscribe('/user/' + user.name + '/console/disconnect', function () {
@@ -91,12 +92,18 @@ async function runBackup(id) {
 }
 
 async function load() {
-    writeLine('Connecting...')
-    user = await (await fetch('/api/webapp/user')).json();
-    agent = await (await fetch('/api/webapp/agent')).json();
-    servers = await (await fetch('/api/webapp/servers')).json();
+    try {
+        writeLine('Connecting...')
+        user = await (await fetch(url + '/api/webapp/user')).json();
+        agent = await (await fetch(url + '/api/webapp/agent')).json();
+        servers = await (await fetch(url + '/api/webapp/servers')).json();
 
-    connect();
+        connect();
+    } catch (err) {
+        let msg = 'Unable to connect to Agent at '+url;
+        console.error(msg+'\n'+err)
+        writeLine(msg)
+    }
 
 // Enables pressing the Enter Key in the Send Message Prompt
     document.getElementById('input')
