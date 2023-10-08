@@ -1,11 +1,12 @@
 package org.comroid.mcsd.api.dto;
 
 import lombok.Value;
+import org.comroid.abstr.DataNode;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.util.Markdown;
 
 @Value
-public class PlayerEvent {
+public class PlayerEvent implements DataNode {
     String username;
     String message;
     Type type;

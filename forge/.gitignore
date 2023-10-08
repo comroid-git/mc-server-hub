@@ -19,7 +19,14 @@ build
 
 # other
 eclipse
-run
+run/client
+run/config/fml.toml
+run/crash-reports
+run/defaultconfigs
+run/gameTestServer
+run/logs
+run/mods
+run/server
 
 # Files from Forge MDK
 forge*changelog.txt

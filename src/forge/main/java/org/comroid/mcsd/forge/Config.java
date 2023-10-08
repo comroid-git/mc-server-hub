@@ -3,13 +3,19 @@ package org.comroid.mcsd.forge;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.comroid.api.Polyfill;
+import org.comroid.mcsd.api.dto.AgentInfo;
+import org.comroid.mcsd.api.dto.PlayerEvent;
+import org.comroid.util.REST;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 // An example config class. This is not required, but it's a good idea to have one to keep your config organized.
@@ -19,29 +25,15 @@ public class Config
 {
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
-    private static final ForgeConfigSpec.BooleanValue LOG_DIRT_BLOCK = BUILDER
-            .comment("Whether to log the dirt block on common setup")
-            .define("logDirtBlock", true);
-
-    private static final ForgeConfigSpec.IntValue MAGIC_NUMBER = BUILDER
-            .comment("A magic number")
-            .defineInRange("magicNumber", 42, 0, Integer.MAX_VALUE);
-
-    public static final ForgeConfigSpec.ConfigValue<String> MAGIC_NUMBER_INTRODUCTION = BUILDER
-            .comment("What you want the introduction message to be for the magic number")
-            .define("magicNumberIntroduction", "The magic number is... ");
-
-    // a list of strings that are treated as resource locations for items
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ITEM_STRINGS = BUILDER
-            .comment("A list of items to log on common setup.")
-            .defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), Config::validateItemName);
+    public static final ForgeConfigSpec.ConfigValue<String> TargetId = BUILDER.comment("The agents target ID").define("target", "<mcsd target id>");
+    public static final ForgeConfigSpec.ConfigValue<String> AgentId = BUILDER.comment("The agents ID").define("agent", "<mcsd agent id>");
+    public static final ForgeConfigSpec.ConfigValue<String> Token = BUILDER.comment("The agents token").define("token", "<mcsd agent token>");
+    public static final ForgeConfigSpec.ConfigValue<String> BaseUrl = BUILDER.comment("The agents base url").define("baseUrl", "<mcsd agent base url>");
+    public static final ForgeConfigSpec.ConfigValue<String> HubBaseUrl = BUILDER.comment("The hub base url").define("hubBaseUrl", "https://mc.comroid.org");
 
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
-    public static boolean logDirtBlock;
-    public static int magicNumber;
-    public static String magicNumberIntroduction;
-    public static Set<Item> items;
+    static AgentInfo info;
 
     private static boolean validateItemName(final Object obj)
     {
@@ -51,13 +43,11 @@ public class Config
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
     {
-        logDirtBlock = LOG_DIRT_BLOCK.get();
-        magicNumber = MAGIC_NUMBER.get();
-        magicNumberIntroduction = MAGIC_NUMBER_INTRODUCTION.get();
-
-        // convert the list of strings into a set of items
-        items = ITEM_STRINGS.get().stream()
-                .map(itemName -> ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName)))
-                .collect(Collectors.toSet());
+        var target= UUID.fromString(TargetId.get());
+        var agent=UUID.fromString(AgentId.get());
+        var hubBaseUrl=Token.get();
+        var token=BaseUrl.get();
+        var baseUrl=HubBaseUrl.get();
+        info=new AgentInfo(target,agent,hubBaseUrl,token,baseUrl);
     }
 }
