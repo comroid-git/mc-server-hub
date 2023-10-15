@@ -74,7 +74,7 @@ public class Program implements ApplicationRunner {
                 StatusModule.Factory,
                 LocalFileModule.Factory,
                 UptimeModule.Factory,
-                UpdateModule.Factory,
+                //todo: fix UpdateModule.Factory,
                 LocalExecutionModule.Factory,
                 //todo: fix BackupModule.Factory,
                 ConsolePlayerEventModule.Factory,
