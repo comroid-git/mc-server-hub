@@ -78,7 +78,7 @@ public final class LocalExecutionModule extends ConsoleModule {
         if (parent.isEnabled() && (manualShutdown.get() || (process != null && process.isAlive())))
             return;
         log.info("Starting " + parent);
-        parent.component(UpdateModule.class).ifPresent(mod->mod.runUpdate(false).join());
+        //parent.component(UpdateModule.class).ifPresent(mod->mod.runUpdate(false).join());
         parent.component(StatusModule.class).assertion().pushStatus(Status.starting);
         final var stopwatch = Stopwatch.start("startup-" + parent.getId());
         var exec = PathUtil.findExec("java").orElseThrow();
