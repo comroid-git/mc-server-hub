@@ -2,7 +2,7 @@ package org.comroid.mcsd.core.util;
 
 import lombok.extern.java.Log;
 import org.comroid.api.Polyfill;
-import org.comroid.api.Rewrapper;
+import org.comroid.api.SupplierX;
 import org.comroid.util.StackTraceUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,7 +25,7 @@ public class ApplicationContextProvider implements ApplicationContextAware {
 
     private static ApplicationContext applicationContext;
 
-    public static Rewrapper<ApplicationContext> get() {
+    public static SupplierX<ApplicationContext> get() {
         return ()->applicationContext;
     }
 

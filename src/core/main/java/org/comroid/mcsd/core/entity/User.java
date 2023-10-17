@@ -5,10 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.java.Log;
 import org.comroid.api.BitmaskAttribute;
-import org.comroid.api.Rewrapper;
-import org.comroid.mcsd.api.dto.McsdConfig;
+import org.comroid.api.SupplierX;
 import org.comroid.mcsd.core.module.discord.DiscordAdapter;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Constraint;
 import org.comroid.util.REST;
 import org.jetbrains.annotations.Nullable;
@@ -19,8 +17,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 
-import static org.comroid.api.Rewrapper.empty;
-import static org.comroid.api.Rewrapper.of;
+import static org.comroid.api.SupplierX.empty;
+import static org.comroid.api.SupplierX.of;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
@@ -99,9 +97,9 @@ public class User extends AbstractEntity {
             ?"https://github.com/comroid-git/mc-server-hub/blob/main/docs/account_not_linked.md"
             :"https://mc-heads.net/body/" + minecraftId;}
 
-    public Rewrapper<DisplayUser> getDisplayUser(DisplayUser.Type... types) {
+    public SupplierX<DisplayUser> getDisplayUser(DisplayUser.Type... types) {
         Constraint.Length.min(1, types, "types").run();
-        Rewrapper<DisplayUser> result = null;
+        SupplierX<DisplayUser> result = null;
         DisplayUser.Type type = DisplayUser.Type.Hub;
         int i = -1;
         do {

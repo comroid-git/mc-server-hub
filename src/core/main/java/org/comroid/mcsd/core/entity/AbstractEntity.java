@@ -7,8 +7,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Named;
-import org.comroid.api.Polyfill;
-import org.comroid.api.Rewrapper;
+import org.comroid.api.SupplierX;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Bitmask;
@@ -53,7 +52,7 @@ public abstract class AbstractEntity implements Named {
                 || Utils.SuperAdmins.contains(user.getId());
     }
 
-    public final Rewrapper<AbstractEntity> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
+    public final SupplierX<AbstractEntity> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
         return () -> hasPermission(user, permissions) ? this : null;
     }
 
