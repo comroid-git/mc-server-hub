@@ -209,6 +209,7 @@ public class Server extends AbstractEntity implements Component {
                 .completeOnTimeout(new StatusMessage(getId()), (long) (statusTimeout.toSeconds() * 1.5), TimeUnit.SECONDS);
     }
 
+    @Deprecated
     public Optional<ShConnection> shCon() {
         return Optional.ofNullable(shConnection);
     }
