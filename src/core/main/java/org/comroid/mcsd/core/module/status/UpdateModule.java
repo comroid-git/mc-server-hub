@@ -73,8 +73,8 @@ public class UpdateModule extends ServerModule {
                 files.updateProperties();
                 //try (var prop = files.writeFile(serverProperties)) {properties.store(prop, "MCSD Managed Server Properties");}
 
-                // download parent.jar
-                var parentJar = parent.path("parent.jar").toAbsolutePath().toString();
+                // download server.jar
+                var parentJar = parent.path("server.jar").toAbsolutePath().toString();
                 if (!force && files.isJarUpToDate())
                     return false;
                 try (var in = new URL(parent.getJarUrl()).openStream();

@@ -85,7 +85,7 @@ public final class LocalExecutionModule extends ConsoleModule {
         process = Runtime.getRuntime().exec(parent.getCustomCommand() == null ? new String[]{
                         exec.getAbsolutePath(),
                         "-Xmx%dG".formatted(parent.getRamGB()),
-                        "-jar", "parent.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : parent.getCustomCommand().split(" "),
+                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : parent.getCustomCommand().split(" "),
                 new String[0],
                 new FileHandle(parent.getDirectory(), true));
 
