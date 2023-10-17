@@ -109,7 +109,7 @@ public class DiscordModule extends ServerModule {
                                         .component(Reset.text(" " + msg.getContentStripped()).build())
                                         .build()
                                         .toString())
-                                .peekData(log::fine)
+                                .peekData(log::finest)
                                 .subscribeData(tellraw -> console.execute(tellraw).exceptionally(Polyfill.exceptionLogger(log)))
                 );
             });
