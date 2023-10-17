@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
 import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.core.entity.AbstractEntity;
@@ -20,6 +21,7 @@ import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 import static org.comroid.mcsd.util.McFormatCode.*;
@@ -106,7 +108,11 @@ public class DiscordModule extends ServerModule {
                                                 .build())
                                         .component(White.text("> ").build())
                                         // todo convert markdown to tellraw data
-                                        .component(Reset.text(msg.getContentStripped()).build())
+                                        .component(Reset.text(msg.getContentStripped() + (msg.getAttachments().isEmpty()
+                                                ? ""
+                                                :msg.getAttachments().stream()
+                                                .map(Message.Attachment::getUrl)
+                                                .collect(Collectors.joining(" ")))).build())
                                         .build()
                                         .toString())
                                 .peekData(log::finest)

@@ -3,6 +3,9 @@ package org.comroid.mcsd.core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.cj.jdbc.Driver;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.sshd.client.ClientBuilder;
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
@@ -84,6 +87,15 @@ public class MCSD {
     @Bean
     public OS.Host hostname() {
         return OS.current.getPrimaryHost();
+    }
+
+    @Bean
+    public SshClient ssh() {
+        SshClient client = ClientBuilder.builder()
+                .serverKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE) // todo This is bad and unsafe
+                .build();
+        client.start();
+        return client;
     }
 
     @Bean

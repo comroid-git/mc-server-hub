@@ -25,15 +25,6 @@ public class Program {
     }
 
     @Bean
-    public SshClient ssh() {
-        SshClient client = ClientBuilder.builder()
-                .serverKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE) // todo This is bad and unsafe
-                .build();
-        client.start();
-        return client;
-    }
-
-    @Bean
     public List<ServerModule.Factory<?>> serverModuleFactories() {
         return List.of(StatusModule.Factory);
     }
