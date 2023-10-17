@@ -104,9 +104,9 @@ public class DiscordModule extends ServerModule {
                                                 .clickEvent(open_url.value(msg.getJumpUrl()))
                                                 .format(Underlined)
                                                 .build())
-                                        .component(White.text(">").build())
+                                        .component(White.text("> ").build())
                                         // todo convert markdown to tellraw data
-                                        .component(Reset.text(" " + msg.getContentStripped()).build())
+                                        .component(Reset.text(msg.getContentStripped()).build())
                                         .build()
                                         .toString())
                                 .peekData(log::finest)
