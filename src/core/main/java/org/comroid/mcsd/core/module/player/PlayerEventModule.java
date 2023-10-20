@@ -73,8 +73,9 @@ public abstract class PlayerEventModule extends ServerModule {
         super(server);
     }
 
+    protected abstract Event.Bus<PlayerEvent> initEventBus();
+
     @Override
-    @SuppressWarnings({"RedundantCast", "RedundantTypeArguments"})
     protected void $initialize() {
         try (var url = new URL("https://raw.githubusercontent.com/misode/mcmeta/assets-json/assets/minecraft/lang/en_us.json").openStream()) {
             var obj = bean(ObjectMapper.class).readTree(url);
@@ -88,7 +89,6 @@ public abstract class PlayerEventModule extends ServerModule {
                         if (!matcher.matches())
                             return Stream.empty();
                         var msg = matcher.group("message");
-                        //noinspection RedundantEscapeInRegexReplacement
                         var out = DeathPatternScheme.formatted(msg).replaceAll("%\\d\\$s", CleanWord_Spaced);
                         return Stream.of(out);
                     })
@@ -98,6 +98,8 @@ public abstract class PlayerEventModule extends ServerModule {
         } catch (Throwable t) {
             log.log(Level.INFO, "Unable to fetch death messages; disabling support for it", t);
         }
+
+        bus = initEventBus();
     }
 
     @Override

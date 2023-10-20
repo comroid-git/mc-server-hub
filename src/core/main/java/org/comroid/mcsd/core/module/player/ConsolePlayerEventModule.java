@@ -55,11 +55,9 @@ public class ConsolePlayerEventModule extends PlayerEventModule {
 
     @Override
     @SuppressWarnings({"RedundantSuppression", "RedundantTypeArguments", "RedundantCast"}) // intellij is being weird
-    protected void $initialize() {
-        super.$initialize();
-
+    protected Event.Bus<PlayerEvent> initEventBus() {
         var console = server.component(ConsoleModule.class).orElseThrow(() -> new InitFailed("No Console module is loaded"));
-        addChildren(bus = console.getBus()
+        return console.getBus()
                 .<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)
                         .collect(Streams.append(DeathMessagePatterns))
                         .<Matcher>flatMap(pattern -> {
@@ -84,6 +82,6 @@ public class ConsolePlayerEventModule extends PlayerEventModule {
                         message = StringUtils.capitalize(message);
                     return new PlayerEvent(username, message, type);
                 })
-                .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg))));
+                .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg)));
     }
 }
