@@ -10,21 +10,16 @@ async function fetchJson(url) {
     return await (await fetch(url)).json()
 }
 
-async function load() {
-    const contentBox = document.querySelector('div.ui-content');
+const user = fetchJson('https://api.mc.comroid.org/api/webapp/user');
 
-    function clearContent() {
-        contentBox.innerHTML = '';
-    }
-
-    // connect to panel or login
-    async function determineContent() {
-        let page = urlParams.get('page');
-        if (page === undefined || page === null || page === '')
-            page = 'dash';
-        let path = pathPrefix + '/frame/' + page + '.html';
-        contentBox.innerHTML = await fetchText(path);
-        for (const script of document.querySelectorAll('div.ui-content script[type="application/javascript"]')) {
+async function determineContent() {
+    let page = urlParams.get('page');
+    if (page === undefined || page === null || page === '')
+        page = 'dash';
+    let path = pathPrefix + '/frame/' + page + '.html';
+    contentBox.innerHTML = await fetchText(path);
+    for (const script of document.querySelectorAll('div.ui-content script[type="application/javascript"]')) {
+        try {
             if (evals.includes(page))
                 continue;
             let code = null;
@@ -33,19 +28,35 @@ async function load() {
             } else code = script.innerHTML;
             evals.push(page);
             eval(code);
+        } catch (e) {
+            console.warn('Could not evaluate ' + script+'\n', e);
         }
     }
+}
 
-    // prepare document
-    function prepareContent() {
-        for (const container of document.querySelectorAll('b.inject')) {
-            let expr = container.classList[1];
+function prepareContent() {
+    for (const container of document.querySelectorAll('b.inject')) {
+        let expr = container.classList[1];
+        try {
             // noinspection JSPrimitiveTypeWrapperUsage
             container.innerHTML = new Function('return ' + expr)();
+        } catch (e) {
+            console.warn('Could not evaluate expression "'+expr+'"\n', e);
         }
     }
+}
 
+async function load() {
+    const contentBox = document.querySelector('div.ui-content');
+
+    function clearContent() {
+        contentBox.innerHTML = '';
+    }
+
+    // connect to panel or login
     await determineContent();
+
+    // prepare document
     prepareContent();
 }
 
