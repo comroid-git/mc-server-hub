@@ -11,6 +11,7 @@ import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.api.dto.AgentInfo;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.core.MCSD;
+import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.Agent;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
@@ -20,7 +21,6 @@ import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.local.LocalFileModule;
 import org.comroid.mcsd.core.module.player.PlayerListModule;
-import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UptimeModule;
 import org.comroid.mcsd.core.repo.AgentRepo;
@@ -37,10 +37,8 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.wrap;
@@ -86,20 +84,12 @@ public class Program implements ApplicationRunner {
     @Bean
     @Unique
     @Lazy(false)
-    public List<Server> servers(@Autowired ServerRepo servers, @Autowired Agent me) {
-        return Streams.of(servers.findAllForAgent(me.getId())).toList();
+    public List<Server> servers(@Autowired ServerRepo serverRepo, @Autowired Agent me) {
+        return Streams.of(serverRepo.findAllForAgent(me.getId())).toList();
     }
 
     @Override
     public void run(ApplicationArguments args) {
-        ((List<Server>) bean(List.class, "servers"))
-                .forEach(srv -> {
-                    srv.addChildren(((List<ServerModule.Factory<?>>) bean(List.class, "serverModuleFactories"))
-                            .stream()
-                            .map(factory -> factory.create(srv))
-                            .toArray());
-                    srv.execute(Executors.newScheduledThreadPool(4), Duration.ofSeconds(30));
-                });
         var info = bean(AgentInfo.class, "agentInfo");
         REST.request(REST.Method.GET, info.getHubBaseUrl() + "/api/open/agent/hello/"
                         + bean(Agent.class, "me").getId()
@@ -113,6 +103,8 @@ public class Program implements ApplicationRunner {
                 .execute()
                 .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
                 .exceptionally(Polyfill.exceptionLogger(Log.get(), "Could not connect to Hub at " + info.getHubBaseUrl()));
+
+        bean(ServerManager.class).startAll(bean(List.class, "servers"));
     }
 }
 

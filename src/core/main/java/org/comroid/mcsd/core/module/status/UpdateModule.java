@@ -17,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.StringReader;
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
@@ -45,12 +44,12 @@ public class UpdateModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        files=parent.component(FileModule.class).assertion();
+        files= server.component(FileModule.class).assertion();
     }
 
     @Override
     protected void $tick() {
-        if ((parent.getBackupPeriod() == null || parent.getLastBackup().plus(parent.getBackupPeriod()).isAfter(now()))
+        if ((server.getBackupPeriod() == null || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()))
                 || (updateRunning.get()!=null&&!updateRunning.get().isDone()))
             return;
         //todo: handle if parent is running
@@ -61,10 +60,10 @@ public class UpdateModule extends ServerModule {
     public CompletableFuture<Boolean> runUpdate(boolean force) {
         if (updateRunning.get()!=null)
             return updateRunning.get();
-        if (!force && parent.component(FileModule.class).map(FileModule::isJarUpToDate).orElse(false))
+        if (!force && server.component(FileModule.class).map(FileModule::isJarUpToDate).orElse(false))
             return CompletableFuture.completedFuture(false);
-        var status = parent.component(StatusModule.class).assertion();
-        log.info("Updating " + parent);
+        var status = server.component(StatusModule.class).assertion();
+        log.info("Updating " + server);
         status.pushStatus(Status.updating);
 
         var fut = CompletableFuture.supplyAsync(() -> {
@@ -74,16 +73,16 @@ public class UpdateModule extends ServerModule {
                 //try (var prop = files.writeFile(serverProperties)) {properties.store(prop, "MCSD Managed Server Properties");}
 
                 // download server.jar
-                var parentJar = parent.path("server.jar").toAbsolutePath().toString();
+                var parentJar = server.path("server.jar").toAbsolutePath().toString();
                 if (!force && files.isJarUpToDate())
                     return false;
-                try (var in = new URL(parent.getJarUrl()).openStream();
+                try (var in = new URL(server.getJarUrl()).openStream();
                      var out = files.writeFile(parentJar)) {
                     in.transferTo(out);
                 }
 
                 // eula.txt
-                var eulaTxt = parent.path("eula.txt").toAbsolutePath().toString();
+                var eulaTxt = server.path("eula.txt").toAbsolutePath().toString();
                 if (!files.exists(eulaTxt))
                     files.mkDir(eulaTxt);
                 try (var in = new DelegateStream.Input(new StringReader("eula=true\n"));

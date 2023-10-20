@@ -10,10 +10,12 @@ import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.model.Status;
+import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Debug;
 import org.comroid.util.MultithreadUtil;
@@ -30,6 +32,8 @@ import java.util.function.IntFunction;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Getter
@@ -75,19 +79,19 @@ public final class LocalExecutionModule extends ConsoleModule {
     @Override
     @SneakyThrows
     protected synchronized void $tick() {
-        if (parent.isEnabled() && (manualShutdown.get() || (process != null && process.isAlive())))
+        if (server.isEnabled() && (manualShutdown.get() || (process != null && process.isAlive())))
             return;
-        log.info("Starting " + parent);
-        parent.component(UpdateModule.class).ifPresent(mod->mod.runUpdate(false).join());
-        parent.component(StatusModule.class).assertion().pushStatus(Status.starting);
-        final var stopwatch = Stopwatch.start("startup-" + parent.getId());
+        log.info("Starting " + server);
+        server.component(UpdateModule.class).ifPresent(mod->mod.runUpdate(false).join());
+        server.component(StatusModule.class).assertion().pushStatus(Status.starting);
+        final var stopwatch = Stopwatch.start("startup-" + server.getId());
         var exec = PathUtil.findExec("java").orElseThrow();
-        process = Runtime.getRuntime().exec(parent.getCustomCommand() == null ? new String[]{
+        process = Runtime.getRuntime().exec(server.getCustomCommand() == null ? new String[]{
                         exec.getAbsolutePath(),
-                        "-Xmx%dG".formatted(parent.getRamGB()),
-                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : parent.getCustomCommand().split(" "),
+                        "-Xmx%dG".formatted(server.getRamGB()),
+                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : server.getCustomCommand().split(" "),
                 new String[0],
-                new FileHandle(parent.getDirectory(), true));
+                new FileHandle(server.getDirectory(), true));
 
         in = new PrintStream(process.getOutputStream(), true);
         oe = DelegateStream.IO.process(process);
@@ -104,20 +108,20 @@ public final class LocalExecutionModule extends ConsoleModule {
         done.thenCompose(d -> {
             var t = Polyfill.durationString(d);
             var msg = "Took " + t + " to start";
-            return parent.component(StatusModule.class).assertion()
-                    .pushStatus((parent.isMaintenance() ? Status.in_maintenance_mode : Status.online).new Message(msg));
-        }).thenAccept(msg -> log.info(parent + " " + msg.getMessage()))
+            return server.component(StatusModule.class).assertion()
+                    .pushStatus((server.isMaintenance() ? Status.in_maintenance_mode : Status.online).new Message(msg));
+        }).thenAccept(msg -> log.info(server + " " + msg.getMessage()))
                 .exceptionally(Polyfill.exceptionLogger());
 
         this.stop = MultithreadUtil.firstOf(process.onExit(),
                         Utils.listenForPattern(bus, StopPattern).listen().once())
-                .thenRun(parent::terminate)
+                .thenRun(bean(ServerManager.class).tree(server)::terminate)
                 .exceptionally(Polyfill.exceptionLogger());
     }
 
     public CompletableFuture<?> shutdown(final String reason, final int warnSeconds) {
         return CompletableFuture.supplyAsync(() -> {
-            parent.component(StatusModule.class).assertion()
+            server.component(StatusModule.class).assertion()
                     .pushStatus(Status.shutting_down.new Message(reason));
             final var msg = (IntFunction<String>) t -> "say Server will shut down in %d seconds (%s)".formatted(t, reason);
             int time = warnSeconds;
@@ -157,7 +161,7 @@ public final class LocalExecutionModule extends ConsoleModule {
         if (process == null || !process.isAlive())
             return;
 
-        parent.component(StatusModule.class).assertion()
+        server.component(StatusModule.class).assertion()
                 .pushStatus(Status.offline);
         if (process.isAlive())
             terminate();

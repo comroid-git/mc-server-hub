@@ -26,12 +26,12 @@ public abstract class FileModule extends ServerModule {
 
     @SneakyThrows
     public boolean isJarUpToDate() {
-        if (parent.isForceCustomJar())
+        if (server.isForceCustomJar())
             return true;
-        var serverJar = new FileHandle(parent.path("server.jar").toFile());
+        var serverJar = new FileHandle(server.path("server.jar").toFile());
         if (!serverJar.exists())
             return false;
-        try (var source = new JSON.Deserializer(new URL(parent.getJarInfoUrl()).openStream());
+        try (var source = new JSON.Deserializer(new URL(server.getJarInfoUrl()).openStream());
              var local = readFile(serverJar.getAbsolutePath())) {
             var sourceMd5 = source.readObject().get("response").get("md5").asString("");
             var localMd5 = MD5.calculate(local);
@@ -40,25 +40,25 @@ public abstract class FileModule extends ServerModule {
     }
 
     public Properties updateProperties() throws IOException {
-        var serverProperties = parent.path("server.properties").toAbsolutePath().toString();
+        var serverProperties = server.path("server.properties").toAbsolutePath().toString();
         mkDir(serverProperties);
         var prop = new Properties();
         try (var input = readFile(serverProperties)) {
             prop.load(input);
         }
 
-        prop.setProperty("parent-port", String.valueOf(parent.getPort()));
-        prop.setProperty("max-players", String.valueOf(parent.getMaxPlayers()));
-        prop.setProperty("white-list", String.valueOf(parent.isWhitelist() || parent.isMaintenance()));
+        prop.setProperty("parent-port", String.valueOf(server.getPort()));
+        prop.setProperty("max-players", String.valueOf(server.getMaxPlayers()));
+        prop.setProperty("white-list", String.valueOf(server.isWhitelist() || server.isMaintenance()));
 
         // query
         prop.setProperty("enable-query", String.valueOf(true));
-        prop.setProperty("query.port", String.valueOf(parent.getQueryPort()));
+        prop.setProperty("query.port", String.valueOf(server.getQueryPort()));
 
         // rcon
-        prop.setProperty("enable-rcon", String.valueOf(parent.getRConPassword() != null && !parent.getRConPassword().isBlank()));
-        prop.setProperty("rcon.port", String.valueOf(parent.getRConPort()));
-        prop.setProperty("rcon.password", Objects.requireNonNullElse(parent.getRConPassword(), ""));
+        prop.setProperty("enable-rcon", String.valueOf(server.getRConPassword() != null && !server.getRConPassword().isBlank()));
+        prop.setProperty("rcon.port", String.valueOf(server.getRConPort()));
+        prop.setProperty("rcon.password", Objects.requireNonNullElse(server.getRConPassword(), ""));
 
         try (var out = writeFile(serverProperties)) {
             prop.store(out, "Managed Server Properties by MCSD");

@@ -51,7 +51,7 @@ public class StatusModule extends ServerModule {
                     previousStatus = currentStatus;
                     currentStatus = message;
                     return message;
-                }).thenCompose(msg -> parent.component(UptimeModule.class)
+                }).thenCompose(msg -> server.component(UptimeModule.class)
                         .ifPresentMapOrElseGet(UptimeModule::pushUptime, () -> CompletableFuture.completedFuture(null)))
                 .thenApply($ -> {
                     bus.publish(message);

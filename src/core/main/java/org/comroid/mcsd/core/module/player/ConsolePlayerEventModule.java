@@ -108,7 +108,7 @@ public class ConsolePlayerEventModule extends ServerModule {
             log.log(Level.INFO, "Unable to fetch death messages; disabling support for it", t);
         }
 
-        var console = parent.component(ConsoleModule.class)
+        var console = server.component(ConsoleModule.class)
                 .orElseThrow(() -> new InitFailed("No Console module is loaded"));
         addChildren(bus = console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)
                         .collect(Streams.append(DeathMessagePatterns))
@@ -134,13 +134,13 @@ public class ConsolePlayerEventModule extends ServerModule {
                         message = StringUtils.capitalize(message);
                     return new PlayerEvent(username, message, type);
                 })
-                .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(parent, msg.getUsername(), msg))));
+                .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg))));
     }
 
     @Override
     protected void $tick() {
-        var console = parent.component(ConsoleModule.class);
-        var msgs = parent.getTickerMessages();
+        var console = server.component(ConsoleModule.class);
+        var msgs = server.getTickerMessages();
         var last = lastTickerMessage.get();
         if (console.isNull() || msgs.isEmpty() || last.time.plus(TickerTimeout).isAfter(now()))
             return;

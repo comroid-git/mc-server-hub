@@ -40,6 +40,15 @@ public abstract class AbstractEntity implements Named {
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<User, @NotNull Integer> permissions;
 
+    public String getBestName() {
+        return Optional.ofNullable(displayName)
+                .or(() -> Optional.ofNullable(name))
+                .or(() -> Optional.ofNullable(owner)
+                        .map(AbstractEntity::getBestName)
+                        .map(n -> n + "s " + getClass().getSimpleName()))
+                .orElseGet(id::toString);
+    }
+
     public boolean isUser() {
         return owner == null;
     }

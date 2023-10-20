@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
-import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
@@ -51,20 +50,20 @@ public class DiscordModule extends ServerModule {
     @Override
     @SneakyThrows
     protected void $initialize() {
-        var chat = parent.component(ConsolePlayerEventModule.class).map(ConsolePlayerEventModule::getBus);
-        var consoleModule = parent.component(ConsoleModule.class);
+        var chat = server.component(ConsolePlayerEventModule.class).map(ConsolePlayerEventModule::getBus);
+        var consoleModule = server.component(ConsoleModule.class);
 
         adapter.getJda().awaitReady();
 
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
             // public channel
-            Optional.ofNullable(parent.getPublicChannelId()).ifPresent(id -> {
-                final var webhook = adapter.getWebhook(parent.getPublicChannelWebhook(), id)
+            Optional.ofNullable(server.getPublicChannelId()).ifPresent(id -> {
+                final var webhook = adapter.getWebhook(server.getPublicChannelWebhook(), id)
                         .thenApply(adapter::messageTemplate).join();
                 final var bot = adapter.messageTemplate(id);
 
                 // status -> dc
-                parent.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
+                server.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
                         addChildren(bus.mapData(msg -> new EmbedBuilder()
                                         //.setAuthor(parent.getAlternateName(),
                                         //        Optional.ofNullable(parent.getHomepage())
@@ -80,7 +79,7 @@ public class DiscordModule extends ServerModule {
 
                 addChildren(
                         // mc -> dc
-                        chatBus.filterData(msg -> msg.getType().isFlagSet(parent.getPublicChannelEvents()))
+                        chatBus.filterData(msg -> msg.getType().isFlagSet(server.getPublicChannelEvents()))
                                 .mapData(msg -> {
                                     var player = bean(UserRepo.class).get(msg.getUsername()).assertion();
                                     return new DiscordMessageSource(msg.toString())
@@ -121,11 +120,11 @@ public class DiscordModule extends ServerModule {
             });
 
             //moderation channel
-            Optional.ofNullable(parent.getModerationChannelId()).ifPresent(id -> addChildren(/*todo*/));
+            Optional.ofNullable(server.getModerationChannelId()).ifPresent(id -> addChildren(/*todo*/));
 
             // console channel
-            Optional.ofNullable(parent.getConsoleChannelId()).ifPresent(id -> {
-                final var channel = adapter.channelAsStream(id, parent.isFancyConsole());
+            Optional.ofNullable(server.getConsoleChannelId()).ifPresent(id -> {
+                final var channel = adapter.channelAsStream(id, server.isFancyConsole());
                 addChildren(
                         // mc -> dc
                         console.getBus().subscribeData(channel::println),
@@ -134,13 +133,13 @@ public class DiscordModule extends ServerModule {
                                 .filterData(msg -> !msg.getAuthor().isBot())
                                 .mapData(msg -> {
                                     var raw = msg.getContentRaw();
-                                    if (parent.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                    if (server.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
                                         msg.delete().queue();
                                     //noinspection RedundantCast //ide error
                                     return (String) raw;
                                 })
-                                .filterData(cmd -> parent.getConsoleChannelPrefix() == null || cmd.startsWith(parent.getConsoleChannelPrefix()))
-                                .mapData(cmd -> parent.getConsoleChannelPrefix() == null ? cmd : cmd.substring(parent.getConsoleChannelPrefix().length()))
+                                .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
+                                .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
                                 .subscribeData(input -> console.execute(input).exceptionally(Polyfill.exceptionLogger(log)))
                 );
             });

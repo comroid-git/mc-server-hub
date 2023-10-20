@@ -7,22 +7,15 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
-import org.comroid.api.BitmaskAttribute;
-import org.comroid.api.Component;
-import org.comroid.api.IntegerAttribute;
-import org.comroid.api.Named;
+import org.comroid.api.*;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.exception.EntityNotFoundException;
-import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
-import org.comroid.mcsd.core.repo.ShRepo;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.mcsd.core.ServerManager;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.util.Token;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -31,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
@@ -40,11 +34,10 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Entity
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class Server extends AbstractEntity implements Component {
+public class Server extends AbstractEntity {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
-    private final @Transient @lombok.experimental.Delegate(excludes = Named.class) Component.Base delegate = new Component.Base();
     private static final Duration TickRate = Duration.ofMinutes(1);
     private @ManyToOne ShConnection shConnection;
     private @ManyToOne @Nullable DiscordBot discordBot;
@@ -212,6 +205,16 @@ public class Server extends AbstractEntity implements Component {
     @Deprecated
     public Optional<ShConnection> shCon() {
         return Optional.ofNullable(shConnection);
+    }
+
+    public <T extends ServerModule> SupplierX<T> component(Class<T> type) {
+        return SupplierX.ofStream(components(type));
+    }
+    public <T extends ServerModule> Stream<T> components(Class<T> type) {
+        return bean(ServerManager.class).get(getId())
+                .assertion(this+" not initialized")
+                .getTree()
+                .components(type);
     }
 
     public enum Mode implements IntegerAttribute {

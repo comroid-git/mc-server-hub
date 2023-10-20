@@ -50,11 +50,11 @@ public class UptimeModule extends ServerModule {
     }
 
     public CompletableFuture<Void> pushUptime() {
-        return parent.status()
+        return server.status()
                 .thenCombine(execution.getProcess()!=null&&execution.getProcess().isAlive()
                                 ? OS.current.getRamUsage(execution.getProcess().pid())
                                 : CompletableFuture.completedFuture(0L),
-                        (stat, ram) -> new ServerUptimeEntry(parent,
+                        (stat, ram) -> new ServerUptimeEntry(server,
                                 statusModule.getCurrentStatus().getStatus(),
                                 stat.getPlayers() != null ? stat.getPlayers().size() : stat.getPlayerCount(),
                                 ram))

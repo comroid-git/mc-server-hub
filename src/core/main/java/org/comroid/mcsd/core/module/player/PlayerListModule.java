@@ -31,7 +31,7 @@ public class PlayerListModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        chat = component(ConsolePlayerEventModule.class).assertion();
+        chat = server.component(ConsolePlayerEventModule.class).assertion();
         users = bean(UserRepo.class);
 
         chat.getBus().filterData(e->e.getType().hasFlag(PlayerEvent.Type.JoinLeave))

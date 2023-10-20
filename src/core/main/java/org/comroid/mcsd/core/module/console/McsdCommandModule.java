@@ -46,7 +46,7 @@ public class McsdCommandModule extends ServerModule implements Command.Handler {
     @Override
     protected void $initialize() {
         ;
-        console = parent.component(ConsoleModule.class).assertion();
+        console = server.component(ConsoleModule.class).assertion();
 
         addChildren(Utils.listenForPattern(console.bus, McsdPattern).subscribeData(matcher -> {
             var username = matcher.group("username");

@@ -54,15 +54,15 @@ public class BackupModule extends ServerModule {
 
     @Override
     protected void $initialize() {
-        consoleModule = parent.component(ConsoleModule.class).assertion();
+        consoleModule = server.component(ConsoleModule.class).assertion();
     }
 
     @Override
     protected void $tick() {
-        var status = parent.component(StatusModule.class).assertion().getCurrentStatus().getStatus();
-        if (parent.getBackupPeriod() == null
+        var status = server.component(StatusModule.class).assertion().getCurrentStatus().getStatus();
+        if (server.getBackupPeriod() == null
                 || Stream.of(Status.online,Status.in_maintenance_mode,Status.offline).noneMatch(status::equals)
-                || parent.getLastBackup().plus(parent.getBackupPeriod()).isAfter(now())
+                || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now())
                 || !currentBackup.get().isDone())
             return;
         runBackup(false).exceptionally(Polyfill.exceptionLogger());
@@ -70,15 +70,15 @@ public class BackupModule extends ServerModule {
 
     public CompletableFuture<File> runBackup(final boolean important) {
         if (!currentBackup.get().isDone()) {
-            log.warning("A backup on parent %s is already running".formatted(parent));
+            log.warning("A backup on parent %s is already running".formatted(server));
             return currentBackup.get();
         }
-        var status = parent.component(StatusModule.class).assertion();
+        var status = server.component(StatusModule.class).assertion();
 
         status.pushStatus(Status.running_backup);
-        final var stopwatch = Stopwatch.start("backup-" + parent.getId());
+        final var stopwatch = Stopwatch.start("backup-" + server.getId());
 
-        var backupDir = new FileHandle(parent.shCon().orElseThrow().getBackupsDir()).createSubDir(parent.getName());
+        var backupDir = new FileHandle(server.shCon().orElseThrow().getBackupsDir()).createSubDir(server.getName());
         if (!backupDir.exists() && !backupDir.mkdirs())
             return CompletableFuture.failedFuture(new RuntimeException("Could not create backup directory"));
 
@@ -87,7 +87,7 @@ public class BackupModule extends ServerModule {
                 // wait for save to finish
                 .thenCompose($ -> Archiver.find(Archiver.ReadOnly).zip()
                         // do run backup
-                        .inputDirectory(parent.path().toAbsolutePath())
+                        .inputDirectory(server.path().toAbsolutePath())
                         .excludePattern("**cache/**")
                         .excludePattern("**libraries/**")
                         .excludePattern("**versions/**")
@@ -106,11 +106,11 @@ public class BackupModule extends ServerModule {
                                     (double) sizeKb / (1024 * 1024));
                             if (r != null)
                                 bean(BackupRepo.class)
-                                        .save(new Backup(time, parent, sizeKb, duration, r.getAbsolutePath(), important));
+                                        .save(new Backup(time, server, sizeKb, duration, r.getAbsolutePath(), important));
                             if (t != null) {
                                 stat = Status.in_Trouble;
                                 msg = "Unable to complete Backup";
-                                log.log(Level.SEVERE, msg + " for " + parent, t);
+                                log.log(Level.SEVERE, msg + " for " + server, t);
                             }
                             consoleModule.execute("save-on");
                             status.pushStatus(stat.new Message(msg));
