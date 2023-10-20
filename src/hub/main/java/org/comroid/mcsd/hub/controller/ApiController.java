@@ -6,10 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.api.dto.McsdConfig;
+import org.comroid.mcsd.api.dto.PlayerEvent;
 import org.comroid.mcsd.core.MCSD;
+import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.StatusCode;
+import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.repo.*;
 import org.comroid.util.Bitmask;
 import org.comroid.util.Streams;
@@ -43,6 +46,8 @@ public class ApiController {
     private AuthorizationLinkRepo authorizationLinkRepo;
     @Autowired
     private McsdConfig config;
+    @Autowired
+    private ServerManager manager;
 
     @ResponseBody
     @GetMapping("/webapp/user")
@@ -137,6 +142,19 @@ public class ApiController {
         } finally {
             authorizationLinkRepo.delete(link);
         }
+    }
+
+    @PostMapping("/server/player/event/{id}")
+    public void playerEvent(
+            @PathVariable UUID id,
+            @RequestBody PlayerEvent event
+    ) {
+        manager.get(id).assertion("Server with ID " + id + " not found")
+                .getTree()
+                .component(PlayerEventModule.class)
+                .assertion("Server with ID " + id + " does not accept Player Events")
+                .getBus()
+                .publish(event);
     }
 
     @GetMapping("/open/agent/hello/{id}")
