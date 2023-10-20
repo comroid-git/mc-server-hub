@@ -144,15 +144,19 @@ public class ApiController {
         }
     }
 
-    @PostMapping("/server/player/event/{id}")
+    @PostMapping("/agent/{agentId}/server/{serverId}/player/event")
     public void playerEvent(
-            @PathVariable UUID id,
+            @PathVariable UUID agentId,
+            @PathVariable UUID serverId,
+            @NotNull @RequestHeader("Authorization") String token,
             @RequestBody PlayerEvent event
     ) {
-        manager.get(id).assertion("Server with ID " + id + " not found")
+        if (!agents.isTokenValid(agentId, token))
+            throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
+        manager.get(serverId).assertion("Server with ID " + serverId + " not found")
                 .getTree()
                 .component(PlayerEventModule.class)
-                .assertion("Server with ID " + id + " does not accept Player Events")
+                .assertion("Server with ID " + serverId + " does not accept Player Events")
                 .getBus()
                 .publish(event);
     }
