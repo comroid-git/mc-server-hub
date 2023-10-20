@@ -41,76 +41,26 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Component.Requires(ConsoleModule.class)
-public class ConsolePlayerEventModule extends ServerModule {
-    public static final Duration TickerTimeout = Duration.ofMinutes(15);
-    public static final Pattern ChatPattern = ConsoleModule.pattern(
-            "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
-                    //"([(\\[{<]" +
-                    "<" +
-                    "(?<username>[\\w\\S_-]+)" +
-                    ">\\s?" +
-                    //"[>}\\])]\\s?)\\s?" +
-                    "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
-                    "(?<message>.+)\\r?\\n?.*");
-    public static final Pattern BroadcastPattern = ConsoleModule.pattern(
-            "(?<username>[\\S\\w_-]+) issued parent command: " +
-                    "/(?<command>(me)|(say)|(broadcast)) " +
-                    "(?<message>.+)\\r?\\n?.*");
-    public static final Pattern JoinLeavePattern = ConsoleModule.pattern(
-            "(?<username>[\\S\\w_-]+) " +
-                    "(?<message>(joined|left) the game)\\r?\\n?");
-    public static final Pattern AchievementPattern = ConsoleModule.pattern(
-            "(?<username>[\\S\\w_-]+) " +
-                    "(?<message>has (made the advancement|completed the challenge) " +
-                    "(\\[(?<advancement>[\\w\\s]+)]))\\r?\\n?");
+public class ConsolePlayerEventModule extends PlayerEventModule {
     public static final Factory<ConsolePlayerEventModule> Factory = new Factory<>(ConsolePlayerEventModule.class) {
         @Override
         public ConsolePlayerEventModule create(Server parent) {
             return new ConsolePlayerEventModule(parent);
         }
     };
-    public static final Pattern DeathPatternBase = Pattern.compile("^%1\\$s (?<message>[\\w\\s%$]+)$");
-    public static final @Language("RegExp") String DeathPatternScheme = ".*INFO]: (?<username>[\\S\\w-_]+) (?<message>%s)\\r?\\n?.*";
-    @SuppressWarnings("RegExpDuplicateCharacterInClass")
-    public static final @Language("RegExp") String CleanWord_Spaced = "\\\\[?([\\\\s\\\\w\\\\-_'?!.]+)]?";
-    public static final List<Pattern> DeathMessagePatterns = new ArrayList<>();
-
-    final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
-    protected Event.Bus<PlayerEvent> bus;
 
     private ConsolePlayerEventModule(Server parent) {
         super(parent);
     }
 
     @Override
-    @SuppressWarnings({"RedundantCast", "RedundantTypeArguments"})
+    @SuppressWarnings({"RedundantSuppression", "RedundantTypeArguments", "RedundantCast"}) // intellij is being weird
     protected void $initialize() {
-        try (var url = new URL("https://raw.githubusercontent.com/misode/mcmeta/assets-json/assets/minecraft/lang/en_us.json").openStream()) {
-            var obj = bean(ObjectMapper.class).readTree(url);
-            Streams.of(obj.fields(),obj.size())
-                    .filter(e->e.getKey().startsWith("death."))
-                    .map(Map.Entry::getValue)
-                    .map(JsonNode::asText)
-                    .filter(Objects::nonNull)
-                    .flatMap(str -> {
-                        var matcher = DeathPatternBase.matcher(str);
-                        if (!matcher.matches())
-                            return Stream.empty();
-                        var msg = matcher.group("message");
-                        //noinspection RedundantEscapeInRegexReplacement
-                        var out = DeathPatternScheme.formatted(msg).replaceAll("%\\d\\$s", CleanWord_Spaced);
-                        return Stream.of(out);
-                    })
-                    .map(Pattern::compile)
-                    .forEach(DeathMessagePatterns::add);
-            log.info(DeathMessagePatterns.size()+" death messages registered");
-        } catch (Throwable t) {
-            log.log(Level.INFO, "Unable to fetch death messages; disabling support for it", t);
-        }
+        super.$initialize();
 
-        var console = server.component(ConsoleModule.class)
-                .orElseThrow(() -> new InitFailed("No Console module is loaded"));
-        addChildren(bus = console.getBus().<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)
+        var console = server.component(ConsoleModule.class).orElseThrow(() -> new InitFailed("No Console module is loaded"));
+        addChildren(bus = console.getBus()
+                .<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)
                         .collect(Streams.append(DeathMessagePatterns))
                         .<Matcher>flatMap(pattern -> {
                             var matcher = pattern.matcher(str);
@@ -135,28 +85,5 @@ public class ConsolePlayerEventModule extends ServerModule {
                     return new PlayerEvent(username, message, type);
                 })
                 .peekData(msg -> log.log(Level.FINE, "[CHAT @ %s] <%s> %s".formatted(server, msg.getUsername(), msg))));
-    }
-
-    @Override
-    protected void $tick() {
-        var console = server.component(ConsoleModule.class);
-        var msgs = server.getTickerMessages();
-        var last = lastTickerMessage.get();
-        if (console.isNull() || msgs.isEmpty() || last.time.plus(TickerTimeout).isAfter(now()))
-            return;
-        var i = last.index + 1;
-        if (i >= msgs.size())
-            i = 0;
-        var msg = msgs.get(i);
-        var cmd = Tellraw.Command.builder()
-                .selector(Tellraw.Selector.Base.ALL_PLAYERS)
-                .component(McFormatCode.Gray.text("<").build())
-                .component(McFormatCode.Light_Purple.text(msg).build())
-                .component(McFormatCode.Gray.text("> ").build())
-                .build().toString();
-        console.assertion().execute(cmd);
-    }
-
-    private record TickerMessage(Instant time, int index) {
     }
 }

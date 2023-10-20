@@ -14,6 +14,7 @@ import org.comroid.mcsd.core.model.DiscordMessageSource;
 import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
+import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.repo.UserRepo;
 import org.comroid.mcsd.util.Tellraw;
@@ -50,7 +51,7 @@ public class DiscordModule extends ServerModule {
     @Override
     @SneakyThrows
     protected void $initialize() {
-        var chat = server.component(ConsolePlayerEventModule.class).map(ConsolePlayerEventModule::getBus);
+        var chat = server.component(ConsolePlayerEventModule.class).map(PlayerEventModule::getBus);
         var consoleModule = server.component(ConsoleModule.class);
 
         adapter.getJda().awaitReady();
