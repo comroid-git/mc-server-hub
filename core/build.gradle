@@ -108,6 +108,9 @@ dependencies {
     api 'net.dv8tion:JDA:5.+'
     api 'club.minnced:discord-webhooks:0.+'
 
+    // emoji
+    api 'com.kcthota:emoji4j:6.+'
+
     // utility
     developmentOnly 'org.springframework.boot:spring-boot-starter-actuator'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

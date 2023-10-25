@@ -1,13 +1,16 @@
 package org.comroid.mcsd.core.module.discord;
 
+import emoji4j.EmojiUtils;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
+import org.comroid.api.SupplierX;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
@@ -21,6 +24,7 @@ import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -33,6 +37,8 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 @ToString
 @Component.Requires({ConsolePlayerEventModule.class,ConsoleModule.class})
 public class DiscordModule extends ServerModule {
+    public static final Pattern EmojiPattern = Pattern.compile(".*:(?<name>[\\w-_]+):?.*");
+
     public static final Factory<DiscordModule> Factory = new Factory<>(DiscordModule.class) {
         @Override
         public DiscordModule create(Server parent) {
@@ -83,7 +89,19 @@ public class DiscordModule extends ServerModule {
                         chatBus.filterData(msg -> msg.getType().isFlagSet(server.getPublicChannelEvents()))
                                 .mapData(msg -> {
                                     var player = bean(UserRepo.class).get(msg.getUsername()).assertion();
-                                    return new DiscordMessageSource(msg.toString())
+                                    String str = msg.toString();
+                                    str = EmojiPattern.matcher(str).replaceAll(match -> {
+                                        var name = match.group(1);
+                                        if (EmojiUtils.isEmoji(name))
+                                            return EmojiUtils.getEmoji(name).getEmoji();
+                                        else {
+                                            var results = adapter.getJda().getEmojisByName(name, true);
+                                            return SupplierX.ofStream(results.stream())
+                                                    .map(CustomEmoji::getAsMention)
+                                                    .orElse("<unknown emoji>");
+                                        }
+                                    });
+                                    return new DiscordMessageSource(str)
                                             .setDisplayUser(player.getDisplayUser(User.DisplayUser.Type.Discord, User.DisplayUser.Type.Minecraft)
                                                     .assertion())
                                             .setAppend(true);
