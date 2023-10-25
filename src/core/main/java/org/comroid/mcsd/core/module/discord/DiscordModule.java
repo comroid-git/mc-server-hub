@@ -99,7 +99,7 @@ public class DiscordModule extends ServerModule {
                                         var results = adapter.getJda().getEmojisByName(name, true);
                                         return SupplierX.ofStream(results.stream())
                                                 .map(CustomEmoji::getAsMention)
-                                                .orElse("<unknown emoji>");
+                                                .orElse(match.group(0));
                                     });
                                     return new DiscordMessageSource(str)
                                             .setDisplayUser(player.getDisplayUser(User.DisplayUser.Type.Discord, User.DisplayUser.Type.Minecraft)
