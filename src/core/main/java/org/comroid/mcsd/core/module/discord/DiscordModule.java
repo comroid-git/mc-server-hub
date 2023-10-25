@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
 import org.comroid.api.SupplierX;
+import org.comroid.api.ThrowingSupplier;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
@@ -92,14 +93,13 @@ public class DiscordModule extends ServerModule {
                                     String str = msg.toString();
                                     str = EmojiPattern.matcher(str).replaceAll(match -> {
                                         var name = match.group(1);
-                                        if (EmojiUtils.isEmoji(name))
-                                            return EmojiUtils.getEmoji(name).getEmoji();
-                                        else {
-                                            var results = adapter.getJda().getEmojisByName(name, true);
-                                            return SupplierX.ofStream(results.stream())
-                                                    .map(CustomEmoji::getAsMention)
-                                                    .orElse("<unknown emoji>");
-                                        }
+                                        var emoji = ThrowingSupplier.fallback(()->EmojiUtils.getEmoji(name),$->null).get();
+                                        if (emoji != null)
+                                            return emoji.getEmoji();
+                                        var results = adapter.getJda().getEmojisByName(name, true);
+                                        return SupplierX.ofStream(results.stream())
+                                                .map(CustomEmoji::getAsMention)
+                                                .orElse("<unknown emoji>");
                                     });
                                     return new DiscordMessageSource(str)
                                             .setDisplayUser(player.getDisplayUser(User.DisplayUser.Type.Discord, User.DisplayUser.Type.Minecraft)
