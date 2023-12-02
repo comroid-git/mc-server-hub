@@ -7,6 +7,7 @@ import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.agent.controller.ConsoleController;
+import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
@@ -45,6 +46,8 @@ public class AgentRunner implements Command.Handler {
     public Server attached;
     @Autowired
     private List<Server> servers;
+    @Autowired
+    private ServerManager manager;
     @Lazy
     @Autowired
     private ServerRepo serverRepo;
@@ -96,6 +99,16 @@ public class AgentRunner implements Command.Handler {
         srv.requirePermission(con.getUser(), AbstractEntity.Permission.Status);
         return srv.component(StatusModule.class).assertion()
                 .getCurrentStatus();
+    }
+
+    @Command(usage = "<name> (experimental)")
+    public Object reload(String[] args, ConsoleController.Connection con) {
+        var srv = getServer(args);
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.ForceOP);
+        var tree = manager.tree(srv);
+        tree.terminate();
+        tree.initialize();
+        return srv+" modules have been reloaded";
     }
 
     @Command(usage = "<name> [-na]")
