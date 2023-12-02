@@ -12,6 +12,7 @@ import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
 import org.comroid.api.SupplierX;
 import org.comroid.api.ThrowingSupplier;
+import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.core.entity.Server;
 import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
@@ -70,13 +71,14 @@ public class DiscordModule extends ServerModule {
                         .thenApply(adapter::messageTemplate).join();
                 final var bot = adapter.messageTemplate(id);
 
-                // status -> dc
+                // public status -> dc
                 server.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
-                        addChildren(bus.mapData(msg -> new EmbedBuilder()
-                                        //.setAuthor(parent.getAlternateName(),
-                                        //        Optional.ofNullable(parent.getHomepage())
-                                        //                .orElse(parent.getViewURL()),
-                                        //        parent.getThumbnailURL())
+                        addChildren(bus.filterData(msg -> msg.getScope() == IStatusMessage.Scope.Public)
+                                .mapData(msg -> new EmbedBuilder()
+                                        .setAuthor(server.getAlternateName(),
+                                                Optional.ofNullable(server.getHomepage())
+                                                        .orElse(server.getViewURL()),
+                                                server.getThumbnailURL())
                                         .setDescription(msg.toStatusMessage())
                                         .setColor(msg.getStatus().getColor())
                                         .setFooter(msg.getMessage())
@@ -139,7 +141,25 @@ public class DiscordModule extends ServerModule {
             });
 
             //moderation channel
-            Optional.ofNullable(server.getModerationChannelId()).ifPresent(id -> addChildren(/*todo*/));
+            Optional.ofNullable(server.getModerationChannelId()).ifPresent(id -> {
+                final var bot = adapter.messageTemplate(id);
+
+                // public status -> dc
+                server.component(StatusModule.class).map(StatusModule::getBus).ifPresent(bus ->
+                        addChildren(bus.filterData(msg -> msg.getScope() == IStatusMessage.Scope.Moderation)
+                                .mapData(msg -> new EmbedBuilder()
+                                        //.setAuthor(parent.getAlternateName(),
+                                        //        Optional.ofNullable(parent.getHomepage())
+                                        //                .orElse(parent.getViewURL()),
+                                        //        parent.getThumbnailURL())
+                                        .setDescription(msg.toStatusMessage())
+                                        .setColor(msg.getStatus().getColor())
+                                        .setFooter(msg.getMessage())
+                                        .setTimestamp(Instant.now()))
+                                .mapData(DiscordMessageSource::new)
+                                .peekData(msg -> msg.setAppend(false))
+                                .subscribeData(bot)));
+            });
 
             // console channel
             Optional.ofNullable(server.getConsoleChannelId()).ifPresent(id -> {

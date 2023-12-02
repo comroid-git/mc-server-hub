@@ -1,9 +1,11 @@
 package org.comroid.mcsd.api.model;
 
+import org.comroid.api.BitmaskAttribute;
 import org.jetbrains.annotations.Nullable;
 
 public interface IStatusMessage {
     Status getStatus();
+    Scope getScope();
 
     @Nullable
     default String getMessage() {
@@ -12,5 +14,9 @@ public interface IStatusMessage {
 
     default String toStatusMessage() {
         return getStatus().getEmoji() + '\t' + "Server is " + getStatus().getName();
+    }
+
+    enum Scope implements BitmaskAttribute<Scope> {
+        Public, Moderation
     }
 }
