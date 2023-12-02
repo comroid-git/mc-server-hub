@@ -44,7 +44,7 @@ public class Server extends AbstractEntity {
     private @Nullable String homepage;
     private @Nullable String PublicChannelWebhook;
     private @Nullable @Column(unique = true) Long PublicChannelId;
-    private @Nullable @Column(unique = true) Long ModerationChannelId;
+    private @Nullable Long ModerationChannelId;
     private @Nullable @Column(unique = true) Long ConsoleChannelId;
     private @Nullable String ConsoleChannelPrefix;
     private int publicChannelEvents = 0xFFFF_FFFF;
