@@ -1,5 +1,29 @@
 function load() {
+    refreshServerList();
 }
 
 function unload() {
 }
+
+function refreshServerList() {
+    document.querySelectorAll('.serverEntry').forEach(entry => {
+        entry.querySelector('.statusIcon').className = 'statusIcon serverStatusUnknown';
+        entry.querySelector('.motd').innerHTML = 'Fetching MOTD ...';
+        entry.querySelector('.players').innerHTML = 'Fetching players ...';
+        fetch('/api/webapp/server/'+sanitize(entry.id)+'/status')
+            .then(resp => {
+                if (resp.status !== 200)
+                    console.error('status request was not successful')
+                return resp;
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                entry.querySelector('.statusIcon').className = 'statusIcon serverStatus'+data.status;
+                entry.querySelector('.motd').innerHTML = data.status==='offline'?'---':data.motd;
+                entry.querySelector('.players').innerHTML = data.status==='offline'?'---':`${data.playerCount}/${data.playerMax}`;
+            })
+            .catch(error => console.log('could not update status of '+entry.id, error))
+    })
+}
+
+function sanitize(uuid) {return uuid.replaceAll('_', '-')}

@@ -16,24 +16,38 @@
   <link href="https://fonts.googleapis.com/css?family=Fira+Mono" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Fira+Sans&display=swap" rel="stylesheet">
 
-  <style>
-    a {
-      color: inherit !important;
-    }
-
-    a:visited {
-      color: inherit !important;
-    }
-  </style>
-
   <script type="text/javascript" th:src="@{/static/dashboard.js}"></script>
 </head>
 <body onload="load()" onbeforeunload="unload()">
-<div class="ui-menubar"><a href="/static">Agent Console</a></div>
+<div class="ui-menubar"><a th:href="@{/}">Dashboard</a></div>
+Hello <b th:text="${user.getBestName()}"></b>
 <div class="ui-container-page">
   <div class="ui-content">
-    <h1>Create Permissions Link for User</h1>
-    <h1 th:text="${message}">Default Message</h1>
+    <h2>Servers</h2>
+    <table>
+      <thead><tr>
+        <th><button class="ui-button" onclick="refreshServerList()">Refresh</button></th>
+        <th><a class="ui-button" th:href="@{/server/create}">Create</a></th>
+        <th>MOTD</th>
+        <th>Players</th>
+        <th>Host</th>
+        <th>:</th>
+        <th>Port</th>
+        <th></th>
+      </tr></thead>
+      <tbody><tr th:each="server: ${serverRepo}" th:id="${server.id.toString().replace('-','_')}" class="serverEntry">
+        <td><div class="statusIcon serverStatusUnknown"></div></td>
+        <td><a class="ui-button" th:href="@{/server/view/${server.id}}">View</a>
+            <a class="ui-button" th:href="@{/server/console/${server.id}}">Console</a></td>
+        <td><div class="motd">Loading MOTD ...</div></td>
+        <td><div class="players">Fetching Players ...</div></td>
+        <td th:text="${server.getHost()}">Host</td>
+        <td>:</td>
+        <td th:text="${server.getPort()}">Port</td>
+        <td><a class="ui-button" th:href="@{/server/edit/${server.id}}">Edit</a>
+            <a class="ui-button" th:href="@{/server/delete/${server.id}}">Delete</a></td>
+      </tr></tbody>
+    </table>
   </div>
 </div>
 <div style="

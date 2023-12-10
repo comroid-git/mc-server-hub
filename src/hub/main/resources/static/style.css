@@ -57,6 +57,10 @@ a {
     text-decoration: none;
 }
 
+a:visited {
+    color: var(--text-color);
+}
+
 a:hover {
     text-decoration: underline;
 }
@@ -86,7 +90,7 @@ tr.serverEntry:hover {
     background-color: var(--secondary-color);
 }
 
-button {
+.ui-button, button {
     background-color: var(--button-background-color);
     color: var(--button-color);
     border: none;
@@ -96,7 +100,7 @@ button {
     margin-right: 0.5rem;
 }
 
-button:hover {
+.ui-button:hover, button:hover {
     background-color: var(--button-hover-background-color);
 }
 
@@ -181,7 +185,7 @@ button:hover {
     /* end position */
 }
 
-.serverStatusOnline {
+.serverStatusonline {
     display: inline-block;
     width: var(--status-icon-size);
     height: var(--status-icon-size);
@@ -190,7 +194,7 @@ button:hover {
     position: relative;
 }
 
-.serverStatusOnline::before {
+.serverStatusonline::before {
     content: "";
     position: absolute;
     top: 50%;
@@ -202,7 +206,7 @@ button:hover {
     border-right: 2px solid green;
 }
 
-.serverStatusOffline {
+.serverStatusoffline {
     display: inline-block;
     width: var(--status-icon-size);
     height: var(--status-icon-size);
@@ -211,8 +215,8 @@ button:hover {
     position: relative;
 }
 
-.serverStatusOffline::before,
-.serverStatusOffline::after {
+.serverStatusoffline::before,
+.serverStatusoffline::after {
     content: "";
     position: absolute;
     top: 50%;
@@ -223,11 +227,11 @@ button:hover {
     background-color: red;
 }
 
-.serverStatusOffline::before {
+.serverStatusoffline::before {
     transform: translate(-50%, -50%) rotate(45deg);
 }
 
-.serverStatusOffline::after {
+.serverStatusoffline::after {
     transform: translate(-50%, -50%) rotate(-45deg);
 }
 

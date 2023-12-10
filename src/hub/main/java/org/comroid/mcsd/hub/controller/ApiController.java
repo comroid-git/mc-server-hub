@@ -7,6 +7,7 @@ import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.api.dto.PlayerEvent;
+import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.*;
@@ -61,6 +62,14 @@ public class ApiController {
         return Streams.of(servers.findAll())
                 .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
                 .toList();
+    }
+
+    @ResponseBody
+    @GetMapping("/webapp/server/{id}/status")
+    public StatusMessage fetchServerStatus(@PathVariable("id") UUID serverId) {
+        var server = servers.findById(serverId)
+                .orElseThrow(()->new EntityNotFoundException(Server.class, serverId));
+        return server.status().join();
     }
 
     @ResponseBody
