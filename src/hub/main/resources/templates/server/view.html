@@ -8,8 +8,8 @@
     <div class="ui-content">
         <form action="/api/webapp/server/edit" method="post">
             <h2>Server <b th:text="${server.getBestName()}"></b>
-                - <a class="ui-button" th:href="@{'/webapp/edit/server/'+${id}}">Edit</a>
-                - <a class="ui-button" th:href="@{'/permissions/server/'+${user.id}+'/'+@{server.id}">Edit Permissions</a></h2>
+                - <a class="ui-button" th:href="@{'/server/edit/'+${id}}">Edit</a>
+                - <a class="ui-button" th:href="@{'/server/permissions/'+${server.id}+'/'+@{user.id}">Edit Permissions</a></h2>
             <h3>General</h3>
             <table>
                 <tbody>
@@ -144,20 +144,6 @@
         </form>
     </div>
 </div>
-<div style="
-  font-family: 'Comic Sans MS', sans-serif;
-  position: fixed;
-  bottom: 0;
-  right: 100px;
-  align-self: center;
-  background: red;
-  padding: 10px;
-  border-radius: 10px 10px 0 0;">
-    yes i know this page is ugly as fuck
-    <br/>
-    i'm not a good graphics designer
-    <br/>
-    <a href="https://github.com/comroid-git/mc-server-hub">go ahead and commit an improvement</a>
-</div>
+<div class="ui-footer" th:include="/footer"></div>
 </body>
 </html>

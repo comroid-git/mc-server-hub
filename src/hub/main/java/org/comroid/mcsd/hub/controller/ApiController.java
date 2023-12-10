@@ -57,22 +57,6 @@ public class ApiController {
     @Autowired
     private ServerManager manager;
 
-    @GetMapping("/webapp/edit/{type}/{id}")
-    public String startEditSession(HttpSession session, Model model,
-                                   @PathVariable("type") String type,
-                                   @PathVariable("id") UUID id,
-                                   @RequestParam(value = "code", required = false) String code) {
-        var user = user(session);
-        user.verifyPermission(user, AbstractEntity.Permission.Modify)
-                .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).cast())
-                .orElseThrow(()->new InsufficientPermissionsException(user,id,AbstractEntity.Permission.Modify));
-        model.addAttribute("user", user)
-                .addAttribute(type, core.findEntity(type, id))
-                .addAttribute("edit", true)
-                .addAttribute("editKey", null);
-        return type+"/view";
-    }
-
     @ResponseBody
     @GetMapping("/webapp/user")
     public User user(HttpSession session) {
