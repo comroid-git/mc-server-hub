@@ -7,6 +7,7 @@ import lombok.extern.java.Log;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.SupplierX;
 import org.comroid.mcsd.core.module.discord.DiscordAdapter;
+import org.comroid.util.Cache;
 import org.comroid.util.Constraint;
 import org.comroid.util.REST;
 import org.jetbrains.annotations.Nullable;
@@ -41,14 +42,14 @@ public class User extends AbstractEntity {
 
     @JsonIgnore
     public CompletableFuture<String> getMinecraftName() {
-        Constraint.notNull(minecraftId, this+".minecraftId").run();
-        return REST.get(getMojangAccountUrl(minecraftId))
+        Constraint.notNull(minecraftId, this + ".minecraftId").run();
+        return Cache.get(minecraftId + ".username", () -> REST.get(getMojangAccountUrl(minecraftId))
                 .thenApply(REST.Response::validate2xxOK)
                 .thenApply(rsp -> rsp.getBody().get("name").asString())
-                .exceptionally(t-> {
+                .exceptionally(t -> {
                     log.log(Level.WARNING, "Could not retrieve Minecraft Username for user " + minecraftId, t);
                     return "Steve";
-                });
+                }));
     }
 
     @JsonIgnore
@@ -80,6 +81,10 @@ public class User extends AbstractEntity {
                             "https://cdn.discordapp.com/embed/avatars/0.png",
                             null);
                 });
+    }
+
+    public String blockingMinecraftName() {
+        return getMinecraftName().join();
     }
 
     @Override

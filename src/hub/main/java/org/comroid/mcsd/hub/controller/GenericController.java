@@ -78,7 +78,11 @@ public class GenericController {
                         .toList())
                 .addAttribute("shRepo", Streams.of(shRepo.findAll())
                         .filter(x -> x.hasPermission(user, AbstractEntity.Permission.Administrate))
-                        .toList());
+                        .toList())
+                .addAttribute("userRepo", Streams.of(userRepo.findAll())
+                        .filter(x -> x.hasPermission(user, AbstractEntity.Permission.Administrate))
+                        .toList())
+                .addAttribute("canManageUsers", user.hasPermission(user, AbstractEntity.Permission.ManageUsers));
         return "dashboard";
     }
 
@@ -87,7 +91,7 @@ public class GenericController {
         var user = userRepo.get(session).assertion();
         var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
         model.addAttribute("user", user)
-                .addAttribute("server", server)
+                .addAttribute("target", server)
                 .addAttribute("edit", false)
                 .addAttribute("editKey", null);
         return "server/view";
@@ -98,7 +102,7 @@ public class GenericController {
         var user = userRepo.get(session).assertion();
         var subject = userRepo.findById(userId).orElseThrow(() -> new EntityNotFoundException(User.class, userId));
         model.addAttribute("user", user)
-                .addAttribute("subject", subject)
+                .addAttribute("target", subject)
                 .addAttribute("canManageUsers", user.hasPermission(user, AbstractEntity.Permission.ManageUsers))
                 .addAttribute("edit", false)
                 .addAttribute("editKey", null);
@@ -119,8 +123,9 @@ public class GenericController {
                 .addAttribute("edit", true)
                 .addAttribute("editKey", null)
                 .addAttribute("target", target)
-                .addAttribute("type", type)
-                .addAttribute(type, target);
+                .addAttribute("type", type);
+        if (!type.equals("user"))
+            model.addAttribute(type, target);
         return type + "/view";
     }
 

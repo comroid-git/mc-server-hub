@@ -32,6 +32,25 @@
             <a class="ui-button" th:href="@{'/server/delete/'+${server.id}}">Delete</a></td>
       </tr></tbody>
     </table>
+    <div th:if="${canManageUsers}">
+      <h2>Users</h2>
+      <table>
+        <thead><tr>
+          <th></th>
+          <th>Name</th>
+          <th>E-Mail</th>
+          <th>Minecraft Profile</th>
+          <th>Discord ID</th>
+        </tr></thead>
+        <tbody><tr th:each="user: ${userRepo}">
+          <td><a class="ui-button" th:href="@{'/user/view/'+${user.id}}">View</a></td>
+          <td th:text="${user.bestName}">Name</td>
+          <td th:text="${user.email}">E-Mail</td>
+          <td><a th:href="${user.nameMcURL}" th:text="${user.blockingMinecraftName()}">Minecraft Profile</a></td>
+          <td th:text="${user.discordId}">Discord ID</td>
+        </tr></tbody>
+      </table>
+    </div>
   </div>
 </div>
 <div class="ui-footer" th:insert="~{/footer}"></div>
