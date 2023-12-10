@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:include="/head"></head>
+<head th:insert="~{/head}"></head>
 <body onload="load()" onbeforeunload="unload()">
-<div class="ui-menubar" th:include="/menubar"></div>
+<div class="ui-menubar" th:insert="~{/menubar}"></div>
 <h2 class="error-text">Well, that didn't work :/</h2>
-<div class="ui-footer" th:include="/footer"></div>
+<div class="ui-footer" th:insert="~{/footer}"></div>
 </body>
 </html>

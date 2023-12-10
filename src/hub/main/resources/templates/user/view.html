@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--suppress HtmlFormInputWithoutLabel -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{/head}"></head>
+<body onbeforeunload="unload()" onload="load()">
+<div class="ui-menubar" th:insert="~{/menubar}"></div>
+<div class="ui-container-page">
+    <div class="ui-content">
+        <form action="/api/webapp/subject/edit" method="post">
+            <h2>User <b th:text="${subject.getBestName()}"></b>
+                - <a class="ui-button" th:if="${canManageUsers}" th:href="@{'/user/edit/'+${id}}">Edit</a>
+            <h3>General</h3>
+            <table>
+                <tbody>
+                <tr><td>Name</td><td><input name="name" th:readonly="${!edit}" th:value="${subject.name}" type="text"></td></tr>
+                <tr><td>Displayname</td><td><input name="name" th:readonly="${!edit}" th:value="${subject.displayName}" type="text"></td></tr>
+                <tr><td>Email</td><td><input email="email" th:readonly="${!edit}" th:value="${subject.email}" type="email"></td></tr>
+                <tr><td>HubId</td><td><input hubId="hubId" th:readonly="${!edit}" th:value="${subject.hubId}" type="text"></td></tr>
+                <tr><td>MinecraftId</td><td><input minecraftId="minecraftId" th:readonly="${!edit}" th:value="${subject.minecraftId}" type="text"></td></tr>
+                <tr><td>DiscordId</td><td><input discordId="discordId" th:readonly="${!edit}" th:value="${subject.discordId}" type="number"></td></tr>
+                </tbody>
+            <input th:if="${editKey!=null}" type="hidden" name="auth_key" th:value="${editKey}">
+            <input th:if="${edit}" type="submit" value="Apply">
+        </form>
+    </div>
+</div>
+<div class="ui-footer" th:insert="~{/footer}"></div>
+</body>
+</html>

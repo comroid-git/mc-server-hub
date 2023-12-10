@@ -12,7 +12,7 @@ import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
-import org.comroid.mcsd.core.exception.InvalidRequestException;
+import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.module.discord.DiscordAdapter;
 import org.comroid.mcsd.core.repo.*;
 import org.comroid.util.Debug;
@@ -137,7 +137,7 @@ public class MCSD {
             case "server" -> servers.findById(id).orElseThrow(()->new EntityNotFoundException(Server.class,id));
             case "sh" -> shRepo.findById(id).orElseThrow(()->new EntityNotFoundException(ShConnection.class,id));
             case "user" -> users.findById(id).orElseThrow(()->new EntityNotFoundException(User.class,id));
-            default -> throw new InvalidRequestException("unknown type: " + type);
+            default -> throw new BadRequestException("unknown type: " + type);
         };
     }
 }

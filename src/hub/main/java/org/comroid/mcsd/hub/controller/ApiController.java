@@ -13,7 +13,7 @@ import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
-import org.comroid.mcsd.core.exception.InvalidRequestException;
+import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.StatusCode;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.repo.*;
@@ -26,8 +26,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -112,7 +110,7 @@ public class ApiController {
             if (data.containsKey("consoleChannelPrefix")) server.setConsoleChannelPrefix(data.get("consolePrefix"));
             if (data.containsKey("fancyConsole")) server.setFancyConsole(Boolean.parseBoolean(data.get("fancyConsole")));
         } catch (NumberFormatException nfe) {
-            throw new InvalidRequestException(nfe.getMessage());
+            throw new BadRequestException(nfe.getMessage());
         }
         return "redirect:/server/view/"+servers.save(server).getId();
     }

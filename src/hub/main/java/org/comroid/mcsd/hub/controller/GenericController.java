@@ -3,34 +3,32 @@ package org.comroid.mcsd.hub.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.IntegerAttribute;
 import org.comroid.mcsd.core.BasicController;
 import org.comroid.mcsd.core.MCSD;
-import org.comroid.mcsd.core.entity.AbstractEntity;
-import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.entity.*;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
-import org.comroid.mcsd.core.exception.InvalidRequestException;
+import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.repo.*;
-import org.comroid.util.Bitmask;
 import org.comroid.util.Constraint;
+import org.comroid.util.FormData;
 import org.comroid.util.Streams;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.web.servlet.error.ErrorController;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Controller
@@ -95,6 +93,18 @@ public class GenericController {
         return "server/view";
     }
 
+    @GetMapping("/user/view/{id}")
+    public String userView(Model model, HttpSession session, @PathVariable("id") UUID userId) {
+        var user = userRepo.get(session).assertion();
+        var subject = userRepo.findById(userId).orElseThrow(() -> new EntityNotFoundException(User.class, userId));
+        model.addAttribute("user", user)
+                .addAttribute("subject", subject)
+                .addAttribute("canManageUsers", user.hasPermission(user, AbstractEntity.Permission.ManageUsers))
+                .addAttribute("edit", false)
+                .addAttribute("editKey", null);
+        return "user/view";
+    }
+
     @GetMapping("/{type}/edit/{id}")
     public String entityEdit(HttpSession session, Model model,
                              @PathVariable("type") String type,
@@ -114,30 +124,54 @@ public class GenericController {
         return type + "/view";
     }
 
-    @RequestMapping(value = "/{type}/permissions/{target}/{user}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @RequestMapping(value = "/{type}/permissions/{target}/{user}")
     public String entityPermissions(Model model, HttpSession session, HttpMethod method,
                                     @PathVariable("type") String type,
                                     @PathVariable("target") UUID targetId,
                                     @PathVariable("user") UUID userId,
-                                    @Nullable @RequestParam(value = "auth_code", required = false) String code,
-                                    @Nullable @RequestBody(required = false) Map<String, String> data
-    ) {
+                                    HttpServletRequest request
+    ) throws IOException {
         Constraint.anyOf(method, "method", HttpMethod.GET, HttpMethod.POST).run();
+        int permissions = 0;
+        FormData.@Nullable Object data = null;
+        if (method == HttpMethod.POST) {
+            data = FormData.Parser.parse(request.getReader().lines().collect(Collectors.joining("")));
+            for (int perm : data.keySet()
+                    .stream()
+                    .filter(str -> str.startsWith("perm_"))
+                    .map(str -> str.substring("perm_".length()))
+                    .mapToInt(Integer::parseInt)
+                    .toArray()) {
+                permissions|=perm;
+            }
+        }
         var user = userRepo.get(session).assertion();
         var subject = userRepo.findById(userId).orElseThrow(() -> new EntityNotFoundException(User.class, userId));
         var target = core.findEntity(type, targetId);
         model.addAttribute("user", user)
                 .addAttribute("subject", subject)
-                .addAttribute("permissions", basicController.permissions())
+                .addAttribute("permissions", Arrays.stream(AbstractEntity.Permission.values())
+                        .filter(perm -> Stream.of(AbstractEntity.Permission.None, AbstractEntity.Permission.Any).noneMatch(perm::equals))
+                        .sorted(Comparator.comparingInt(IntegerAttribute::getAsInt))
+                        .toList())
                 .addAttribute("mask", Objects.requireNonNullElse(target.getPermissions().get(subject), 0))
                 .addAttribute("target", target)
                 .addAttribute("type", type)
                 .addAttribute(type, target);
         var verify = target.verifyPermission(user, AbstractEntity.Permission.Administrate);
-        if (method == HttpMethod.POST)
-            verify = verify.or(authorizationLinkRepo.validate(user, targetId, code, AbstractEntity.Permission.Administrate).cast());
+        if (method == HttpMethod.POST && data.containsKey("auth_code"))
+            verify = verify.or(authorizationLinkRepo.validate(user, targetId, data.get("auth_code").asString(), AbstractEntity.Permission.Administrate).cast());
         verify.orElseThrow(() -> new InsufficientPermissionsException(user, target, AbstractEntity.Permission.Administrate));
         if (method == HttpMethod.POST) {
+            target.getPermissions().put(subject, permissions);
+            switch(type){
+                case"agent"->agentRepo.save((Agent)target);
+                case"discordBot"->discordBotRepo.save((DiscordBot)target);
+                case"server"->serverRepo.save((Server)target);
+                case"sh"->shRepo.save((ShConnection)target);
+                case"user"->userRepo.save((User)target);
+                default -> throw new BadRequestException("invalid type: "+type);
+            }
         }
         return "entity/permissions";
     }
@@ -167,7 +201,7 @@ public class GenericController {
             case "server" -> serverRepo;
             case "sh" -> shRepo;
             case "user" -> userRepo;
-            default -> throw new InvalidRequestException("invalid type: " + type);
+            default -> throw new BadRequestException("invalid type: " + type);
         }).deleteById(id);
         return "redirect:/";
     }

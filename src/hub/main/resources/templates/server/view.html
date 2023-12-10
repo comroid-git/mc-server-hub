@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <!--suppress HtmlFormInputWithoutLabel -->
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:include="/head"></head>
+<head th:insert="~{/head}"></head>
 <body onbeforeunload="unload()" onload="load()">
-<div class="ui-menubar" th:include="/menubar"></div>
+<div class="ui-menubar" th:insert="~{/menubar}"></div>
 <div class="ui-container-page">
     <div class="ui-content">
         <form action="/api/webapp/server/edit" method="post">
@@ -33,7 +33,7 @@
                     <td><input name="id" readonly th:value="${server.id}" type="text"></td>
                 </tr>
                 <tr>
-                    <td>Minecraft_Version</td>
+                    <td>Minecraft Version</td>
                     <td><input name="mcVersion" th:readonly="${!edit}" th:value="${server.mcVersion}" type="text"></td>
                 </tr>
                 <tr>
@@ -139,11 +139,11 @@
                 </tr>
                 </tbody>
             </table>
-            <input th:if="${editKey!=null}" type="hidden" name="editKey" th:value="${editKey}">
+            <input th:if="${editKey!=null}" type="hidden" name="auth_key" th:value="${editKey}">
             <input th:if="${edit}" type="submit" value="Apply">
         </form>
     </div>
 </div>
-<div class="ui-footer" th:include="/footer"></div>
+<div class="ui-footer" th:insert="~{/footer}"></div>
 </body>
 </html>
