@@ -140,6 +140,10 @@ public class Server extends AbstractEntity {
         return "https://serverjars.com/api/fetchJar/%s/%s/%s".formatted(type,mode.name().toLowerCase(),mcVersion);
     }
 
+    public String getLoaderName() {
+        return mode.getName();
+    }
+
     public Path path(String... extra) {
         return Paths.get(getDirectory(), extra);
     }

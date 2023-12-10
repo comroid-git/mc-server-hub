@@ -10,7 +10,7 @@ function refreshServerList() {
         entry.querySelector('.statusIcon').className = 'statusIcon serverStatusUnknown';
         entry.querySelector('.motd').innerHTML = 'Fetching MOTD ...';
         entry.querySelector('.players').innerHTML = 'Fetching players ...';
-        fetch('/api/webapp/server/'+sanitize(entry.id)+'/status')
+        fetch('/api/webapp/server/'+entry.id+'/status')
             .then(resp => {
                 if (resp.status !== 200)
                     console.error('status request was not successful')
@@ -25,5 +25,3 @@ function refreshServerList() {
             .catch(error => console.log('could not update status of '+entry.id, error))
     })
 }
-
-function sanitize(uuid) {return uuid.replaceAll('_', '-')}

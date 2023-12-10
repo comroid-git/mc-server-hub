@@ -1,26 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-  <title>Minecraft Server Hub</title>
-
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <meta name="keywords" content="minecraft, server hub, server manager"/>
-  <meta name="robots" content="noindex"/>
-  <meta name="author" content="kaleidox@comroid.org"/>
-  <meta name="publisher" content="comroid"/>
-  <meta name="description" content="Minecraft Server Hub"/>
-
-  <link th:href="@{/static/favicon.ico}" rel="icon">
-  <link th:href="@{/static/style.css}" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Fira+Mono" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans&display=swap" rel="stylesheet">
-
+<head th:include="/head">
   <script type="text/javascript" th:src="@{/static/dashboard.js}"></script>
 </head>
 <body onload="load()" onbeforeunload="unload()">
-<div class="ui-menubar"><a th:href="@{/}">Dashboard</a></div>
-Hello <b th:text="${user.getBestName()}"></b>
+<div class="ui-menubar" th:include="/menubar"></div>
+<h3>Hello <b th:text="${user.getBestName()}"></b></h3>
 <div class="ui-container-page">
   <div class="ui-content">
     <h2>Servers</h2>
@@ -35,17 +20,17 @@ Hello <b th:text="${user.getBestName()}"></b>
         <th>Port</th>
         <th></th>
       </tr></thead>
-      <tbody><tr th:each="server: ${serverRepo}" th:id="${server.id.toString().replace('-','_')}" class="serverEntry">
+      <tbody><tr th:each="server: ${serverRepo}" th:id="${server.id}" class="serverEntry">
         <td><div class="statusIcon serverStatusUnknown"></div></td>
-        <td><a class="ui-button" th:href="@{/server/view/${server.id}}">View</a>
-            <a class="ui-button" th:href="@{/server/console/${server.id}}">Console</a></td>
+        <td><a class="ui-button" th:href="@{'/server/view/'+${server.id}}">View</a>
+            <a class="ui-button" th:href="@{'/server/console/'+${server.id}}">Console</a></td>
         <td><div class="motd">Loading MOTD ...</div></td>
         <td><div class="players">Fetching Players ...</div></td>
         <td th:text="${server.getHost()}">Host</td>
         <td>:</td>
         <td th:text="${server.getPort()}">Port</td>
-        <td><a class="ui-button" th:href="@{/server/edit/${server.id}}">Edit</a>
-            <a class="ui-button" th:href="@{/server/delete/${server.id}}">Delete</a></td>
+        <td><a class="ui-button" th:href="@{'/server/edit/'+${server.id}}">Edit</a>
+            <a class="ui-button" th:href="@{'/server/delete/'+${server.id}}">Delete</a></td>
       </tr></tbody>
     </table>
   </div>
