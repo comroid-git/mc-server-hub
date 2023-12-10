@@ -10,6 +10,7 @@ import org.comroid.util.Token;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -30,11 +31,12 @@ public interface AuthorizationLinkRepo extends CrudRepository<AuthorizationLink,
         return validate(user, target, code, Bitmask.combine(permissions));
     }
     default SupplierX<AuthorizationLink> validate(User user, UUID target, String code, int permissions) {
-        return SupplierX.ofSupplier(()->findById(code).orElse(null))
+        return SupplierX.ofSupplier(()-> Optional.ofNullable(code)
+                .flatMap(this::findById)
                 .filter(link -> link.getCreator().equals(user))
                 .filter(link -> link.getTarget().equals(target))
                 .filter(link -> link.getPermissions() == permissions)
-                .peek(this::delete);
+                .orElse(null));
     }
 
     default void flush(String... codes) {

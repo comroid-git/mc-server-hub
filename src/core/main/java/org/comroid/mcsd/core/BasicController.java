@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping
-@ControllerAdvice
 public class BasicController implements org.springframework.boot.web.servlet.error.ErrorController {
     @ResponseBody
     @GetMapping("/api/webapp/permissions")

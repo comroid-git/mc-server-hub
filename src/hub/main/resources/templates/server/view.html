@@ -9,7 +9,7 @@
         <form action="/api/webapp/server/edit" method="post">
             <h2>Server <b th:text="${server.getBestName()}"></b>
                 - <a class="ui-button" th:href="@{'/server/edit/'+${id}}">Edit</a>
-                - <a class="ui-button" th:href="@{'/server/permissions/'+${server.id}+'/'+@{user.id}">Edit Permissions</a></h2>
+                - <a class="ui-button" th:href="@{'/server/permissions/'+${server.id}+'/'+${user.id}}">Edit Permissions</a></h2>
             <h3>General</h3>
             <table>
                 <tbody>

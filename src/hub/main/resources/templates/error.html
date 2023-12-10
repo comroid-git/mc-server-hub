@@ -4,8 +4,6 @@
 <body onload="load()" onbeforeunload="unload()">
 <div class="ui-menubar" th:include="/menubar"></div>
 <h2>Well, that didn't work :/</h2>
-<h3 th:text="'Your request to '+${request.getRequestURL()}+' failed'"></h3>
-<textarea th:text="${exception}"></textarea>
 <div class="ui-footer" th:include="/footer"></div>
 </body>
 </html>
