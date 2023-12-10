@@ -9,22 +9,22 @@
         <h2>Permissions for User <b th:text="${subject.bestName}"></b> for <span th:text="${type}"></span> <b
                 th:text="${target.bestName}"></b></h2>
         <h4 class="error-text" th:if="${target.owner.id == user.id}">User is owner of the service; changes will have no effect</h4>
-        <form th:action="${type}+'/permissions/'+${target.id}+'/'+${subject.id}">
+        <form th:action="@{'/'+${type}+'/permissions/'+${target.id}+'/'+${subject.id}}" method="post">
             <table>
                 <thead>
                 <tr>
+                    <td>Enabled</td>
                     <td>Permission</td>
                     <td>Value</td>
-                    <td>Enabled</td>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="permission: ${permissions}">
-                    <td th:text="${permission.value}"></td>
-                    <td th:text="${T(java.lang.String).format('0x%08X', permission.key)}"></td>
                     <td><input th:name="'perm_'+${permission.key}"
                                th:value="${T(org.comroid.util.Bitmask).isFlagSet(mask, permission.key)}"
                                type="checkbox"></td>
+                    <td th:text="${permission.value}"></td>
+                    <td th:text="${T(java.lang.String).format('0x%08X', permission.key)}"></td>
                 </tr>
                 </tbody>
             </table>

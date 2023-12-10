@@ -27,6 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -79,9 +80,8 @@ public class ApiController {
         return server.status().join();
     }
 
-    @ResponseBody
-    @PostMapping(value = "/webapp/server/{id}/edit", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public Server editServer(HttpSession session, @RequestBody Map<String, String> data) {
+    @PostMapping(value = "/webapp/server/edit", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public String editServer(HttpSession session, @RequestParam Map<String, String> data) {
         var user = user(session);
         var server = servers.findById(UUID.fromString(data.get("id")))
                 .orElseThrow(()->new EntityNotFoundException(Server.class, data.get("id")));
@@ -91,7 +91,30 @@ public class ApiController {
                 .peek($->authorizationLinkRepo.flush(data.get("editKey")))
                 .orElseThrow(()->new InsufficientPermissionsException(user,server,AbstractEntity.Permission.Modify));
 
-        throw new UnsupportedOperationException("not yet implemented"); // todo
+        try {
+            if (data.containsKey("name")) server.setName(data.get("name"));
+            if (data.containsKey("displayName")) server.setDisplayName(data.get("displayName"));
+            if (data.containsKey("ownerId")) server.setOwner(users.findById(UUID.fromString(data.get("ownerId"))).orElseThrow(()->new EntityNotFoundException(User.class, data.get("ownerId"))));
+            if (data.containsKey("mcVersion")) server.setMcVersion(data.get("mcVersion"));
+            if (data.containsKey("host")) server.setHost(data.get("host"));
+            if (data.containsKey("port")) server.setPort(Integer.parseInt(data.get("port")));
+            if (data.containsKey("homepage")) server.setHomepage(data.get("homepage"));
+            if (data.containsKey("managed")) server.setManaged(Boolean.parseBoolean(data.get("managed")));
+            if (data.containsKey("enabled")) server.setEnabled(Boolean.parseBoolean(data.get("enabled")));
+            if (data.containsKey("whitelist")) server.setWhitelist(Boolean.parseBoolean(data.get("whitelist")));
+            if (data.containsKey("queryPort")) server.setQueryPort(Integer.parseInt(data.get("queryPort")));
+            if (data.containsKey("rConPort")) server.setRConPort(Integer.parseInt(data.get("rConPort")));
+            if (data.containsKey("rConPassword") && !data.get("rConPassword").isBlank()) server.setRConPassword(data.get("rConPassword"));
+            if (data.containsKey("discordBotId")) server.setDiscordBot(discordBotRepo.findById(UUID.fromString(data.get("discordBotId"))).orElseThrow(()->new EntityNotFoundException(DiscordBot.class, data.get("discordBotId"))));
+            if (data.containsKey("publicChannelId")) server.setPublicChannelId(Long.valueOf(data.get("publicChannelId")));
+            if (data.containsKey("moderationChannelId")) server.setModerationChannelId(Long.valueOf(data.get("moderationChannelId")));
+            if (data.containsKey("consoleChannelId")) server.setConsoleChannelId(Long.valueOf(data.get("consoleChannelId")));
+            if (data.containsKey("consoleChannelPrefix")) server.setConsoleChannelPrefix(data.get("consolePrefix"));
+            if (data.containsKey("fancyConsole")) server.setFancyConsole(Boolean.parseBoolean(data.get("fancyConsole")));
+        } catch (NumberFormatException nfe) {
+            throw new InvalidRequestException(nfe.getMessage());
+        }
+        return "redirect:/server/view/"+servers.save(server).getId();
     }
 
     @ResponseBody

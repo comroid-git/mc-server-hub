@@ -13,17 +13,21 @@ import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.exception.InvalidRequestException;
 import org.comroid.mcsd.core.repo.*;
 import org.comroid.util.Bitmask;
+import org.comroid.util.Constraint;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.*;
@@ -83,7 +87,7 @@ public class GenericController {
     @GetMapping("/server/view/{id}")
     public String serverView(Model model, HttpSession session, @PathVariable("id") UUID serverId) {
         var user = userRepo.get(session).assertion();
-        var server = serverRepo.findById(serverId).orElseThrow(()->new EntityNotFoundException(Server.class,serverId));
+        var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
         model.addAttribute("user", user)
                 .addAttribute("server", server)
                 .addAttribute("edit", false)
@@ -99,7 +103,7 @@ public class GenericController {
         var user = userRepo.get(session).assertion();
         user.verifyPermission(user, AbstractEntity.Permission.Modify)
                 .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).cast())
-                .orElseThrow(()->new InsufficientPermissionsException(user,id,AbstractEntity.Permission.Modify));
+                .orElseThrow(() -> new InsufficientPermissionsException(user, id, AbstractEntity.Permission.Modify));
         var target = core.findEntity(type, id);
         model.addAttribute("user", user)
                 .addAttribute("edit", true)
@@ -107,24 +111,25 @@ public class GenericController {
                 .addAttribute("target", target)
                 .addAttribute("type", type)
                 .addAttribute(type, target);
-        return type+"/view";
+        return type + "/view";
     }
 
-    @GetMapping("/{type}/permissions/{target}/{user}")
-    @PostMapping("/{type}/permissions/{target}/{user}")
+    @RequestMapping(value = "/{type}/permissions/{target}/{user}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public String entityPermissions(Model model, HttpSession session, HttpMethod method,
-                              @PathVariable("type") String type,
-                              @PathVariable("target") UUID targetId,
-                              @PathVariable("user") UUID userId,
-                              @RequestParam(value = "auth_code",required = false) String code
+                                    @PathVariable("type") String type,
+                                    @PathVariable("target") UUID targetId,
+                                    @PathVariable("user") UUID userId,
+                                    @Nullable @RequestParam(value = "auth_code", required = false) String code,
+                                    @Nullable @RequestBody(required = false) Map<String, String> data
     ) {
+        Constraint.anyOf(method, "method", HttpMethod.GET, HttpMethod.POST).run();
         var user = userRepo.get(session).assertion();
         var subject = userRepo.findById(userId).orElseThrow(() -> new EntityNotFoundException(User.class, userId));
         var target = core.findEntity(type, targetId);
         model.addAttribute("user", user)
                 .addAttribute("subject", subject)
                 .addAttribute("permissions", basicController.permissions())
-                .addAttribute("mask", Objects.requireNonNullElse(target.getPermissions().get(subject),0))
+                .addAttribute("mask", Objects.requireNonNullElse(target.getPermissions().get(subject), 0))
                 .addAttribute("target", target)
                 .addAttribute("type", type)
                 .addAttribute(type, target);
@@ -132,17 +137,18 @@ public class GenericController {
         if (method == HttpMethod.POST)
             verify = verify.or(authorizationLinkRepo.validate(user, targetId, code, AbstractEntity.Permission.Administrate).cast());
         verify.orElseThrow(() -> new InsufficientPermissionsException(user, target, AbstractEntity.Permission.Administrate));
-        if (method == HttpMethod.POST)
-            throw new UnsupportedOperationException("unimplemented");//todo
+        if (method == HttpMethod.POST) {
+        }
         return "entity/permissions";
     }
 
-    @GetMapping("/{type}/delete/{id}")
-    @PostMapping("/{type}/delete/{id}")
+    @RequestMapping(value = "/{type}/delete/{id}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public String entityDelete(HttpSession session, Model model, HttpMethod method,
-                             @PathVariable("type") String type,
-                             @PathVariable("id") UUID id,
-                             @RequestParam(value = "auth_code", required = false) String code) {
+                               @PathVariable("type") String type,
+                               @PathVariable("id") UUID id,
+                               @Nullable @RequestParam(value = "auth_code", required = false) String code
+    ) {
+        Constraint.anyOf(method, "method", HttpMethod.GET, HttpMethod.POST).run();
         var user = userRepo.get(session).assertion();
         if (method == HttpMethod.GET) {
             var target = core.findEntity(type, id);

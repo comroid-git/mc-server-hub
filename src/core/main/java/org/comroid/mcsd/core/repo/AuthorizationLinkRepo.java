@@ -10,8 +10,10 @@ import org.comroid.util.Token;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 
 public interface AuthorizationLinkRepo extends CrudRepository<AuthorizationLink, String> {
@@ -41,7 +43,10 @@ public interface AuthorizationLinkRepo extends CrudRepository<AuthorizationLink,
 
     default void flush(String... codes) {
         try {
-            deleteAllById(Arrays.asList(codes));
+            deleteAllById(Arrays.stream(codes)
+                    .filter(Objects::nonNull)
+                    .filter(Predicate.not(String::isBlank))
+                    .toList());
         } catch (Throwable t) {
             Log.at(Level.FINE, "Error flushing Authorizations", t);
         }
