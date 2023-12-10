@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>Minecraft Server Hub - Agent</title>
+  <title>Minecraft Server Hub</title>
 
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -11,8 +11,8 @@
   <meta name="publisher" content="comroid"/>
   <meta name="description" content="Minecraft Server Hub"/>
 
-  <link href="favicon.ico" rel="icon">
-  <link href="style.css" rel="stylesheet">
+  <link th:href="@{/static/favicon.ico}" rel="icon">
+  <link th:href="@{/static/style.css}" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Fira+Mono" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Fira+Sans&display=swap" rel="stylesheet">
 
@@ -26,15 +26,14 @@
     }
   </style>
 
-  <script type="text/javascript">
-
-  </script>
+  <script type="text/javascript" th:src="@{/static/dashboard.js}"></script>
 </head>
 <body onload="load()" onbeforeunload="unload()">
-<div class="ui-menubar"><a href="/">Agent Console</a></div>
+<div class="ui-menubar"><a href="/static">Agent Console</a></div>
 <div class="ui-container-page">
   <div class="ui-content">
     <h1>Create Permissions Link for User</h1>
+    <h1 th:text="${message}">Default Message</h1>
   </div>
 </div>
 <div style="

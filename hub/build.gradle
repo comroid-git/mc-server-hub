@@ -47,6 +47,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework:spring-messaging:6.0.0'
 
+    // thymeleaf
+    implementation "org.thymeleaf:thymeleaf:3.1.+"
+    implementation "org.thymeleaf:thymeleaf-spring6:3.1.+"
+
     // security
     implementation 'org.springframework.session:spring-session-core'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
