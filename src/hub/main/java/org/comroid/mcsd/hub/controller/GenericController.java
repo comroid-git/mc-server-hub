@@ -3,12 +3,16 @@ package org.comroid.mcsd.hub.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
+import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.repo.*;
 import org.comroid.util.Streams;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,6 +25,8 @@ import java.util.UUID;
 @RequestMapping
 public class GenericController {
     @Autowired
+    private MCSD core;
+    @Autowired
     private UserRepo userRepo;
     @Autowired
     private ServerRepo serverRepo;
@@ -30,6 +36,8 @@ public class GenericController {
     private AgentRepo agentRepo;
     @Autowired
     private ShRepo shRepo;
+    @Autowired
+    private AuthorizationLinkRepo authorizationLinkRepo;
 
     /*
     @GetMapping("/error")
@@ -60,6 +68,24 @@ public class GenericController {
                         .filter(x -> x.hasPermission(user, AbstractEntity.Permission.Administrate))
                         .toList());
         return "dashboard";
+    }
+
+    @GetMapping("/permissions/{type}/{user}/{target}")
+    public String permissions(Model model, HttpSession session,
+                              @PathVariable("type") String type,
+                              @PathVariable("user") UUID userId,
+                              @PathVariable("target") UUID targetId,
+                              @RequestParam(value = "code",required = false) String code
+    ) {
+        var exec = userRepo.get(session).assertion();
+        var user = userRepo.findById(userId).orElseThrow(() -> new EntityNotFoundException(User.class, userId));
+        var target = core.findEntity(type, targetId);
+        target.verifyPermission(exec, AbstractEntity.Permission.Administrate)
+                .or(authorizationLinkRepo.validate(exec, targetId, code, AbstractEntity.Permission.Administrate).cast())
+                .orElseThrow(() -> new InsufficientPermissionsException(exec, target, AbstractEntity.Permission.Administrate));
+        model.addAttribute("user", user)
+                .addAttribute(type, target);
+        return "entity/permissions";
     }
 
     @GetMapping("/server/view/{id}")

@@ -10,8 +10,11 @@ import org.comroid.api.DelegateStream;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.McsdConfig;
-import org.comroid.mcsd.core.entity.DiscordBot;
+import org.comroid.mcsd.core.entity.*;
+import org.comroid.mcsd.core.exception.EntityNotFoundException;
+import org.comroid.mcsd.core.exception.InvalidRequestException;
 import org.comroid.mcsd.core.module.discord.DiscordAdapter;
+import org.comroid.mcsd.core.repo.*;
 import org.comroid.util.Debug;
 import org.comroid.util.REST;
 import org.jetbrains.annotations.Nullable;
@@ -27,6 +30,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -39,6 +43,11 @@ import java.util.concurrent.TimeUnit;
 @EntityScan(basePackages = "org.comroid.mcsd.core.entity")
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
 public class MCSD {
+    @Lazy @Autowired private UserRepo users;
+    @Lazy @Autowired private ServerRepo servers;
+    @Lazy @Autowired private AgentRepo agents;
+    @Lazy @Autowired private ShRepo shRepo;
+    @Lazy @Autowired private DiscordBotRepo discordBotRepo;
     @Bean(name = "configDir")
     @Order(Ordered.HIGHEST_PRECEDENCE)
     @ConditionalOnExpression(value = "environment.containsProperty('DEBUG')")
@@ -119,6 +128,17 @@ public class MCSD {
 
     public static String wrapHostname(String hostname) {
         return "http%s://%s%s".formatted(Debug.isDebug() ? "" : "s", hostname, Debug.isDebug() ? ":42064" : "");
+    }
+
+    public AbstractEntity findEntity(String type, UUID id) {
+        return switch(type){
+            case "agent" -> agents.findById(id).orElseThrow(()->new EntityNotFoundException(Agent.class,id));
+            case "discordBot" -> discordBotRepo.findById(id).orElseThrow(()->new EntityNotFoundException(DiscordBot.class,id));
+            case "server" -> servers.findById(id).orElseThrow(()->new EntityNotFoundException(Server.class,id));
+            case "sh" -> shRepo.findById(id).orElseThrow(()->new EntityNotFoundException(ShConnection.class,id));
+            case "user" -> users.findById(id).orElseThrow(()->new EntityNotFoundException(User.class,id));
+            default -> throw new InvalidRequestException("unknown type: " + type);
+        };
     }
 }
 

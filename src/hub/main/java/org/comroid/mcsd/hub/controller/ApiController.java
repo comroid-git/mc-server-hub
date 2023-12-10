@@ -22,6 +22,7 @@ import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -36,6 +37,9 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/api")
 public class ApiController {
+    @Qualifier("MCSD")
+    @Autowired
+    private MCSD core;
     @Autowired
     private UserRepo users;
     @Autowired
@@ -63,14 +67,7 @@ public class ApiController {
                 .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).cast())
                 .orElseThrow(()->new InsufficientPermissionsException(user,id,AbstractEntity.Permission.Modify));
         model.addAttribute("user", user)
-                .addAttribute(type, switch(type){
-                    case "agent" -> agents.findById(id).orElseThrow(()->new EntityNotFoundException(Agent.class,id));
-                    case "discordBot" -> discordBotRepo.findById(id).orElseThrow(()->new EntityNotFoundException(DiscordBot.class,id));
-                    case "server" -> servers.findById(id).orElseThrow(()->new EntityNotFoundException(Server.class,id));
-                    case "sh" -> shRepo.findById(id).orElseThrow(()->new EntityNotFoundException(ShConnection.class,id));
-                    case "user" -> users.findById(id).orElseThrow(()->new EntityNotFoundException(User.class,id));
-                    default -> throw new InvalidRequestException("unknown type: " + type);
-                })
+                .addAttribute(type, core.findEntity(type, id))
                 .addAttribute("edit", true)
                 .addAttribute("editKey", null);
         return type+"/view";
