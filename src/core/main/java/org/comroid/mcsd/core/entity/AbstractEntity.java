@@ -106,6 +106,12 @@ public abstract class AbstractEntity implements Named {
         ForceOP,
         TriggerCron,
 
+        CreateAgent,
+        CreateDiscordBot,
+        CreateServer,
+        CreateSh,
+        Modify,
+
         View(0x0100_0000, Status),
         Moderate(0x0200_0000, View, Whitelist, Kick, Mute),
         Manage(0x0400_0000, Moderate, Ban, Start, Stop, Backup, Update, Maintenance, Enable),

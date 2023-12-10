@@ -5,120 +5,142 @@
 <body onbeforeunload="unload()" onload="load()">
 <div class="ui-menubar" th:include="/menubar"></div>
 <div class="ui-container-page">
-    <div class="ui-content"><form action="/api/webapp/server/edit" method="post">
-        <h2>Server <b th:text="${server.getBestName()}"></b></h2>
-        <h3>General</h3>
-        <table>
-            <tbody>
-            <tr>
-                <td>Name</td>
-                <td><input name="name" th:readonly="${!edit}" th:value="${server.name}" type="text"></td>
-            </tr>
-            <tr>
-                <td>Displayname</td>
-                <td><input name="displayName" th:readonly="${!edit}" th:value="${server.displayName}" type="text"></td>
-            </tr>
-            <tr>
-                <td>Owner</td>
-                <td><input name="owner" th:readonly="${!edit}" th:value="${edit?server.owner.id:server.owner.bestName}"
-                           type="text"></td>
-            </tr>
-            <tr>
-                <td>ID</td>
-                <td><input name="id" readonly th:value="${server.id}" type="text"></td>
-            </tr>
-            <tr>
-                <td>Minecraft_Version</td>
-                <td><input name="mcVersion" th:readonly="${!edit}" th:value="${server.mcVersion}" type="text"></td>
-            </tr>
-            <tr>
-                <td>Loader</td>
-                <td><input name="loader" readonly
-                           th:value="${server.forceCustomJar} ? 'Custom JAR' : ${server.loaderName}"
-                           type="text"></td>
-            </tr>
-            <tr>
-                <td th:if="${server.customCommand != null}">Runscript</td>
-                <td th:if="${server.customCommand != null}"><input name="customCommand" th:readonly="${!edit}"
-                                                                   th:value="${server.customCommand}"
-                                                                   type="text"></td>
-            </tr>
-            <tr>
-                <td>Host</td>
-                <td><input name="host" th:readonly="${!edit}" th:value="${server.host}"
-                           type="text"></td>
-                <td><input max="65535" min="1" name="port" th:readonly="${!edit}" th:value="${server.port}"
-                             type="number"></td>
-            </tr>
-            <tr>
-                <td>Homepage</td>
-                <td><a th:href="${server.homepage}"><input name="homepage" th:if="${edit}" th:value="${server.homepage}"
-                                                           type="url"></a></td>
-            </tr>
-            </tbody>
-        </table>
-        <h3>Advanced configuration</h3>
-        <table>
-            <tbody>
-            <tr>
-                <td>Whitelist</td>
-                <td><input type="checkbox" th:readonly="${!edit}" th:value="${server.whitelist}"></td>
-            </tr>
-            <tr>
-                <td>Query Port</td>
-                <td><input max="65535" min="1" th:readonly="${!edit}" th:value="${server.queryPort}" type="number"></td>
-            </tr>
-            <tr>
-                <td>Rcon Port</td>
-                <td><input max="65535" min="1" th:readonly="${!edit}" th:value="${server.RConPort}" type="number"></td>
-            </tr>
-            <tr>
-                <td>Rcon Password</td>
-                <td><input th:readonly="${!edit}"
-                           th:value="${edit?'':(server.getRConPassword()!=null?'hidden':'rcon disabled')}"
-                           type="password"></td>
-            </tr>
-            </tbody>
-        </table>
-        <h3>Discord Integration</h3>
-        <h5 class="error-text" th:unless="${server.getDiscordBot() != null}">Not configured</h5>
-        <table th:if="${server.getDiscordBot() != null}">
-            <tbody>
-            <tr>
-                <td>Bot</td>
-                <td><input name="discordBot" th:readonly="${!edit}"
-                           th:value="${edit?server.discordBot.id:server.discordBot.bestName}"
-                           type="text"></td>
-            </tr>
-            <tr>
-                <td>Public Channel ID</td>
-                <td><input name="publicChannelId" th:readonly="${!edit}" th:value="${server.publicChannelId}"
-                           type="number"></td>
-            </tr>
-            <tr>
-                <td>Moderation Channel ID</td>
-                <td><input name="moderationChannelId" th:readonly="${!edit}" th:value="${server.moderationChannelId}"
-                           type="number"></td>
-            </tr>
-            <tr>
-                <td>Console Channel ID</td>
-                <td><input name="consoleChannelId" th:readonly="${!edit}" th:value="${server.consoleChannelId}"
-                           type="number"></td>
-            </tr>
-            <tr>
-                <td>Console Prefix</td>
-                <td><input name="consoleChannelPrefix" th:readonly="${!edit}" th:value="${server.consoleChannelPrefix}"
-                           type="text"></td>
-            </tr>
-            <tr>
-                <td>Fancier Console</td>
-                <td><input name="fancyConsole" th:readonly="${!edit}" th:value="${server.fancyConsole}" type="checkbox">
-                </td>
-            </tr>
-            </tbody>
-        </table>
-        <input type="submit" value="Apply" th:if="${edit}">
-    </form></div>
+    <div class="ui-content">
+        <form action="/api/webapp/server/edit" method="post">
+            <h2>Server <b th:text="${server.getBestName()}"></b></h2>
+            <h3>General</h3>
+            <table>
+                <tbody>
+                <tr>
+                    <td>Name</td>
+                    <td><input name="name" th:readonly="${!edit}" th:value="${server.name}" type="text"></td>
+                </tr>
+                <tr>
+                    <td>Displayname</td>
+                    <td><input name="displayName" th:readonly="${!edit}" th:value="${server.displayName}" type="text">
+                    </td>
+                </tr>
+                <tr>
+                    <td>Owner</td>
+                    <td><input name="owner" th:readonly="${!edit}"
+                               th:value="${edit?server.owner.id:server.owner.bestName}"
+                               type="text"></td>
+                </tr>
+                <tr>
+                    <td>ID</td>
+                    <td><input name="id" readonly th:value="${server.id}" type="text"></td>
+                </tr>
+                <tr>
+                    <td>Minecraft_Version</td>
+                    <td><input name="mcVersion" th:readonly="${!edit}" th:value="${server.mcVersion}" type="text"></td>
+                </tr>
+                <tr>
+                    <td>Loader</td>
+                    <td><input name="loader" readonly
+                               th:value="${server.forceCustomJar} ? 'Custom JAR' : ${server.loaderName}"
+                               type="text"></td>
+                </tr>
+                <tr>
+                    <td th:if="${server.customCommand != null}">Runscript</td>
+                    <td th:if="${server.customCommand != null}"><input name="customCommand" th:readonly="${!edit}"
+                                                                       th:value="${server.customCommand}"
+                                                                       type="text"></td>
+                </tr>
+                <tr>
+                    <td>Host</td>
+                    <td><input name="host" th:readonly="${!edit}" th:value="${server.host}"
+                               type="text"></td>
+                    <td><input max="65535" min="1" name="port" th:readonly="${!edit}" th:value="${server.port}"
+                               type="number"></td>
+                </tr>
+                <tr>
+                    <td>Homepage</td>
+                    <td><a th:href="${server.homepage}"><input name="homepage" th:if="${edit}"
+                                                               th:value="${server.homepage}"
+                                                               type="url"></a></td>
+                </tr>
+                </tbody>
+            </table>
+            <h3>Advanced configuration</h3>
+            <table>
+                <tbody>
+                <tr>
+                    <td>Managed</td>
+                    <td><input name="managed" th:readonly="${!edit}" th:value="${server.managed}" type="checkbox"></td>
+                </tr>
+                <tr>
+                    <td>Autostart</td>
+                    <td><input name="enabled" th:readonly="${!edit}" th:value="${server.enabled}" type="checkbox"></td>
+                </tr>
+                <tr>
+                    <td>Whitelist</td>
+                    <td><input name="whitelist" th:readonly="${!edit}" th:value="${server.whitelist}" type="checkbox">
+                    </td>
+                </tr>
+                <tr>
+                    <td>Query Port</td>
+                    <td><input max="65535" min="1" name="queryPort" th:readonly="${!edit}"
+                               th:value="${server.queryPort}"
+                               type="number"></td>
+                </tr>
+                <tr>
+                    <td>Rcon Port</td>
+                    <td><input max="65535" min="1" name="rConPort" th:readonly="${!edit}" th:value="${server.RConPort}"
+                               type="number"></td>
+                </tr>
+                <tr>
+                    <td>Rcon Password</td>
+                    <td><input name="rConPassword"
+                               th:readonly="${!edit}"
+                               th:value="${edit?'':(server.getRConPassword()!=null?'hidden':'rcon disabled')}"
+                               type="password"></td>
+                </tr>
+                </tbody>
+            </table>
+            <h3>Discord Integration</h3>
+            <h5 class="error-text" th:unless="${server.getDiscordBot() != null}">Not configured</h5>
+            <table th:if="${server.getDiscordBot() != null}">
+                <tbody>
+                <tr>
+                    <td>Bot</td>
+                    <td><input name="discordBot" th:readonly="${!edit}"
+                               th:value="${edit?server.discordBot.id:server.discordBot.bestName}"
+                               type="text"></td>
+                </tr>
+                <tr>
+                    <td>Public Channel ID</td>
+                    <td><input name="publicChannelId" th:readonly="${!edit}" th:value="${server.publicChannelId}"
+                               type="number"></td>
+                </tr>
+                <tr>
+                    <td>Moderation Channel ID</td>
+                    <td><input name="moderationChannelId" th:readonly="${!edit}"
+                               th:value="${server.moderationChannelId}"
+                               type="number"></td>
+                </tr>
+                <tr>
+                    <td>Console Channel ID</td>
+                    <td><input name="consoleChannelId" th:readonly="${!edit}" th:value="${server.consoleChannelId}"
+                               type="number"></td>
+                </tr>
+                <tr>
+                    <td>Console Prefix</td>
+                    <td><input name="consoleChannelPrefix" th:readonly="${!edit}"
+                               th:value="${server.consoleChannelPrefix}"
+                               type="text"></td>
+                </tr>
+                <tr>
+                    <td>Fancier Console</td>
+                    <td><input name="fancyConsole" th:readonly="${!edit}" th:value="${server.fancyConsole}"
+                               type="checkbox">
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <input th:if="${editKey!=null}" type="hidden" name="editKey" th:value="${editKey}">
+            <input th:if="${edit}" type="submit" value="Apply">
+        </form>
+    </div>
 </div>
 <div style="
   font-family: 'Comic Sans MS', sans-serif;

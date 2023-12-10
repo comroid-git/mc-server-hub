@@ -68,7 +68,8 @@ public class GenericController {
         var server = serverRepo.findById(serverId).orElseThrow(()->new EntityNotFoundException(Server.class,serverId));
         model.addAttribute("user", user)
                 .addAttribute("server", server)
-                .addAttribute("edit", false);
+                .addAttribute("edit", false)
+                .addAttribute("editKey", null);
         return "server/view";
     }
 }
