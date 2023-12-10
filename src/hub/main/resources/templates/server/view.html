@@ -7,7 +7,7 @@
 <div class="ui-container-page">
     <div class="ui-content">
         <form action="/api/webapp/server/edit" method="post">
-            <h2>Server <b th:text="${server.getBestName()}"></b></h2>
+            <h2>Server <b th:text="${server.getBestName()}"></b> - <a th:href="@{'/webapp/edit/server/'+${id}}">Edit</a></h2>
             <h3>General</h3>
             <table>
                 <tbody>

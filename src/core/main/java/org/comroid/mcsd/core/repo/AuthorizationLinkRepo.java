@@ -26,11 +26,11 @@ public interface AuthorizationLinkRepo extends CrudRepository<AuthorizationLink,
         return save(link);
     }
 
-    default SupplierX<AuthorizationLink> validate(String editKey, User user, UUID target, AbstractEntity.Permission... permissions) {
-        return validate(editKey, user, target, Bitmask.combine(permissions));
+    default SupplierX<AuthorizationLink> validate(User user, UUID target, String code, AbstractEntity.Permission... permissions) {
+        return validate(user, target, code, Bitmask.combine(permissions));
     }
-    default SupplierX<AuthorizationLink> validate(String editKey, User user, UUID target, int permissions) {
-        return SupplierX.ofSupplier(()->findById(editKey).orElse(null))
+    default SupplierX<AuthorizationLink> validate(User user, UUID target, String code, int permissions) {
+        return SupplierX.ofSupplier(()->findById(code).orElse(null))
                 .filter(link -> link.getCreator().equals(user))
                 .filter(link -> link.getTarget().equals(target))
                 .filter(link -> link.getPermissions() == permissions)

@@ -19,7 +19,6 @@ import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.repo.*;
 import org.comroid.util.Bitmask;
 import org.comroid.util.Streams;
-import org.comroid.util.Token;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,9 +56,12 @@ public class ApiController {
     @GetMapping("/webapp/edit/{type}/{id}")
     public String startEditSession(HttpSession session, Model model,
                                    @PathVariable("type") String type,
-                                   @PathVariable("id") UUID id) {
+                                   @PathVariable("id") UUID id,
+                                   @RequestParam(value = "code", required = false) String code) {
         var user = user(session);
-        user.requirePermission(user, AbstractEntity.Permission.Modify);
+        user.verifyPermission(user, AbstractEntity.Permission.Modify)
+                .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).cast())
+                .orElseThrow(()->new InsufficientPermissionsException(user,id,AbstractEntity.Permission.Modify));
         model.addAttribute("user", user)
                 .addAttribute(type, switch(type){
                     case "agent" -> agents.findById(id).orElseThrow(()->new EntityNotFoundException(Agent.class,id));
@@ -103,7 +105,7 @@ public class ApiController {
         var server = servers.findById(UUID.fromString(data.get("id")))
                 .orElseThrow(()->new EntityNotFoundException(Server.class, data.get("id")));
         server.verifyPermission(user, AbstractEntity.Permission.Modify)
-                .or(authorizationLinkRepo.validate(data.get("editKey"), user, server.getId(), AbstractEntity.Permission.Modify)
+                .or(authorizationLinkRepo.validate(user, server.getId(), data.get("editKey"), AbstractEntity.Permission.Modify)
                         .map($->server))
                 .peek($->authorizationLinkRepo.flush(data.get("editKey")))
                 .orElseThrow(()->new InsufficientPermissionsException(user,server,AbstractEntity.Permission.Modify));

@@ -10,7 +10,7 @@ import java.util.Arrays;
 
 @ResponseStatus(HttpStatus.UNAUTHORIZED)
 public class InsufficientPermissionsException extends CommandStatusError {
-    public InsufficientPermissionsException(User user, @Nullable AbstractEntity related, AbstractEntity.Permission... missing) {
+    public InsufficientPermissionsException(User user, @Nullable Object related, AbstractEntity.Permission... missing) {
         super("User %s is missing permission %s for %s".formatted(user.getName(), Arrays.toString(missing), related));
     }
 
