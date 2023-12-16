@@ -7,18 +7,16 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.comroid.api.Component;
 import org.comroid.api.Event;
 import org.comroid.mcsd.api.dto.PlayerEvent;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.module.player.PlayerEventModulePrototype;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.Streams;
-import org.comroid.util.Switch;
 import org.intellij.lang.annotations.Language;
-import org.springframework.util.StringUtils;
 
 import java.net.URL;
 import java.time.Duration;
@@ -29,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -39,7 +36,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Log
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public abstract class PlayerEventModule extends ServerModule {
+public abstract class PlayerEventModule<T extends PlayerEventModulePrototype> extends ServerModule<T> {
     public static final Duration TickerTimeout = Duration.ofMinutes(15);
     public static final Pattern ChatPattern = ConsoleModule.pattern(
             "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
@@ -69,8 +66,8 @@ public abstract class PlayerEventModule extends ServerModule {
     private final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
     protected @Getter Event.Bus<PlayerEvent> bus;
 
-    public PlayerEventModule(Server server) {
-        super(server);
+    public PlayerEventModule(Server server, T proto) {
+        super(server, proto);
     }
 
     protected abstract Event.Bus<PlayerEvent> initEventBus();

@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.entity;
+package org.comroid.mcsd.core.entity.system;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.extern.java.Log;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.SupplierX;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.module.discord.DiscordAdapter;
 import org.comroid.util.Cache;
 import org.comroid.util.Constraint;

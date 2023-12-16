@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Named;
 import org.comroid.api.SupplierX;
+import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Bitmask;

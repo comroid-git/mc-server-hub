@@ -12,8 +12,8 @@ import org.comroid.mcsd.api.dto.AgentInfo;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
-import org.comroid.mcsd.core.entity.Agent;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.system.Agent;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.module.*;
 import org.comroid.mcsd.core.module.discord.DiscordModule;
@@ -23,8 +23,8 @@ import org.comroid.mcsd.core.module.local.LocalFileModule;
 import org.comroid.mcsd.core.module.player.PlayerListModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UptimeModule;
-import org.comroid.mcsd.core.repo.AgentRepo;
-import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.system.AgentRepo;
+import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -64,21 +64,6 @@ public class Program implements ApplicationRunner {
     public Agent me(@Autowired AgentInfo agentInfo, @Autowired AgentRepo agents) {
         return agents.findById(agentInfo.getAgent())
                 .orElseThrow(() -> new EntityNotFoundException(Agent.class, agentInfo.getAgent()));
-    }
-
-    @Bean
-    public List<ServerModule.Factory<?>> serverModuleFactories() {
-        return List.of(
-                StatusModule.Factory,
-                LocalFileModule.Factory,
-                UptimeModule.Factory,
-                //todo: fix UpdateModule.Factory,
-                LocalExecutionModule.Factory,
-                //todo: fix BackupModule.Factory,
-                ConsolePlayerEventModule.Factory,
-                PlayerListModule.Factory,
-                DiscordModule.Factory
-        );
     }
 
     @Bean

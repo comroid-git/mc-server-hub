@@ -9,7 +9,8 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.comroid.api.Event;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.ServerModule;
 
 import java.util.Objects;
@@ -21,21 +22,14 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class StatusModule extends ServerModule {
-    public static final Factory<StatusModule> Factory = new Factory<>(StatusModule.class) {
-        @Override
-        public StatusModule create(Server parent) {
-            return new StatusModule(parent);
-        }
-    };
-
+public class StatusModule extends ServerModule<StatusModulePrototype> {
     IStatusMessage previousStatus = Status.unknown_status;
     IStatusMessage currentStatus = Status.unknown_status;
 
     Event.Bus<IStatusMessage> bus;
 
-    private StatusModule(Server parent) {
-        super(parent);
+    public StatusModule(Server server, StatusModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override

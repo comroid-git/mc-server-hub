@@ -1,7 +1,5 @@
 package org.comroid.mcsd.core.module.player;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.ToString;
@@ -9,28 +7,18 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.Component;
 import org.comroid.api.Event;
+import org.comroid.api.Polyfill;
 import org.comroid.mcsd.api.dto.PlayerEvent;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
-import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.mcsd.util.McFormatCode;
-import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.Streams;
 import org.comroid.util.Switch;
-import org.intellij.lang.annotations.Language;
 import org.springframework.util.StringUtils;
 
-import java.net.URL;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.time.Instant.now;
@@ -41,27 +29,21 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Component.Requires(ConsoleModule.class)
-public class ConsolePlayerEventModule extends PlayerEventModule {
-    public static final Factory<ConsolePlayerEventModule> Factory = new Factory<>(ConsolePlayerEventModule.class) {
-        @Override
-        public ConsolePlayerEventModule create(Server parent) {
-            return new ConsolePlayerEventModule(parent);
-        }
-    };
-
-    private ConsolePlayerEventModule(Server parent) {
-        super(parent);
+public class ConsolePlayerEventModule extends PlayerEventModule<ConsolePlayerEventModulePrototype> {
+    public ConsolePlayerEventModule(Server server, ConsolePlayerEventModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override
     @SuppressWarnings({"RedundantSuppression", "RedundantTypeArguments", "RedundantCast"}) // intellij is being weird
     protected Event.Bus<PlayerEvent> initEventBus() {
-        var console = server.component(ConsoleModule.class).orElseThrow(() -> new InitFailed("No Console module is loaded"));
+        ConsoleModule<?> console = server.component(ConsoleModule.class).orElseThrow(() -> new InitFailed("No Console module is loaded"));
+        //noinspection unchecked
         return console.getBus()
                 .<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)
                         .collect(Streams.append(DeathMessagePatterns))
                         .<Matcher>flatMap(pattern -> {
-                            var matcher = pattern.matcher(str);
+                            var matcher = pattern.matcher(String.valueOf(str));
                             if (matcher.matches())
                                 return Stream.of(matcher);
                             return Stream.<Matcher>empty();

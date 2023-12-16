@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.entity;
+package org.comroid.mcsd.core.entity.server;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
@@ -11,6 +11,9 @@ import org.comroid.api.*;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.ServerManager;
+import org.comroid.mcsd.core.entity.AbstractEntity;
+import org.comroid.mcsd.core.entity.system.DiscordBot;
+import org.comroid.mcsd.core.entity.system.ShConnection;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.util.Token;
 import org.intellij.lang.annotations.Language;
@@ -211,10 +214,10 @@ public class Server extends AbstractEntity {
         return Optional.ofNullable(shConnection);
     }
 
-    public <T extends ServerModule> SupplierX<T> component(Class<T> type) {
+    public <T extends ServerModule<?>> SupplierX<T> component(Class<T> type) {
         return SupplierX.ofStream(components(type));
     }
-    public <T extends ServerModule> Stream<T> components(Class<T> type) {
+    public <T extends ServerModule<?>> Stream<T> components(Class<T> type) {
         return bean(ServerManager.class).get(getId())
                 .assertion(this+" not initialized")
                 .getTree()

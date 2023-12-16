@@ -2,7 +2,8 @@ package org.comroid.mcsd.core.module;
 
 import lombok.SneakyThrows;
 import org.comroid.api.io.FileHandle;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.module.FileModulePrototype;
 import org.comroid.util.JSON;
 import org.comroid.util.MD5;
 
@@ -13,9 +14,9 @@ import java.net.URL;
 import java.util.Objects;
 import java.util.Properties;
 
-public abstract class FileModule extends ServerModule {
-    public FileModule(Server parent) {
-        super(parent);
+public abstract class FileModule<T extends FileModulePrototype> extends ServerModule<T> {
+    public FileModule(Server server, T proto) {
+        super(server, proto);
     }
 
     public abstract boolean mkDir(String path);

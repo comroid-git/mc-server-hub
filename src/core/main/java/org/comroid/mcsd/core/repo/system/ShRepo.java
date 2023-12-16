@@ -1,7 +1,6 @@
-package org.comroid.mcsd.core.repo;
+package org.comroid.mcsd.core.repo.system;
 
-import jakarta.persistence.Table;
-import org.comroid.mcsd.core.entity.ShConnection;
+import org.comroid.mcsd.core.entity.system.ShConnection;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.Map;

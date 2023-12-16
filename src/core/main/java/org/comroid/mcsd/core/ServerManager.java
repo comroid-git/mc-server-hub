@@ -4,11 +4,11 @@ import lombok.Value;
 import lombok.extern.java.Log;
 import org.comroid.api.Component;
 import org.comroid.api.SupplierX;
-import org.comroid.api.ThrowingConsumer;
 import org.comroid.api.ThrowingFunction;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.ModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.util.Streams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -58,6 +58,7 @@ public class ServerManager {
     @Value
     public static class Entry {
         Server server;
+        ModulePrototype proto;
         Component tree;
     }
 }

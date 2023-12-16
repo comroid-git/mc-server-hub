@@ -36,14 +36,14 @@ import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.api.Defaults;
-import org.comroid.mcsd.core.entity.DiscordBot;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.system.DiscordBot;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
 import org.comroid.mcsd.core.module.status.BackupModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
-import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.mcsd.core.repo.UserRepo;
+import org.comroid.mcsd.core.repo.server.ServerRepo;
+import org.comroid.mcsd.core.repo.system.UserRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.util.*;
@@ -520,7 +520,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         }
     }
 
-    private EmbedBuilder embed(@NotNull EmbedBuilder builder, @Nullable org.comroid.mcsd.core.entity.User player) {
+    private EmbedBuilder embed(@NotNull EmbedBuilder builder, @Nullable org.comroid.mcsd.core.entity.system.User player) {
         if (player != null)
             builder = builder.setAuthor(player.getName(), player.getNameMcURL(), player.getHeadURL());
         builder.setTimestamp(Instant.now());

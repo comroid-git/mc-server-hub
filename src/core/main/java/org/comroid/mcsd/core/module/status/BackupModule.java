@@ -9,12 +9,13 @@ import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.Backup;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
+import org.comroid.mcsd.core.entity.server.Backup;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.local.LocalShellModule;
-import org.comroid.mcsd.core.repo.BackupRepo;
+import org.comroid.mcsd.core.repo.server.BackupRepo;
 import org.comroid.util.Archiver;
 import org.comroid.util.PathUtil;
 import org.comroid.util.Stopwatch;
@@ -36,20 +37,13 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Component.Requires(LocalShellModule.class)
-public class BackupModule extends ServerModule {
+public class BackupModule extends ServerModule<BackupModulePrototype> {
     public static final Pattern SaveCompletePattern = ConsoleModule.pattern("Saved the game");
-    public static final Factory<BackupModule> Factory = new Factory<>(BackupModule.class) {
-        @Override
-        public BackupModule create(Server parent) {
-            return new BackupModule(parent);
-        }
-    };
-
     final AtomicReference<CompletableFuture<File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
-    ConsoleModule consoleModule;
+    @Component.Inject ConsoleModule<?> consoleModule;
 
-    private BackupModule(Server parent) {
-        super(parent);
+    public BackupModule(Server server, BackupModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override

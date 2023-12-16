@@ -13,15 +13,16 @@ import org.comroid.api.Polyfill;
 import org.comroid.api.SupplierX;
 import org.comroid.api.ThrowingSupplier;
 import org.comroid.mcsd.api.model.IStatusMessage;
-import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
 import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
-import org.comroid.mcsd.core.repo.UserRepo;
+import org.comroid.mcsd.core.repo.system.UserRepo;
 import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;
@@ -38,19 +39,12 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 @Getter
 @ToString
 @Component.Requires({ConsolePlayerEventModule.class,ConsoleModule.class})
-public class DiscordModule extends ServerModule {
+public class DiscordModule extends ServerModule<DiscordModulePrototype> {
     public static final Pattern EmojiPattern = Pattern.compile(".*:(?<name>[\\w-_]+):?.*");
-
-    public static final Factory<DiscordModule> Factory = new Factory<>(DiscordModule.class) {
-        @Override
-        public DiscordModule create(Server parent) {
-            return new DiscordModule(parent);
-        }
-    };
     protected final DiscordAdapter adapter;
 
-    public DiscordModule(Server parent) {
-        super(parent);
+    public DiscordModule(Server parent, DiscordModulePrototype proto) {
+        super(parent, proto);
         this.adapter = Optional.ofNullable(parent.getDiscordBot())
                 .map(DiscordAdapter::get)
                 .orElseThrow();

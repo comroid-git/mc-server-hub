@@ -11,11 +11,11 @@ import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.ServerManager;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.local.LocalExecutionModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Debug;
 import org.comroid.util.MultithreadUtil;
@@ -40,18 +40,10 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ToString
 @Component.Requires(UpdateModule.class)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public final class LocalExecutionModule extends ConsoleModule {
+public final class LocalExecutionModule extends ConsoleModule<LocalExecutionModulePrototype> {
     public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?.*?");
     public static final Pattern StopPattern = pattern("Closing [sS]erver.*\\r?\\n?.*?");
-    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-parent.txt).*.*?");
-
-    public static final Factory<LocalExecutionModule> Factory = new Factory<>(LocalExecutionModule.class) {
-        @Override
-        public LocalExecutionModule create(Server parent) {
-            return new LocalExecutionModule(parent);
-        }
-    };
-
+    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}(-\\w+)?.txt).*.*?");
     final AtomicBoolean manualShutdown = new AtomicBoolean(false);
     Process process;
     PrintStream in;
@@ -59,8 +51,8 @@ public final class LocalExecutionModule extends ConsoleModule {
     CompletableFuture<Duration> done;
     CompletableFuture<Void> stop;
 
-    private LocalExecutionModule(Server parent) {
-        super(parent);
+    public LocalExecutionModule(Server server, LocalExecutionModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override

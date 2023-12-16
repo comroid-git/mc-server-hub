@@ -1,7 +1,7 @@
-package org.comroid.mcsd.core.repo;
+package org.comroid.mcsd.core.repo.system;
 
 import jakarta.transaction.Transactional;
-import org.comroid.mcsd.core.entity.Agent;
+import org.comroid.mcsd.core.entity.system.Agent;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;

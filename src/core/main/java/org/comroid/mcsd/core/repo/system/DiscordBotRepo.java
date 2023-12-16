@@ -1,6 +1,6 @@
-package org.comroid.mcsd.core.repo;
+package org.comroid.mcsd.core.repo.system;
 
-import org.comroid.mcsd.core.entity.DiscordBot;
+import org.comroid.mcsd.core.entity.system.DiscordBot;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.UUID;

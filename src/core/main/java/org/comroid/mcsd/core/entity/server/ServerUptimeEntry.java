@@ -1,9 +1,8 @@
-package org.comroid.mcsd.core.entity;
+package org.comroid.mcsd.core.entity.server;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.comroid.mcsd.api.model.Status;
-import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 

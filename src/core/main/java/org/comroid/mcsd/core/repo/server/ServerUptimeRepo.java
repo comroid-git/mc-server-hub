@@ -1,13 +1,11 @@
-package org.comroid.mcsd.core.repo;
+package org.comroid.mcsd.core.repo.server;
 
-import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.entity.ServerUptimeEntry;
+import org.comroid.mcsd.core.entity.server.ServerUptimeEntry;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface ServerUptimeRepo extends CrudRepository<ServerUptimeEntry, UUID> {

@@ -1,11 +1,7 @@
-package org.comroid.mcsd.core.repo;
+package org.comroid.mcsd.core.repo.server;
 
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import jakarta.transaction.Transactional;
-import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.Agent;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;

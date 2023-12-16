@@ -1,8 +1,9 @@
-package org.comroid.mcsd.core.entity;
+package org.comroid.mcsd.core.entity.system;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.util.Token;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
