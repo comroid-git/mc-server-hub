@@ -33,6 +33,9 @@
     }
 }
 
+.null-text {
+    font-style: italic;
+}
 
 .error-text {
     position: relative;
