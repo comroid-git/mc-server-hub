@@ -11,5 +11,6 @@ import org.comroid.mcsd.core.entity.module.ModulePrototype;
 @Getter
 @Setter
 @NoArgsConstructor
+//@AllArgsConstructor
 public class StatusModulePrototype extends ModulePrototype {
 }

@@ -205,7 +205,7 @@ public class AgentRunner implements Command.Handler {
         attached = null;
         return "Detached";
     }
-
+/*
     @Command(usage = "<name> <version> <mode> [-na]")
     public Object create(String[] args, ConsoleController.Connection con) {
         if (!Utils.SuperAdmins.contains(con.getUser().getId()))
@@ -253,7 +253,7 @@ public class AgentRunner implements Command.Handler {
         server.setOwner(con.getUser()).setName(name);
         return serverRepo.save(server) + " created";
     }
-
+ */
     @Command(usage = "")
     public String shutdown(ConsoleController.Connection con) {
         if (!Utils.SuperAdmins.contains(con.getUser().getId()))

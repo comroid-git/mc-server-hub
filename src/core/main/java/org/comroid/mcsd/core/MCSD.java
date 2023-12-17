@@ -179,7 +179,11 @@ public class MCSD {
                 if (repo.findByServerIdAndDtype(server.getId(), type.name()).isPresent())
                     return;
                 var migrate = migratedObj.get();
+                save(repo, migrate);
                 repo.save(Polyfill.uncheckedCast(migrate));
+            }
+
+            <T extends AbstractEntity> void save(AbstractEntity.Repo<?> repo, T migrate) {
             }
         }
 
