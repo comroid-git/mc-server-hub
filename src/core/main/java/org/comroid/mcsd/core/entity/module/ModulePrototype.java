@@ -7,6 +7,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.comroid.api.Invocable;
 import org.comroid.api.Named;
+import org.comroid.api.Polyfill;
+import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
 import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
@@ -21,6 +23,7 @@ import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.UpdateModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.UptimeModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.console.McsdCommandModule;
 import org.comroid.mcsd.core.module.discord.DiscordModule;
@@ -34,19 +37,29 @@ import org.comroid.mcsd.core.module.status.BackupModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.module.status.UptimeModule;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.util.Constraint;
+
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+//@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public abstract class ModulePrototype extends AbstractEntity {
     private String dtype;
 
+    public <T extends ServerModule<P>, P extends ModulePrototype> T toModule(Server server) {
+        var type = Type.valueOf(dtype);
+        if (!type.proto.isAssignableFrom(getClass()))
+            throw new RuntimeException("Invalid dtype " + dtype + " for module " + this);
+        var module = type.ctor.autoInvoke(server, this);
+        return Polyfill.uncheckedCast(module);
+    }
+
     @Getter
-    @RequiredArgsConstructor
-    @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
     public enum Type implements Named {
         // console
         McsdCommand("MCSD Command from Console", McsdCommandModule.class, McsdCommandModulePrototype.class),
@@ -67,9 +80,21 @@ public abstract class ModulePrototype extends AbstractEntity {
         Status("Internal Status Logging", StatusModule.class, StatusModulePrototype.class),
         Uptime("Internal Uptime Logging", UptimeModule.class, UptimeModulePrototype.class);
 
-        String displayName;
-        Class<? extends ServerModule> impl;
-        Class<? extends ModulePrototype> proto;
-        Invocable<? extends ServerModule> ctor = Invocable.ofConstructor(impl, Server.class);
+        private final String description;
+        private final Class<? extends ServerModule<?>> impl;
+        private final Class<? extends ModulePrototype> proto;
+        private final Invocable<? extends ServerModule<?>> ctor;
+
+        Type(String description, Class<? extends ServerModule<?>> impl, Class<? extends ModulePrototype> proto) {
+            this.description = description;
+            this.impl = impl;
+            this.proto = proto;
+            this.ctor = Invocable.ofConstructor(impl, Server.class, proto);
+        }
+
+        @Override
+        public String getAlternateName() {
+            return description;
+        }
     }
 }

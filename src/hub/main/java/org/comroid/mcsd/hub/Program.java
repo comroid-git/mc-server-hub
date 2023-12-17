@@ -20,10 +20,5 @@ public class Program {
     public static void main(String[] args) {
         SpringApplication.run(Program.class, args);
     }
-
-    @Bean
-    public List<ServerModule.Factory<?>> serverModuleFactories() {
-        return List.of(StatusModule.Factory);
-    }
 }
 

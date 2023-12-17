@@ -1,6 +1,6 @@
 package org.comroid.mcsd.core.module;
 
-import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.comroid.api.Component;
 import org.comroid.api.Named;
 import org.comroid.mcsd.core.ServerManager;
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
-@AllArgsConstructor
+@Data
 public abstract class ServerModule<T extends ModulePrototype> extends Component.Base implements Named {
     protected final Server server;
     protected final T proto;

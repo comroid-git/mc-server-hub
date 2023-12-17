@@ -204,7 +204,6 @@ public class ApiController {
         if (!agents.isTokenValid(agentId, token))
             throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
         manager.get(serverId).assertion("Server with ID " + serverId + " not found")
-                .getTree()
                 .component(PlayerEventModule.class)
                 .assertion("Server with ID " + serverId + " does not accept Player Events")
                 .getBus()

@@ -220,7 +220,6 @@ public class Server extends AbstractEntity {
     public <T extends ServerModule<?>> Stream<T> components(Class<T> type) {
         return bean(ServerManager.class).get(getId())
                 .assertion(this+" not initialized")
-                .getTree()
                 .components(type);
     }
 
