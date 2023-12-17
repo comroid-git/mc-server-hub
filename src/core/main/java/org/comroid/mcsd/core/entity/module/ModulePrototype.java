@@ -54,6 +54,7 @@ import static org.comroid.util.StackTraceUtils.lessSimpleName;
 public abstract class ModulePrototype extends AbstractEntity {
     private @ManyToOne Server server;
     private String dtype = Type.of(this).require(Enum::name, "Unimplemented type: " + lessSimpleName(getClass()));
+    private boolean enabled = true;
 
     public <T extends ServerModule<P>, P extends ModulePrototype> T toModule(Server server) {
         var type = Type.valueOf(dtype);

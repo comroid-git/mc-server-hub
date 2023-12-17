@@ -193,19 +193,46 @@ public class MCSD {
         // migrate servers to use modules
         Streams.of(servers.findMigrationCandidates(0))
                 .map(server -> {
+
+                    //todo: complete migration code
            //    StatusModule.Factory,
                     helper.getOrMigrate(server, ModulePrototype.Type.Status,
                             () -> new StatusModulePrototype()
-                            .setServer(server));
-
+                                    .setServer(server));
            //    LocalFileModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.LocalFile,
+                            () -> new LocalFileModulePrototype()
+                                    .setServer(server));
            //    UptimeModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.Uptime,
+                            () -> new UptimeModulePrototype()
+                                    .setServer(server));
            //    //todo: fix UpdateModule.Factory,
+//                    helper.getOrMigrate(server, ModulePrototype.Type.Update,
+//                            () -> new UpdateModulePrototype()
+//                                    .setServer(server)
+//                                    .setEnabled(false));
            //    LocalExecutionModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.LocalExecution,
+                            ()->new LocalExecutionModulePrototype()
+                                    .setServer(server));
            //    //todo: fix BackupModule.Factory,
+//                    helper.getOrMigrate(server, ModulePrototype.Type.Backup,
+//                            () -> new BackupModulePrototype()
+//                                    .setServer(server)
+//                                    .setEnabled(false));
            //    ConsolePlayerEventModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.ConsolePlayerEvent,
+                            () -> new ConsolePlayerEventModulePrototype()
+                                    .setServer(server));
            //    PlayerListModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.PlayerList,
+                            () -> new PlayerListModulePrototype()
+                                    .setServer(server));
            //    DiscordModule.Factory
+                    helper.getOrMigrate(server, ModulePrototype.Type.Discord,
+                            () -> new DiscordModulePrototype()
+                                    .setServer(server));
 
                     server.setVersion(AbstractEntity.CurrentVersion);
                     return server;
