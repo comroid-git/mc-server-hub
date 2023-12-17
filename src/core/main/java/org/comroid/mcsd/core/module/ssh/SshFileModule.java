@@ -27,7 +27,7 @@ public class SshFileModule extends FileModule<SshFileModulePrototype> {
     @Override
     @SneakyThrows
     protected void $initialize() {
-        var sh= server.getShConnection();
+        var sh= proto.getShConnection();
         session = ApplicationContextProvider.bean(SshClient.class)
                 .connect(sh.getUsername(),sh.getHost(),sh.getPort())
                 .verify()

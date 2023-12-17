@@ -41,6 +41,10 @@ public class ServerManager {
                 .forEach(log::info);
     }
 
+    public SupplierX<Entry> get(Server server) {
+        return get(server.getId());
+    }
+
     public SupplierX<Entry> get(final UUID id) {
         if (cache.containsKey(id))
             return () -> cache.get(id);

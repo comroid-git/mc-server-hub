@@ -2,6 +2,8 @@ package org.comroid.mcsd.core.entity.module;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.*;
 import org.comroid.api.Invocable;
 import org.comroid.api.Named;
@@ -48,7 +50,7 @@ import static org.comroid.util.StackTraceUtils.lessSimpleName;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-//@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"id", "dtype"}))
 public abstract class ModulePrototype extends AbstractEntity {
     private @ManyToOne Server server;
     private String dtype = Type.of(this).require(Enum::name, "Unimplemented type: " + lessSimpleName(getClass()));

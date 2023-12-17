@@ -27,7 +27,7 @@ public abstract class FileModule<T extends FileModulePrototype> extends ServerMo
 
     @SneakyThrows
     public boolean isJarUpToDate() {
-        if (server.isForceCustomJar())
+        if (proto.isForceCustomJar())
             return true;
         var serverJar = new FileHandle(server.path("server.jar").toFile());
         if (!serverJar.exists())

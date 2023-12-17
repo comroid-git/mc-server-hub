@@ -43,9 +43,9 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
     public static final Pattern EmojiPattern = Pattern.compile(".*:(?<name>[\\w-_]+):?.*");
     protected final DiscordAdapter adapter;
 
-    public DiscordModule(Server parent, DiscordModulePrototype proto) {
-        super(parent, proto);
-        this.adapter = Optional.ofNullable(parent.getDiscordBot())
+    public DiscordModule(Server server, DiscordModulePrototype proto) {
+        super(server, proto);
+        this.adapter = Optional.ofNullable(proto.getDiscordBot())
                 .map(DiscordAdapter::get)
                 .orElseThrow();
     }
@@ -60,8 +60,8 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
 
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
             // public channel
-            Optional.ofNullable(server.getPublicChannelId()).ifPresent(id -> {
-                final var webhook = adapter.getWebhook(server.getPublicChannelWebhook(), id)
+            Optional.ofNullable(proto.getPublicChannelId()).ifPresent(id -> {
+                final var webhook = adapter.getWebhook(proto.getPublicChannelWebhook(), id)
                         .thenApply(adapter::messageTemplate).join();
                 final var bot = adapter.messageTemplate(id);
 
@@ -83,7 +83,7 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
 
                 addChildren(
                         // mc -> dc
-                        chatBus.filterData(msg -> msg.getType().isFlagSet(server.getPublicChannelEvents()))
+                        chatBus.filterData(msg -> msg.getType().isFlagSet(proto.getPublicChannelEvents()))
                                 .mapData(msg -> {
                                     var player = bean(UserRepo.class).get(msg.getUsername()).assertion();
                                     String str = msg.toString();
@@ -135,7 +135,7 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
             });
 
             //moderation channel
-            Optional.ofNullable(server.getModerationChannelId()).ifPresent(id -> {
+            Optional.ofNullable(proto.getModerationChannelId()).ifPresent(id -> {
                 final var bot = adapter.messageTemplate(id);
 
                 // public status -> dc
@@ -156,8 +156,8 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
             });
 
             // console channel
-            Optional.ofNullable(server.getConsoleChannelId()).ifPresent(id -> {
-                final var channel = adapter.channelAsStream(id, server.isFancyConsole());
+            Optional.ofNullable(proto.getConsoleChannelId()).ifPresent(id -> {
+                final var channel = adapter.channelAsStream(id, proto.isFancyConsole());
                 addChildren(
                         // mc -> dc
                         console.getBus().subscribeData(channel::println),
@@ -166,13 +166,13 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
                                 .filterData(msg -> !msg.getAuthor().isBot())
                                 .mapData(msg -> {
                                     var raw = msg.getContentRaw();
-                                    if (server.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                    if (proto.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
                                         msg.delete().queue();
                                     //noinspection RedundantCast //ide error
                                     return (String) raw;
                                 })
-                                .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
-                                .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
+                                .filterData(cmd -> proto.getConsoleChannelPrefix() == null || cmd.startsWith(proto.getConsoleChannelPrefix()))
+                                .mapData(cmd -> proto.getConsoleChannelPrefix() == null ? cmd : cmd.substring(proto.getConsoleChannelPrefix().length()))
                                 .subscribeData(input -> console.execute(input).exceptionally(Polyfill.exceptionLogger(log)))
                 );
             });

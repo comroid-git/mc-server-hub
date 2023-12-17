@@ -43,7 +43,7 @@ public class UpdateModule extends ServerModule<UpdateModulePrototype> {
 
     @Override
     protected void $tick() {
-        if ((server.getBackupPeriod() == null || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()))
+        if ((proto.getUpdatePeriod() == null || proto.getLastUpdate().plus(proto.getUpdatePeriod()).isAfter(now()))
                 || (updateRunning.get()!=null&&!updateRunning.get().isDone()))
             return;
         //todo: handle if parent is running

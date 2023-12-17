@@ -11,8 +11,10 @@ import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.ServerManager;
+import org.comroid.mcsd.core.entity.module.FileModulePrototype;
 import org.comroid.mcsd.core.entity.module.local.LocalExecutionModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
@@ -78,12 +80,12 @@ public final class LocalExecutionModule extends ConsoleModule<LocalExecutionModu
         server.component(StatusModule.class).assertion().pushStatus(Status.starting);
         final var stopwatch = Stopwatch.start("startup-" + server.getId());
         var exec = PathUtil.findExec("java").orElseThrow();
-        process = Runtime.getRuntime().exec(server.getCustomCommand() == null ? new String[]{
+        process = Runtime.getRuntime().exec(proto.getCustomCommand() == null ? new String[]{
                         exec.getAbsolutePath(),
-                        "-Xmx%dG".formatted(server.getRamGB()),
-                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : server.getCustomCommand().split(" "),
+                        "-Xmx%dG".formatted(proto.getRamGB()),
+                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : proto.getCustomCommand().split(" "),
                 new String[0],
-                new FileHandle(server.getDirectory(), true));
+                new FileHandle(((FileModulePrototype) component(FileModule.class).assertion().getProto()).getDirectory(), true));
 
         in = new PrintStream(process.getOutputStream(), true);
         oe = DelegateStream.IO.process(process);

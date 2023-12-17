@@ -9,9 +9,11 @@ import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.model.Status;
+import org.comroid.mcsd.core.entity.module.FileModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
 import org.comroid.mcsd.core.entity.server.Backup;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.local.LocalShellModule;
@@ -54,9 +56,9 @@ public class BackupModule extends ServerModule<BackupModulePrototype> {
     @Override
     protected void $tick() {
         var status = server.component(StatusModule.class).assertion().getCurrentStatus().getStatus();
-        if (server.getBackupPeriod() == null
+        if (proto.getBackupPeriod() == null
                 || Stream.of(Status.online,Status.in_maintenance_mode,Status.offline).noneMatch(status::equals)
-                || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now())
+                || proto.getLastBackup().plus(proto.getBackupPeriod()).isAfter(now())
                 || !currentBackup.get().isDone())
             return;
         runBackup(false).exceptionally(Polyfill.exceptionLogger());
@@ -72,7 +74,7 @@ public class BackupModule extends ServerModule<BackupModulePrototype> {
         status.pushStatus(Status.running_backup);
         final var stopwatch = Stopwatch.start("backup-" + server.getId());
 
-        var backupDir = new FileHandle(server.shCon().orElseThrow().getBackupsDir()).createSubDir(server.getName());
+        var backupDir = new FileHandle(((FileModulePrototype) component(FileModule.class).require(ServerModule::getProto)).getBackupsDir()).createSubDir(server.getName());
         if (!backupDir.exists() && !backupDir.mkdirs())
             return CompletableFuture.failedFuture(new RuntimeException("Could not create backup directory"));
 
@@ -105,7 +107,7 @@ public class BackupModule extends ServerModule<BackupModulePrototype> {
                                 stat = Status.in_Trouble;
                                 msg = "Unable to complete Backup";
                                 log.log(Level.SEVERE, msg + " for " + server, t);
-                            }
+                            }//todo fixme: does not set lastBackup
                             consoleModule.execute("save-on");
                             status.pushStatus(stat.new Message(msg));
                         }));

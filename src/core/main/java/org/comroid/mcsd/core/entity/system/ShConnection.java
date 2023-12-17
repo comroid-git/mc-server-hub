@@ -20,7 +20,6 @@ public class ShConnection extends AbstractEntity {
     private int port = 22;
     private String username;
     private @Getter(onMethod = @__(@JsonIgnore)) String password;
-    private String backupsDir = "$HOME/backups";
     private int capabilites = Bitmask.combine(Capability.SSH);
 
     @Override

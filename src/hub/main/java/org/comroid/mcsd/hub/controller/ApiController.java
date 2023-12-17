@@ -106,12 +106,6 @@ public class ApiController {
             if (data.containsKey("queryPort")) server.setQueryPort(Integer.parseInt(data.get("queryPort")));
             if (data.containsKey("rConPort")) server.setRConPort(Integer.parseInt(data.get("rConPort")));
             if (data.containsKey("rConPassword") && !data.get("rConPassword").isBlank()) server.setRConPassword(data.get("rConPassword"));
-            if (data.containsKey("discordBotId")) server.setDiscordBot(discordBotRepo.findById(UUID.fromString(data.get("discordBotId"))).orElseThrow(()->new EntityNotFoundException(DiscordBot.class, data.get("discordBotId"))));
-            if (data.containsKey("publicChannelId")) server.setPublicChannelId(Long.valueOf(data.get("publicChannelId")));
-            if (data.containsKey("moderationChannelId")) server.setModerationChannelId(Long.valueOf(data.get("moderationChannelId")));
-            if (data.containsKey("consoleChannelId")) server.setConsoleChannelId(Long.valueOf(data.get("consoleChannelId")));
-            if (data.containsKey("consoleChannelPrefix")) server.setConsoleChannelPrefix(data.get("consolePrefix"));
-            if (data.containsKey("fancyConsole")) server.setFancyConsole(Boolean.parseBoolean(data.get("fancyConsole")));
         } catch (NumberFormatException nfe) {
             throw new BadRequestException(nfe.getMessage());
         }

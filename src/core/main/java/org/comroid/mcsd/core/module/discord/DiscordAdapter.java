@@ -36,6 +36,7 @@ import org.comroid.api.DelegateStream;
 import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.api.Defaults;
+import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.system.DiscordBot;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
@@ -453,11 +454,15 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                         .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
                         .submit()
                         .thenApply(wh -> {
-                            final var parents = bean(ServerRepo.class);
-                            parents.findByDiscordChannel(channelId)
+                            var moduleRepo = bean(MCSD.class).getModules_discord();
+                            bean(ServerRepo.class)
+                                    .findByDiscordChannel(channelId)
                                     .stream()
-                                    .map(srv -> srv.setPublicChannelWebhook(wh.getUrl()))
-                                    .forEach(parents::save);
+                                    .flatMap(server -> moduleRepo
+                                            .findByServerIdAndDtype(server.getId(), "Discord")
+                                            .stream())
+                                    .map(discord -> discord.setPublicChannelWebhook(wh.getUrl()))
+                                    .forEach(moduleRepo::save);
                             return wh;
                         }));
     }
