@@ -1,7 +1,9 @@
 package org.comroid.mcsd.core.repo.server;
 
 import jakarta.transaction.Transactional;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -11,7 +13,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ServerRepo extends CrudRepository<Server, UUID> {
+public interface ServerRepo extends AbstractEntity.Repo<Server> {
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
             " JOIN ShConnection sh" +

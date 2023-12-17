@@ -3,7 +3,6 @@ package org.comroid.mcsd.core;
 import lombok.Value;
 import lombok.extern.java.Log;
 import org.comroid.api.*;
-import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.ServerModule;
@@ -11,7 +10,6 @@ import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +18,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static java.util.function.Predicate.not;
@@ -31,7 +28,7 @@ public class ServerManager {
     public static final Duration TickRate = Duration.ofSeconds(30);
     private final Map<UUID, Entry> cache = new ConcurrentHashMap<>();
     private @Autowired ServerRepo servers;
-    private @Autowired ModuleRepo moduleRepo;
+    private @Autowired ModuleRepo<ModulePrototype> moduleRepo;
 
     public void startAll(List<Server> servers) {
         servers.stream()
@@ -115,7 +112,7 @@ public class ServerManager {
          * Terminates and removes all modules that are no longer in DB
          */
         public long cleanupModules() {
-            var existing = Streams.of(moduleRepo.findAllByOwnerId(server.getId())).toList();
+            var existing = Streams.of(moduleRepo.findAllByServerId(server.getId())).toList();
             var missing = tree.keySet().stream()
                     .filter(not(existing::contains))
                     .toList();
@@ -128,7 +125,7 @@ public class ServerManager {
          * Loads all modules that are in DB but are not loaded as a module
          */
         public long refreshModules() {
-            return Streams.of(moduleRepo.findAllByOwnerId(server.getId()))
+            return Streams.of(moduleRepo.findAllByServerId(server.getId()))
                     .filter(not(tree::containsKey))
                     .<ServerModule<?>>map(proto -> {
                         log.fine("Loading proto " + proto);

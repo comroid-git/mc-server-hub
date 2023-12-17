@@ -15,6 +15,9 @@ import org.comroid.util.Bitmask;
 import org.comroid.util.Constraint;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -26,6 +29,7 @@ import java.util.UUID;
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class AbstractEntity implements Named {
+    public static final int CurrentVersion = 1;
     @Id
     private UUID id = UUID.randomUUID();
     @Setter
@@ -40,6 +44,7 @@ public abstract class AbstractEntity implements Named {
     private User owner;
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<User, @NotNull Integer> permissions;
+    private @Nullable Integer version = CurrentVersion;
 
     public String getBestName() {
         return Optional.ofNullable(displayName)
@@ -148,5 +153,10 @@ public abstract class AbstractEntity implements Named {
         public String toString() {
             return "%s(0x%x)".formatted(name(),value);
         }
+    }
+
+    public interface Repo<T extends AbstractEntity> extends CrudRepository<T, UUID> {
+        @Query("SELECT e FROM #{#entityName} e WHERE e.version = null OR e.version <= :version")
+        Iterable<T> findMigrationCandidates(@Param("version") int fromVersion);
     }
 }
