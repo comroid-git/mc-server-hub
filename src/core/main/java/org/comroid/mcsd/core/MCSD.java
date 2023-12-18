@@ -202,6 +202,9 @@ public class MCSD {
            //    LocalFileModule.Factory,
                     helper.getOrMigrate(server, ModulePrototype.Type.LocalFile,
                             () -> new LocalFileModulePrototype()
+                                    .setDirectory(server.getDirectory())
+                                    .setBackupsDir(server.getShConnection().getBackupsDir())
+                                    .setForceCustomJar(server.isForceCustomJar())
                                     .setServer(server));
            //    UptimeModule.Factory,
                     helper.getOrMigrate(server, ModulePrototype.Type.Uptime,
@@ -215,6 +218,8 @@ public class MCSD {
            //    LocalExecutionModule.Factory,
                     helper.getOrMigrate(server, ModulePrototype.Type.LocalExecution,
                             ()->new LocalExecutionModulePrototype()
+                                    .setRamGB(server.getRamGB())
+                                    .setCustomCommand(server.getCustomCommand())
                                     .setServer(server));
            //    //todo: fix BackupModule.Factory,
 //                    helper.getOrMigrate(server, ModulePrototype.Type.Backup,
@@ -232,6 +237,14 @@ public class MCSD {
            //    DiscordModule.Factory
                     helper.getOrMigrate(server, ModulePrototype.Type.Discord,
                             () -> new DiscordModulePrototype()
+                                    .setDiscordBot(server.getDiscordBot())
+                                    .setPublicChannelId(server.getPublicChannelId())
+                                    .setPublicChannelWebhook(server.getPublicChannelWebhook())
+                                    .setPublicChannelEvents(server.getPublicChannelEvents())
+                                    .setModerationChannelId(server.getModerationChannelId())
+                                    .setConsoleChannelId(server.getConsoleChannelId())
+                                    .setConsoleChannelPrefix(server.getConsoleChannelPrefix())
+                                    .setFancyConsole(server.isFancyConsole())
                                     .setServer(server));
 
                     server.setVersion(AbstractEntity.CurrentVersion);
