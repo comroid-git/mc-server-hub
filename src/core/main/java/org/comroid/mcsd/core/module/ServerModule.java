@@ -19,4 +19,9 @@ public abstract class ServerModule<T extends ModulePrototype> extends Component.
     public @Nullable Component getParent() {
         return bean(ServerManager.class).tree(server);
     }
+
+    @Override
+    public boolean isSubComponent() {
+        return true;
+    }
 }
