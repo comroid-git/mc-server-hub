@@ -1,6 +1,9 @@
 package org.comroid.mcsd.core.module;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.comroid.api.Component;
 import org.comroid.api.Named;
 import org.comroid.mcsd.core.ServerManager;
@@ -10,14 +13,20 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
-@Data
+@Getter
+@AllArgsConstructor
 public abstract class ServerModule<T extends ModulePrototype> extends Component.Base implements Named {
     protected final Server server;
-    protected final T proto;
+    protected T proto;
 
     @Override
     public @Nullable Component getParent() {
         return bean(ServerManager.class).tree(server);
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return proto.isEnabled();
     }
 
     @Override

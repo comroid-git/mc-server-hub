@@ -38,7 +38,9 @@ import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.module.status.UptimeModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -55,6 +57,11 @@ public abstract class ModulePrototype extends AbstractEntity {
     private @ManyToOne Server server;
     private String dtype = Type.of(this).require(Enum::name, "Unimplemented type: " + lessSimpleName(getClass()));
     private boolean enabled = true;
+
+    @Override
+    public @Nullable String getDisplayName() {
+        return Objects.requireNonNull(super.getDisplayName(), ()->dtype+" for "+server);
+    }
 
     public <T extends ServerModule<P>, P extends ModulePrototype> T toModule(Server server) {
         var type = Type.valueOf(dtype);

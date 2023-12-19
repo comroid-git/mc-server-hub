@@ -189,7 +189,7 @@ public class MCSD {
     @DependsOn("applicationContextProvider")
     public Set<AbstractEntity> migrateEntities() {
         class Helper {
-            <T extends ModulePrototype> void getOrMigrate(Server server, ModulePrototype.Type type, Supplier<T> migratedObj) {
+            <T extends AbstractEntity> void getOrMigrate(Server server, ModulePrototype.Type type, Supplier<T> migratedObj) {
                 var repo = type.getRepo().apply(MCSD.this);
                 if (repo.findByServerIdAndDtype(server.getId(), type.name()).isPresent())
                     return;
@@ -245,8 +245,8 @@ public class MCSD {
            //    //todo: fix BackupModule.Factory,
                     helper.getOrMigrate(server, ModulePrototype.Type.Backup,
                             () -> new BackupModulePrototype()
-                                    .setServer(server)
-                                    .setEnabled(false));
+                                    .setEnabled(false)
+                                    .setServer(server));
            //    ConsolePlayerEventModule.Factory,
                     helper.getOrMigrate(server, ModulePrototype.Type.ConsolePlayerEvent,
                             () -> new ConsolePlayerEventModulePrototype()

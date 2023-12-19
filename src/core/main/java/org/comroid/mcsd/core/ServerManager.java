@@ -11,6 +11,7 @@ import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -24,6 +25,7 @@ import static java.util.function.Predicate.not;
 
 @Log
 @Service
+@DependsOn("migrateEntities")
 public class ServerManager {
     public static final Duration TickRate = Duration.ofSeconds(30);
     private final Map<UUID, Entry> cache = new ConcurrentHashMap<>();
@@ -123,6 +125,10 @@ public class ServerManager {
             return missing.stream()
                     .filter(proto->removeChildren(proto)>1)
                     .count();
+        }
+
+        public long reloadProtos() {
+            return 0; //todo
         }
 
         /**
