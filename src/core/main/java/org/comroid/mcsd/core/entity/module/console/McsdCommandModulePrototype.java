@@ -13,7 +13,6 @@ import org.comroid.mcsd.core.entity.module.ModulePrototype;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
+//@AllArgsConstructor
 public class McsdCommandModulePrototype extends ModulePrototype {
-    private @ManyToOne ConsoleModulePrototype console;
 }

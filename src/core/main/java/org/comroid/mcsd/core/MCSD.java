@@ -190,6 +190,8 @@ public class MCSD {
         var helper = new Helper();
         var yield = new HashSet<AbstractEntity>();
 
+        log.info("Checking if DB needs migration");
+
         // migrate servers to use modules
         Streams.of(servers.findMigrationCandidates(0))
                 .map(server -> {

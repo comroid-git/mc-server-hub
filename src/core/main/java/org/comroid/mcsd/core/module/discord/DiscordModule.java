@@ -157,7 +157,7 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
 
             // console channel
             Optional.ofNullable(proto.getConsoleChannelId()).ifPresent(id -> {
-                final var channel = adapter.channelAsStream(id, proto.isFancyConsole());
+                final var channel = adapter.channelAsStream(id, proto.getFancyConsole());
                 addChildren(
                         // mc -> dc
                         console.getBus().subscribeData(channel::println),
@@ -166,7 +166,7 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
                                 .filterData(msg -> !msg.getAuthor().isBot())
                                 .mapData(msg -> {
                                     var raw = msg.getContentRaw();
-                                    if (proto.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                    if (proto.getFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
                                         msg.delete().queue();
                                     //noinspection RedundantCast //ide error
                                     return (String) raw;

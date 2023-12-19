@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.jetbrains.annotations.Nullable;
 
 @Entity
 @Getter
@@ -15,7 +16,7 @@ import org.hibernate.annotations.ColumnDefault;
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class FileModulePrototype extends ModulePrototype {
-    private String directory = "~/minecraft";
-    private boolean forceCustomJar = false;
-    private String backupsDir = "$HOME/backups";
+    private @Nullable String directory = "~/minecraft";
+    private @Nullable boolean forceCustomJar = false;
+    private @Nullable String backupsDir = "$HOME/backups";
 }

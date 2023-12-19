@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -17,6 +18,6 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateModulePrototype extends ModulePrototype {
-    private @Basic Duration updatePeriod = Duration.ofDays(7);
-    private Instant lastUpdate = Instant.ofEpochMilli(0);
+    private @Nullable @Basic Duration updatePeriod = Duration.ofDays(7);
+    private @Nullable Instant lastUpdate = Instant.ofEpochMilli(0);
 }

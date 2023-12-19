@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.regex.Pattern;
 
@@ -17,7 +18,7 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class PlayerEventModulePrototype extends ModulePrototype {
-    private @Basic Pattern chatPattern = ConsoleModule.pattern(
+    private @Nullable @Basic Pattern chatPattern = ConsoleModule.pattern(
             "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
                     //"([(\\[{<]" +
                     "<" +
@@ -26,14 +27,14 @@ public abstract class PlayerEventModulePrototype extends ModulePrototype {
                     //"[>}\\])]\\s?)\\s?" +
                     "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
                     "(?<message>.+)\\r?\\n?.*");
-    private Pattern broadcastPattern = ConsoleModule.pattern(
+    private @Nullable Pattern broadcastPattern = ConsoleModule.pattern(
             "(?<username>[\\S\\w_-]+) issued parent command: " +
                     "/(?<command>(me)|(say)|(broadcast)) " +
                     "(?<message>.+)\\r?\\n?.*");
-    private Pattern joinLeavePattern = ConsoleModule.pattern(
+    private @Nullable Pattern joinLeavePattern = ConsoleModule.pattern(
             "(?<username>[\\S\\w_-]+) " +
                     "(?<message>(joined|left) the game)\\r?\\n?");
-    private Pattern achievementPattern = ConsoleModule.pattern(
+    private @Nullable Pattern achievementPattern = ConsoleModule.pattern(
             "(?<username>[\\S\\w_-]+) " +
                     "(?<message>has (made the advancement|completed the challenge) " +
                     "(\\[(?<advancement>[\\w\\s]+)]))\\r?\\n?");

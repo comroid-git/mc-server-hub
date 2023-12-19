@@ -17,5 +17,5 @@ import org.jetbrains.annotations.Nullable;
 @AllArgsConstructor
 public class LocalExecutionModulePrototype extends ConsoleModulePrototype {
     private @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
-    private byte ramGB = 4;
+    private @Nullable Byte ramGB = 4;
 }

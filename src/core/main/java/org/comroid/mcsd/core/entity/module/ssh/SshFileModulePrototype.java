@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.comroid.mcsd.core.entity.module.FileModulePrototype;
 import org.comroid.mcsd.core.entity.system.ShConnection;
+import org.jetbrains.annotations.NotNull;
 
 @Entity
 @Getter
@@ -15,5 +16,5 @@ import org.comroid.mcsd.core.entity.system.ShConnection;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SshFileModulePrototype extends FileModulePrototype {
-    private @ManyToOne ShConnection shConnection;
+    private @NotNull @ManyToOne ShConnection shConnection;
 }

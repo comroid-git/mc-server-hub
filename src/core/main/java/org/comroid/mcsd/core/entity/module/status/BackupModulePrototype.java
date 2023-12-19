@@ -18,5 +18,5 @@ import java.time.Instant;
 @AllArgsConstructor
 public class BackupModulePrototype extends ModulePrototype {
     private @Nullable Duration backupPeriod = Duration.ofHours(12);
-    private Instant lastBackup = Instant.ofEpochMilli(0);
+    private @Nullable Instant lastBackup = Instant.ofEpochMilli(0);
 }
