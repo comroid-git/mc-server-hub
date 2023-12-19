@@ -127,15 +127,25 @@ public class ServerManager {
                     .count();
         }
 
+        private Stream<ModulePrototype> streamProtos() {
+            return Streams.of(moduleRepo.findAllByServerId(server.getId()));
+        }
+
+        /**
+         * Reloads all module configurations without restarting anything
+         */
         public long reloadProtos() {
-            return 0; //todo
+            return streamProtos()
+                    .filter(tree::containsKey)
+                    .peek(proto -> tree.get(proto).setProto(proto))
+                    .count();
         }
 
         /**
          * Loads all modules that are in DB but are not loaded as a module
          */
         public long refreshModules() {
-            return Streams.of(moduleRepo.findAllByServerId(server.getId()))
+            return streamProtos()
                     .filter(not(tree::containsKey))
                     .<ServerModule<?>>map(proto -> {
                         log.fine("Loading proto " + proto);

@@ -105,11 +105,10 @@ public class AgentRunner implements Command.Handler {
     @Command(usage = "<name> (experimental)")
     public Object reload(String[] args, ConsoleController.Connection con) {
         var srv = getServer(args);
-        srv.requirePermission(con.getUser(), AbstractEntity.Permission.ForceOP);
-        var tree = manager.tree(srv);
-        tree.terminate();
-        tree.initialize();
-        return srv+" modules have been reloaded";
+        srv.requirePermission(con.getUser(), AbstractEntity.Permission.Administrate);
+        var tree = manager.get(srv).orElseThrow(()->new Command.Error("Could not load entry " + srv));
+        var load = tree.reloadProtos();
+        return load+" modules have been reloaded";
     }
 
     @Command(usage = "<name> [-na]")

@@ -11,6 +11,7 @@ import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.*;
+import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.*;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Controller
@@ -71,6 +73,12 @@ public class ApiController {
         return Streams.of(servers.findAll())
                 .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
                 .toList();
+    }
+
+    @ResponseBody
+    @GetMapping("/webapp/modules")
+    public List<ModulePrototype.Type> modules() {
+        return Stream.of(ModulePrototype.Type.values()).toList();
     }
 
     @ResponseBody

@@ -24,6 +24,7 @@ import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.UpdateModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.UptimeModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.console.McsdCommandModule;
 import org.comroid.mcsd.core.module.discord.DiscordModule;
@@ -38,6 +39,7 @@ import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.module.status.UptimeModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
@@ -69,6 +71,11 @@ public abstract class ModulePrototype extends AbstractEntity {
             throw new RuntimeException("Invalid dtype " + dtype + " for module " + this);
         var module = type.ctor.autoInvoke(server, this);
         return Polyfill.uncheckedCast(module);
+    }
+
+    @Override
+    public boolean hasPermission(@NotNull User user, Permission... permissions) {
+        return super.hasPermission(user, permissions) || server.hasPermission(user, permissions);
     }
 
     @Getter
