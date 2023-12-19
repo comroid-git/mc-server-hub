@@ -50,7 +50,7 @@ import static org.comroid.util.StackTraceUtils.lessSimpleName;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"id", "dtype"}))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"server_id", "dtype"}))
 public abstract class ModulePrototype extends AbstractEntity {
     private @ManyToOne Server server;
     private String dtype = Type.of(this).require(Enum::name, "Unimplemented type: " + lessSimpleName(getClass()));
