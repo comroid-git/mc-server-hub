@@ -3,12 +3,14 @@ package org.comroid.mcsd.agent.controller;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.mcsd.agent.AgentRunner;
+import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.repo.system.UserRepo;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
+
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Slf4j
 @Controller
@@ -37,7 +41,7 @@ public class ApiController {
     @ResponseBody
     @GetMapping("/webapp/servers")
     public List<Server> servers(HttpSession session) {
-        return runner.streamServers()
+        return bean(MCSD.class).servers().stream()
                 .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
                 .toList();
     }

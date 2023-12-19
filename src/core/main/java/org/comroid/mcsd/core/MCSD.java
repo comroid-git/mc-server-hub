@@ -2,6 +2,8 @@ package org.comroid.mcsd.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.cj.jdbc.Driver;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.client.ClientBuilder;
@@ -40,15 +42,21 @@ import org.comroid.mcsd.core.repo.system.AgentRepo;
 import org.comroid.mcsd.core.repo.system.DiscordBotRepo;
 import org.comroid.mcsd.core.repo.system.ShRepo;
 import org.comroid.mcsd.core.repo.system.UserRepo;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Debug;
 import org.comroid.util.REST;
 import org.comroid.util.Streams;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.SingletonBeanRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -56,14 +64,16 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Slf4j
 @Getter
@@ -73,6 +83,8 @@ import java.util.function.Supplier;
 @EntityScan(basePackages = "org.comroid.mcsd.core.entity")
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
 public class MCSD {
+    @Lazy @Autowired private DefaultListableBeanFactory beanRegistry;
+    @Lazy @Autowired private EntityManager entityManager;;
     @Lazy @Autowired private UserRepo users;
     @Lazy @Autowired private ServerRepo servers;
     @Lazy @Autowired private AgentRepo agents;
@@ -171,7 +183,10 @@ public class MCSD {
 
     @Bean
     @Lazy(false)
+    @Transactional
+    @SuppressWarnings("deprecation")
     @Order(Ordered.HIGHEST_PRECEDENCE)
+    @DependsOn("applicationContextProvider")
     public Set<AbstractEntity> migrateEntities() {
         class Helper {
             <T extends ModulePrototype> void getOrMigrate(Server server, ModulePrototype.Type type, Supplier<T> migratedObj) {
@@ -192,10 +207,19 @@ public class MCSD {
 
         log.info("Checking if DB needs migration");
 
+        // migrate server.agent fields
+        servers.saveAll(entityManager.createQuery("SELECT s FROM Server s WHERE s.agent = null", Server.class)
+                .getResultList().stream()
+                .peek(srv -> agents.findForServer(srv.getId()).ifPresentOrElse(
+                        srv::setAgent,
+                        () -> log.warn("Could not migrate " + srv + "s Agent ID. Please set Agent ID manually (Server ID: " + srv.getId() + ")")
+                ))
+                .peek(yield::add)
+                .toList());
+
         // migrate servers to use modules
         Streams.of(servers.findMigrationCandidates(0))
-                .map(server -> {
-
+                .peek(server -> {
                     //todo: complete migration code
            //    StatusModule.Factory,
                     helper.getOrMigrate(server, ModulePrototype.Type.Status,
@@ -250,10 +274,14 @@ public class MCSD {
                                     .setServer(server));
 
                     server.setVersion(AbstractEntity.CurrentVersion);
-                    return server;
                 })
                 .peek(servers::save)
                 .forEach(yield::add);
+
+        if (!yield.isEmpty())
+            log.info("Migrated entities:"+yield.stream()
+                    .map(Objects::toString)
+                    .collect(Collectors.joining("\n\t- ","\n\t- ","")));
 
         return yield;
     }
@@ -271,6 +299,11 @@ public class MCSD {
             case "user" -> users.findById(id).orElseThrow(()->new EntityNotFoundException(User.class,id));
             default -> throw new BadRequestException("unknown type: " + type);
         };
+    }
+
+    @ApiStatus.Internal
+    public List<Server> servers() {
+        return ApplicationContextProvider.<List<?>, List<Server>>bean(List.class, "servers");
     }
 }
 

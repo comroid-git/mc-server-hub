@@ -13,6 +13,7 @@ import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.module.FileModulePrototype;
+import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.entity.system.DiscordBot;
 import org.comroid.mcsd.core.entity.system.ShConnection;
 import org.comroid.mcsd.core.module.FileModule;
@@ -59,6 +60,7 @@ public class Server extends AbstractEntity {
     private int rConPort = Defaults.RCON_PORT;
     private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
+    private @Nullable @ManyToOne Agent agent; // todo: make not nullable
     private @Deprecated @ManyToOne ShConnection shConnection;
     private @Deprecated @ManyToOne @Nullable DiscordBot discordBot;
     private @Deprecated @Nullable String PublicChannelWebhook;

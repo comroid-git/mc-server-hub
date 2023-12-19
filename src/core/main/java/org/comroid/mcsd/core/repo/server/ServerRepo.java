@@ -3,10 +3,8 @@ package org.comroid.mcsd.core.repo.server;
 import jakarta.transaction.Transactional;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.server.Server;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
@@ -14,11 +12,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ServerRepo extends AbstractEntity.Repo<Server> {
+    @Deprecated
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
-            " JOIN SshFileModulePrototype fs ON fs.server.id = s.id" +
             " JOIN ShConnection sh" +
-            " WHERE sh.id = a.target AND sh.id = fs.shConnection.id")
+            " WHERE sh.id = a.target AND sh.id = s.shConnection.id")
+    Iterable<Server> findAllForAgent_old(@Param("agentId") UUID agentId);
+
+    @Query("SELECT s FROM Server s WHERE s.agent.id = :agentId")
     Iterable<Server> findAllForAgent(@Param("agentId") UUID agentId);
 
     @Query("SELECT s FROM Server s" +
