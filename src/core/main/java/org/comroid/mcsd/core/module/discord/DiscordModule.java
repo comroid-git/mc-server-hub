@@ -13,15 +13,16 @@ import org.comroid.api.Polyfill;
 import org.comroid.api.SupplierX;
 import org.comroid.api.ThrowingSupplier;
 import org.comroid.mcsd.api.model.IStatusMessage;
-import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
 import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
-import org.comroid.mcsd.core.repo.UserRepo;
+import org.comroid.mcsd.core.repo.system.UserRepo;
 import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;
@@ -38,20 +39,13 @@ import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
 @Getter
 @ToString
 @Component.Requires({ConsolePlayerEventModule.class,ConsoleModule.class})
-public class DiscordModule extends ServerModule {
+public class DiscordModule extends ServerModule<DiscordModulePrototype> {
     public static final Pattern EmojiPattern = Pattern.compile(".*:(?<name>[\\w-_]+):?.*");
-
-    public static final Factory<DiscordModule> Factory = new Factory<>(DiscordModule.class) {
-        @Override
-        public DiscordModule create(Server parent) {
-            return new DiscordModule(parent);
-        }
-    };
     protected final DiscordAdapter adapter;
 
-    public DiscordModule(Server parent) {
-        super(parent);
-        this.adapter = Optional.ofNullable(parent.getDiscordBot())
+    public DiscordModule(Server server, DiscordModulePrototype proto) {
+        super(server, proto);
+        this.adapter = Optional.ofNullable(proto.getDiscordBot())
                 .map(DiscordAdapter::get)
                 .orElseThrow();
     }
@@ -66,8 +60,8 @@ public class DiscordModule extends ServerModule {
 
         chat.ifBothPresent(consoleModule, (chatBus, console) -> {
             // public channel
-            Optional.ofNullable(server.getPublicChannelId()).ifPresent(id -> {
-                final var webhook = adapter.getWebhook(server.getPublicChannelWebhook(), id)
+            Optional.ofNullable(proto.getPublicChannelId()).ifPresent(id -> {
+                final var webhook = adapter.getWebhook(proto.getPublicChannelWebhook(), id)
                         .thenApply(adapter::messageTemplate).join();
                 final var bot = adapter.messageTemplate(id);
 
@@ -89,7 +83,7 @@ public class DiscordModule extends ServerModule {
 
                 addChildren(
                         // mc -> dc
-                        chatBus.filterData(msg -> msg.getType().isFlagSet(server.getPublicChannelEvents()))
+                        chatBus.filterData(msg -> msg.getType().isFlagSet(proto.getPublicChannelEvents()))
                                 .mapData(msg -> {
                                     var player = bean(UserRepo.class).get(msg.getUsername()).assertion();
                                     String str = msg.toString();
@@ -141,7 +135,7 @@ public class DiscordModule extends ServerModule {
             });
 
             //moderation channel
-            Optional.ofNullable(server.getModerationChannelId()).ifPresent(id -> {
+            Optional.ofNullable(proto.getModerationChannelId()).ifPresent(id -> {
                 final var bot = adapter.messageTemplate(id);
 
                 // public status -> dc
@@ -162,8 +156,8 @@ public class DiscordModule extends ServerModule {
             });
 
             // console channel
-            Optional.ofNullable(server.getConsoleChannelId()).ifPresent(id -> {
-                final var channel = adapter.channelAsStream(id, server.isFancyConsole());
+            Optional.ofNullable(proto.getConsoleChannelId()).ifPresent(id -> {
+                final var channel = adapter.channelAsStream(id, proto.getFancyConsole());
                 addChildren(
                         // mc -> dc
                         console.getBus().subscribeData(channel::println),
@@ -172,13 +166,13 @@ public class DiscordModule extends ServerModule {
                                 .filterData(msg -> !msg.getAuthor().isBot())
                                 .mapData(msg -> {
                                     var raw = msg.getContentRaw();
-                                    if (server.isFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
+                                    if (proto.getFancyConsole() && !msg.getAuthor().equals(adapter.getJda().getSelfUser()))
                                         msg.delete().queue();
                                     //noinspection RedundantCast //ide error
                                     return (String) raw;
                                 })
-                                .filterData(cmd -> server.getConsoleChannelPrefix() == null || cmd.startsWith(server.getConsoleChannelPrefix()))
-                                .mapData(cmd -> server.getConsoleChannelPrefix() == null ? cmd : cmd.substring(server.getConsoleChannelPrefix().length()))
+                                .filterData(cmd -> proto.getConsoleChannelPrefix() == null || cmd.startsWith(proto.getConsoleChannelPrefix()))
+                                .mapData(cmd -> proto.getConsoleChannelPrefix() == null ? cmd : cmd.substring(proto.getConsoleChannelPrefix().length()))
                                 .subscribeData(input -> console.execute(input).exceptionally(Polyfill.exceptionLogger(log)))
                 );
             });

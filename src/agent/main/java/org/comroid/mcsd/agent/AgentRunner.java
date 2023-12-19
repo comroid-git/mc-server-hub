@@ -7,15 +7,18 @@ import org.comroid.api.Command;
 import org.comroid.api.DelegateStream;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.agent.controller.ConsoleController;
+import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.*;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
 import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
-import org.comroid.mcsd.core.repo.ServerRepo;
-import org.comroid.mcsd.core.repo.ShRepo;
+import org.comroid.mcsd.core.repo.server.ServerRepo;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
@@ -25,8 +28,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.PrintStream;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -202,7 +203,7 @@ public class AgentRunner implements Command.Handler {
         attached = null;
         return "Detached";
     }
-
+/*
     @Command(usage = "<name> <version> <mode> [-na]")
     public Object create(String[] args, ConsoleController.Connection con) {
         if (!Utils.SuperAdmins.contains(con.getUser().getId()))
@@ -250,7 +251,7 @@ public class AgentRunner implements Command.Handler {
         server.setOwner(con.getUser()).setName(name);
         return serverRepo.save(server) + " created";
     }
-
+ */
     @Command(usage = "")
     public String shutdown(ConsoleController.Connection con) {
         if (!Utils.SuperAdmins.contains(con.getUser().getId()))
@@ -278,12 +279,13 @@ public class AgentRunner implements Command.Handler {
         out.println(response);
     }
 
+    @Deprecated
     public Stream<Server> streamServers() {
         return Streams.of(bean(ServerRepo.class).findAllForAgent(getMe().getId()));
     }
 
     public Stream<String> streamServerStatusMsgs() {
-        return streamServers().map(Server::toString);
+        return bean(MCSD.class).servers().stream().map(Server::toString);
     }
 
     public void execute(String cmd, ConsoleController.Connection con) {

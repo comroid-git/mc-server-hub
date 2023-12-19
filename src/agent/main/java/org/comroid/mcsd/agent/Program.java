@@ -12,29 +12,18 @@ import org.comroid.mcsd.api.dto.AgentInfo;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
-import org.comroid.mcsd.core.entity.Agent;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.system.Agent;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
-import org.comroid.mcsd.core.module.*;
-import org.comroid.mcsd.core.module.discord.DiscordModule;
-import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
-import org.comroid.mcsd.core.module.local.LocalExecutionModule;
-import org.comroid.mcsd.core.module.local.LocalFileModule;
-import org.comroid.mcsd.core.module.player.PlayerListModule;
-import org.comroid.mcsd.core.module.status.StatusModule;
-import org.comroid.mcsd.core.module.status.UptimeModule;
-import org.comroid.mcsd.core.repo.AgentRepo;
-import org.comroid.mcsd.core.repo.ServerRepo;
+import org.comroid.mcsd.core.repo.system.AgentRepo;
+import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.ImportResource;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.*;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -67,23 +56,9 @@ public class Program implements ApplicationRunner {
     }
 
     @Bean
-    public List<ServerModule.Factory<?>> serverModuleFactories() {
-        return List.of(
-                StatusModule.Factory,
-                LocalFileModule.Factory,
-                UptimeModule.Factory,
-                //todo: fix UpdateModule.Factory,
-                LocalExecutionModule.Factory,
-                //todo: fix BackupModule.Factory,
-                ConsolePlayerEventModule.Factory,
-                PlayerListModule.Factory,
-                DiscordModule.Factory
-        );
-    }
-
-    @Bean
     @Unique
     @Lazy(false)
+    @DependsOn("migrateEntities")
     public List<Server> servers(@Autowired ServerRepo serverRepo, @Autowired Agent me) {
         return Streams.of(serverRepo.findAllForAgent(me.getId())).toList();
     }

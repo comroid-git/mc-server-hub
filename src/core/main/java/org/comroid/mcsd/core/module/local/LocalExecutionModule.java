@@ -11,11 +11,13 @@ import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.ServerManager;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.FileModulePrototype;
+import org.comroid.mcsd.core.entity.module.local.LocalExecutionModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Debug;
 import org.comroid.util.MultithreadUtil;
@@ -40,18 +42,10 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ToString
 @Component.Requires(UpdateModule.class)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public final class LocalExecutionModule extends ConsoleModule {
+public final class LocalExecutionModule extends ConsoleModule<LocalExecutionModulePrototype> {
     public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?.*?");
     public static final Pattern StopPattern = pattern("Closing [sS]erver.*\\r?\\n?.*?");
-    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-parent.txt).*.*?");
-
-    public static final Factory<LocalExecutionModule> Factory = new Factory<>(LocalExecutionModule.class) {
-        @Override
-        public LocalExecutionModule create(Server parent) {
-            return new LocalExecutionModule(parent);
-        }
-    };
-
+    public static final Pattern CrashPattern = Pattern.compile(".*(crash-\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}(-\\w+)?.txt).*.*?");
     final AtomicBoolean manualShutdown = new AtomicBoolean(false);
     Process process;
     PrintStream in;
@@ -59,8 +53,8 @@ public final class LocalExecutionModule extends ConsoleModule {
     CompletableFuture<Duration> done;
     CompletableFuture<Void> stop;
 
-    private LocalExecutionModule(Server parent) {
-        super(parent);
+    public LocalExecutionModule(Server server, LocalExecutionModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override
@@ -86,12 +80,12 @@ public final class LocalExecutionModule extends ConsoleModule {
         server.component(StatusModule.class).assertion().pushStatus(Status.starting);
         final var stopwatch = Stopwatch.start("startup-" + server.getId());
         var exec = PathUtil.findExec("java").orElseThrow();
-        process = Runtime.getRuntime().exec(server.getCustomCommand() == null ? new String[]{
+        process = Runtime.getRuntime().exec(proto.getCustomCommand() == null ? new String[]{
                         exec.getAbsolutePath(),
-                        "-Xmx%dG".formatted(server.getRamGB()),
-                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : server.getCustomCommand().split(" "),
+                        "-Xmx%dG".formatted(proto.getRamGB()),
+                        "-jar", "server.jar", Debug.isDebug() && OS.isWindows ? "" : "nogui"} : proto.getCustomCommand().split(" "),
                 new String[0],
-                new FileHandle(server.getDirectory(), true));
+                new FileHandle(((FileModulePrototype) component(FileModule.class).assertion().getProto()).getDirectory(), true));
 
         in = new PrintStream(process.getOutputStream(), true);
         oe = DelegateStream.IO.process(process);

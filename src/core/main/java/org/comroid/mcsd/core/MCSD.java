@@ -2,27 +2,61 @@ package org.comroid.mcsd.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysql.cj.jdbc.Driver;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.comroid.api.DelegateStream;
+import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.core.entity.*;
+import org.comroid.mcsd.core.entity.module.ModulePrototype;
+import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
+import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
+import org.comroid.mcsd.core.entity.module.local.LocalExecutionModulePrototype;
+import org.comroid.mcsd.core.entity.module.local.LocalFileModulePrototype;
+import org.comroid.mcsd.core.entity.module.local.LocalShellModulePrototype;
+import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
+import org.comroid.mcsd.core.entity.module.player.PlayerListModulePrototype;
+import org.comroid.mcsd.core.entity.module.ssh.SshFileModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.UpdateModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.UptimeModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.system.Agent;
+import org.comroid.mcsd.core.entity.system.DiscordBot;
+import org.comroid.mcsd.core.entity.system.ShConnection;
+import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.module.discord.DiscordAdapter;
-import org.comroid.mcsd.core.repo.*;
+import org.comroid.mcsd.core.repo.module.ModuleRepo;
+import org.comroid.mcsd.core.repo.server.ServerRepo;
+import org.comroid.mcsd.core.repo.system.AgentRepo;
+import org.comroid.mcsd.core.repo.system.DiscordBotRepo;
+import org.comroid.mcsd.core.repo.system.ShRepo;
+import org.comroid.mcsd.core.repo.system.UserRepo;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.comroid.util.Debug;
 import org.comroid.util.REST;
+import org.comroid.util.Streams;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.SingletonBeanRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -30,24 +64,45 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Slf4j
+@Getter
 @Configuration
 @ImportResource({"classpath:baseBeans.xml"})
 @ComponentScan(basePackages = "org.comroid.mcsd.core")
 @EntityScan(basePackages = "org.comroid.mcsd.core.entity")
 @EnableJpaRepositories(basePackages = "org.comroid.mcsd.core.repo")
 public class MCSD {
+    @Lazy @Autowired private DefaultListableBeanFactory beanRegistry;
+    @Lazy @Autowired private EntityManager entityManager;;
     @Lazy @Autowired private UserRepo users;
     @Lazy @Autowired private ServerRepo servers;
     @Lazy @Autowired private AgentRepo agents;
     @Lazy @Autowired private ShRepo shRepo;
     @Lazy @Autowired private DiscordBotRepo discordBotRepo;
+    @Lazy @Autowired private ModuleRepo<McsdCommandModulePrototype> modules_mcsd;
+    @Lazy @Autowired private ModuleRepo<DiscordModulePrototype> modules_discord;
+    @Lazy @Autowired private ModuleRepo<LocalExecutionModulePrototype> modules_localExecution;
+    @Lazy @Autowired private ModuleRepo<LocalFileModulePrototype> modules_localFiles;
+    @Lazy @Autowired private ModuleRepo<LocalShellModulePrototype> modules_localShell;
+    @Lazy @Autowired private ModuleRepo<ConsolePlayerEventModulePrototype> modules_consolePlayerEvents;
+    @Lazy @Autowired private ModuleRepo<PlayerListModulePrototype> modules_playerList;
+    @Lazy @Autowired private ModuleRepo<SshFileModulePrototype> modules_sshFile;
+    @Lazy @Autowired private ModuleRepo<BackupModulePrototype> modules_backup;
+    @Lazy @Autowired private ModuleRepo<StatusModulePrototype> modules_status;
+    @Lazy @Autowired private ModuleRepo<UpdateModulePrototype> modules_update;
+    @Lazy @Autowired private ModuleRepo<UptimeModulePrototype> modules_uptime;
+
     @Bean(name = "configDir")
     @Order(Ordered.HIGHEST_PRECEDENCE)
     @ConditionalOnExpression(value = "environment.containsProperty('DEBUG')")
@@ -126,6 +181,102 @@ public class MCSD {
         }, 72, 72, TimeUnit.HOURS);
     }
 
+    @Bean
+    @Lazy(false)
+    @Transactional
+    @SuppressWarnings("deprecation")
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @DependsOn("applicationContextProvider")
+    public Set<AbstractEntity> migrateEntities() {
+        class Helper {
+            <T extends AbstractEntity> void getOrMigrate(Server server, ModulePrototype.Type type, Supplier<T> migratedObj) {
+                var repo = type.getRepo().apply(MCSD.this);
+                if (repo.findByServerIdAndDtype(server.getId(), type.name()).isPresent())
+                    return;
+                var migrate = migratedObj.get();
+                save(repo, migrate);
+                repo.save(Polyfill.uncheckedCast(migrate));
+            }
+
+            <T extends AbstractEntity> void save(AbstractEntity.Repo<?> repo, T migrate) {
+            }
+        }
+
+        var helper = new Helper();
+        var yield = new HashSet<AbstractEntity>();
+
+        log.info("Checking if DB needs migration");
+
+        // migrate server.agent fields
+        servers.saveAll(entityManager.createQuery("SELECT s FROM Server s WHERE s.agent = null", Server.class)
+                .getResultList().stream()
+                .peek(srv -> agents.findForServer(srv.getId()).ifPresentOrElse(
+                        srv::setAgent,
+                        () -> log.warn("Could not migrate " + srv + "s Agent ID. Please set Agent ID manually (Server ID: " + srv.getId() + ")")
+                ))
+                .peek(yield::add)
+                .toList());
+
+        // migrate servers to use modules
+        Streams.of(servers.findMigrationCandidates(0))
+                .peek(server -> {
+                    //todo: complete migration code
+           //    StatusModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.Status,
+                            () -> new StatusModulePrototype()
+                                    .setServer(server));
+           //    LocalFileModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.LocalFile,
+                            () -> new LocalFileModulePrototype()
+                                    .setDirectory(server.getDirectory())
+                                    .setBackupsDir(server.getShConnection().getBackupsDir())
+                                    .setForceCustomJar(server.isForceCustomJar())
+                                    .setServer(server));
+           //    UptimeModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.Uptime,
+                            () -> new UptimeModulePrototype()
+                                    .setServer(server));
+           //    LocalExecutionModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.LocalExecution,
+                            ()->new LocalExecutionModulePrototype()
+                                    .setRamGB(server.getRamGB())
+                                    .setCustomCommand(server.getCustomCommand())
+                                    .setServer(server));
+           //    //todo: fix BackupModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.Backup,
+                            () -> new BackupModulePrototype()
+                                    .setEnabled(false)
+                                    .setServer(server));
+           //    ConsolePlayerEventModule.Factory,
+                    helper.getOrMigrate(server, ModulePrototype.Type.ConsolePlayerEvent,
+                            () -> new ConsolePlayerEventModulePrototype()
+                                    .setServer(server));
+           //    DiscordModule.Factory
+                    helper.getOrMigrate(server, ModulePrototype.Type.Discord,
+                            () -> new DiscordModulePrototype()
+                                    .setDiscordBot(server.getDiscordBot())
+                                    .setPublicChannelId(server.getPublicChannelId())
+                                    .setPublicChannelWebhook(server.getPublicChannelWebhook())
+                                    .setPublicChannelEvents(server.getPublicChannelEvents())
+                                    .setModerationChannelId(server.getModerationChannelId())
+                                    .setConsoleChannelId(server.getConsoleChannelId())
+                                    .setConsoleChannelPrefix(server.getConsoleChannelPrefix())
+                                    .setFancyConsole(server.isFancyConsole())
+                                    .setServer(server));
+
+                    server.setVersion(AbstractEntity.CurrentVersion);
+                })
+                .peek(servers::save)
+                .forEach(yield::add);
+
+        if (!yield.isEmpty())
+            log.info("Migrated entities:"+yield.stream()
+                    .map(Objects::toString)
+                    .collect(Collectors.joining("\n\t- ","\n\t- ","")));
+
+        return yield;
+    }
+
     public static String wrapHostname(String hostname) {
         return "http%s://%s%s".formatted(Debug.isDebug() ? "" : "s", hostname, Debug.isDebug() ? ":42064" : "");
     }
@@ -139,6 +290,11 @@ public class MCSD {
             case "user" -> users.findById(id).orElseThrow(()->new EntityNotFoundException(User.class,id));
             default -> throw new BadRequestException("unknown type: " + type);
         };
+    }
+
+    @ApiStatus.Internal
+    public List<Server> servers() {
+        return ApplicationContextProvider.<List<?>, List<Server>>bean(List.class, "servers");
     }
 }
 

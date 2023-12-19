@@ -11,12 +11,15 @@ import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.*;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.system.*;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.StatusCode;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
-import org.comroid.mcsd.core.repo.*;
+import org.comroid.mcsd.core.repo.server.ServerRepo;
+import org.comroid.mcsd.core.repo.system.*;
 import org.comroid.util.Bitmask;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
@@ -103,12 +106,6 @@ public class ApiController {
             if (data.containsKey("queryPort")) server.setQueryPort(Integer.parseInt(data.get("queryPort")));
             if (data.containsKey("rConPort")) server.setRConPort(Integer.parseInt(data.get("rConPort")));
             if (data.containsKey("rConPassword") && !data.get("rConPassword").isBlank()) server.setRConPassword(data.get("rConPassword"));
-            if (data.containsKey("discordBotId")) server.setDiscordBot(discordBotRepo.findById(UUID.fromString(data.get("discordBotId"))).orElseThrow(()->new EntityNotFoundException(DiscordBot.class, data.get("discordBotId"))));
-            if (data.containsKey("publicChannelId")) server.setPublicChannelId(Long.valueOf(data.get("publicChannelId")));
-            if (data.containsKey("moderationChannelId")) server.setModerationChannelId(Long.valueOf(data.get("moderationChannelId")));
-            if (data.containsKey("consoleChannelId")) server.setConsoleChannelId(Long.valueOf(data.get("consoleChannelId")));
-            if (data.containsKey("consoleChannelPrefix")) server.setConsoleChannelPrefix(data.get("consolePrefix"));
-            if (data.containsKey("fancyConsole")) server.setFancyConsole(Boolean.parseBoolean(data.get("fancyConsole")));
         } catch (NumberFormatException nfe) {
             throw new BadRequestException(nfe.getMessage());
         }
@@ -201,7 +198,6 @@ public class ApiController {
         if (!agents.isTokenValid(agentId, token))
             throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
         manager.get(serverId).assertion("Server with ID " + serverId + " not found")
-                .getTree()
                 .component(PlayerEventModule.class)
                 .assertion("Server with ID " + serverId + " does not accept Player Events")
                 .getBus()

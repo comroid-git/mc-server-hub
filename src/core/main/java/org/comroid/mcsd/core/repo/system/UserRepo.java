@@ -1,9 +1,8 @@
-package org.comroid.mcsd.core.repo;
+package org.comroid.mcsd.core.repo.system;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
-import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.util.AlmostComplete;
 import org.comroid.util.REST;
 import org.comroid.util.Streams;

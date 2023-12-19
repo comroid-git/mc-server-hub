@@ -8,23 +8,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Named;
 import org.comroid.api.SupplierX;
+import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.util.Utils;
 import org.comroid.util.Bitmask;
 import org.comroid.util.Constraint;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 @Data
 @Slf4j
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class AbstractEntity implements Named {
+    public static final int CurrentVersion = 1;
     @Id
     private UUID id = UUID.randomUUID();
     @Setter
@@ -39,6 +45,7 @@ public abstract class AbstractEntity implements Named {
     private User owner;
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<User, @NotNull Integer> permissions;
+    private @Nullable Integer version = CurrentVersion;
 
     public String getBestName() {
         return Optional.ofNullable(displayName)
@@ -46,6 +53,7 @@ public abstract class AbstractEntity implements Named {
                 .or(() -> Optional.ofNullable(owner)
                         .map(AbstractEntity::getBestName)
                         .map(n -> n + "s " + getClass().getSimpleName()))
+                .filter(Predicate.not("null"::equals))
                 .orElseGet(id::toString);
     }
 
@@ -79,7 +87,7 @@ public abstract class AbstractEntity implements Named {
     }
 
     public String toString() {
-        return getClass().getSimpleName() + ' ' + getName();
+        return getClass().getSimpleName() + ' ' + getBestName();
     }
 
     public final boolean equals(Object other) {
@@ -147,5 +155,10 @@ public abstract class AbstractEntity implements Named {
         public String toString() {
             return "%s(0x%x)".formatted(name(),value);
         }
+    }
+
+    public interface Repo<T extends AbstractEntity> extends CrudRepository<T, UUID> {
+        @Query("SELECT e FROM #{#entityName} e WHERE e.version = null OR e.version <= :version")
+        Iterable<T> findMigrationCandidates(@Param("version") int fromVersion);
     }
 }

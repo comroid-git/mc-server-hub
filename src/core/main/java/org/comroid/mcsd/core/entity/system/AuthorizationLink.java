@@ -1,12 +1,11 @@
-package org.comroid.mcsd.core.entity;
+package org.comroid.mcsd.core.entity.system;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import org.comroid.mcsd.core.entity.system.User;
 
 import java.time.Duration;
 import java.time.Instant;

@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.entity;
+package org.comroid.mcsd.core.entity.server;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
@@ -11,6 +11,12 @@ import org.comroid.api.*;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.ServerManager;
+import org.comroid.mcsd.core.entity.AbstractEntity;
+import org.comroid.mcsd.core.entity.module.FileModulePrototype;
+import org.comroid.mcsd.core.entity.system.Agent;
+import org.comroid.mcsd.core.entity.system.DiscordBot;
+import org.comroid.mcsd.core.entity.system.ShConnection;
+import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.util.Token;
 import org.intellij.lang.annotations.Language;
@@ -39,24 +45,12 @@ public class Server extends AbstractEntity {
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
     public static final Duration statusTimeout = Duration.ofSeconds(10);
     private static final Duration TickRate = Duration.ofMinutes(1);
-    private @ManyToOne ShConnection shConnection;
-    private @ManyToOne @Nullable DiscordBot discordBot;
     private @Nullable String homepage;
-    private @Nullable String PublicChannelWebhook;
-    private @Nullable @Column(unique = true) Long PublicChannelId;
-    private @Nullable Long ModerationChannelId;
-    private @Nullable @Column(unique = true) Long ConsoleChannelId;
-    private @Nullable String ConsoleChannelPrefix;
-    private int publicChannelEvents = 0xFFFF_FFFF;
-    private boolean fancyConsole = true;
-    private boolean forceCustomJar = false;
-    private @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
     private String mcVersion = "1.19.4";
     private String host;
     private int port = 25565;
-    private String directory = "~/minecraft";
+    private @Deprecated String directory = "~/minecraft";
     private Mode mode = Mode.Paper;
-    private byte ramGB = 4;
     private boolean enabled = false;
     private boolean managed = false;
     private boolean whitelist = false;
@@ -65,11 +59,24 @@ public class Server extends AbstractEntity {
     private int queryPort = 25565;
     private int rConPort = Defaults.RCON_PORT;
     private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
-    private @Nullable Duration backupPeriod = Duration.ofHours(12);
-    private Duration updatePeriod = Duration.ofDays(7);
-    private Instant lastBackup = Instant.ofEpochMilli(0);
-    private Instant lastUpdate = Instant.ofEpochMilli(0);
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
+    private @Nullable @ManyToOne Agent agent; // todo: make not nullable
+    private @Deprecated @ManyToOne ShConnection shConnection;
+    private @Deprecated @ManyToOne @Nullable DiscordBot discordBot;
+    private @Deprecated @Nullable String PublicChannelWebhook;
+    private @Deprecated @Nullable @Column(unique = true) Long PublicChannelId;
+    private @Deprecated @Nullable Long ModerationChannelId;
+    private @Deprecated @Nullable @Column(unique = true) Long ConsoleChannelId;
+    private @Deprecated @Nullable String ConsoleChannelPrefix;
+    private @Deprecated int publicChannelEvents = 0xFFFF_FFFF;
+    private @Deprecated boolean fancyConsole = true;
+    private @Deprecated boolean forceCustomJar = false;
+    private @Deprecated @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
+    private @Deprecated byte ramGB = 4;
+    private @Deprecated @Nullable Duration backupPeriod = Duration.ofHours(12);
+    private @Deprecated Instant lastBackup = Instant.ofEpochMilli(0);
+    private @Deprecated @Nullable Duration updatePeriod = Duration.ofDays(7);
+    private @Deprecated Instant lastUpdate = Instant.ofEpochMilli(0);
 
     @JsonIgnore
     public boolean isVanilla() {
@@ -145,7 +152,7 @@ public class Server extends AbstractEntity {
     }
 
     public Path path(String... extra) {
-        return Paths.get(getDirectory(), extra);
+        return Paths.get(((FileModulePrototype) component(FileModule.class).assertion().getProto()).getDirectory(), extra);
     }
 
     @SneakyThrows
@@ -206,18 +213,12 @@ public class Server extends AbstractEntity {
                 .completeOnTimeout(new StatusMessage(getId()), (long) (statusTimeout.toSeconds() * 1.5), TimeUnit.SECONDS);
     }
 
-    @Deprecated
-    public Optional<ShConnection> shCon() {
-        return Optional.ofNullable(shConnection);
-    }
-
-    public <T extends ServerModule> SupplierX<T> component(Class<T> type) {
+    public <T extends ServerModule<?>> SupplierX<T> component(Class<T> type) {
         return SupplierX.ofStream(components(type));
     }
-    public <T extends ServerModule> Stream<T> components(Class<T> type) {
+    public <T extends ServerModule<?>> Stream<T> components(Class<T> type) {
         return bean(ServerManager.class).get(getId())
                 .assertion(this+" not initialized")
-                .getTree()
                 .components(type);
     }
 

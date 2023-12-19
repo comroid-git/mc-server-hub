@@ -1,10 +1,10 @@
-package org.comroid.mcsd.core.repo;
+package org.comroid.mcsd.core.repo.system;
 
 import org.comroid.api.SupplierX;
 import org.comroid.api.info.Log;
 import org.comroid.mcsd.core.entity.AbstractEntity;
-import org.comroid.mcsd.core.entity.AuthorizationLink;
-import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.entity.system.AuthorizationLink;
+import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.util.Bitmask;
 import org.comroid.util.Token;
 import org.springframework.data.repository.CrudRepository;

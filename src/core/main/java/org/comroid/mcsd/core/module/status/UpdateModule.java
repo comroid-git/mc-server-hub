@@ -9,7 +9,8 @@ import lombok.extern.java.Log;
 import org.comroid.api.Component;
 import org.comroid.api.DelegateStream;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.status.UpdateModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.jetbrains.annotations.Nullable;
@@ -27,19 +28,12 @@ import static java.time.Instant.now;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Component.Requires({FileModule.class, StatusModule.class})
-public class UpdateModule extends ServerModule {
-    public static final Factory<UpdateModule> Factory = new Factory<>(UpdateModule.class) {
-        @Override
-        public UpdateModule create(Server parent) {
-            return new UpdateModule(parent);
-        }
-    };
-
+public class UpdateModule extends ServerModule<UpdateModulePrototype> {
     final AtomicReference<@Nullable CompletableFuture<Boolean>> updateRunning = new AtomicReference<>();
-    FileModule files;
+    @Inject FileModule<?> files;
 
-    private UpdateModule(Server parent) {
-        super(parent);
+    public UpdateModule(Server server, UpdateModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override
@@ -49,7 +43,7 @@ public class UpdateModule extends ServerModule {
 
     @Override
     protected void $tick() {
-        if ((server.getBackupPeriod() == null || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now()))
+        if ((proto.getUpdatePeriod() == null || proto.getLastUpdate().plus(proto.getUpdatePeriod()).isAfter(now()))
                 || (updateRunning.get()!=null&&!updateRunning.get().isDone()))
             return;
         //todo: handle if parent is running

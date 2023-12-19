@@ -1,37 +1,39 @@
-package org.comroid.mcsd.core.repo;
+package org.comroid.mcsd.core.repo.server;
 
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import jakarta.transaction.Transactional;
-import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.Agent;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.AbstractEntity;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ServerRepo extends CrudRepository<Server, UUID> {
+public interface ServerRepo extends AbstractEntity.Repo<Server> {
+    @Deprecated
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
             " JOIN ShConnection sh" +
             " WHERE sh.id = a.target AND sh.id = s.shConnection.id")
+    Iterable<Server> findAllForAgent_old(@Param("agentId") UUID agentId);
+
+    @Query("SELECT s FROM Server s WHERE s.agent.id = :agentId")
     Iterable<Server> findAllForAgent(@Param("agentId") UUID agentId);
 
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
+            " JOIN SshFileModulePrototype fs ON fs.server.id = s.id" +
             " JOIN ShConnection sh" +
-            " WHERE (sh.id = a.target AND sh.id = s.shConnection.id) AND s.name = :name")
+            " WHERE (sh.id = a.target AND sh.id = fs.shConnection.id) AND s.name = :name")
     Optional<Server> findByAgentAndName(@Param("agentId") UUID agentId, @Param("name") String name);
 
     @Query("SELECT s FROM Server s" +
-            " WHERE s.PublicChannelId = :id" +
-            " OR s.ModerationChannelId = :id" +
-            " OR s.ConsoleChannelId = :id")
+            " JOIN DiscordModulePrototype dc ON dc.server.id = s.id" +
+            " WHERE dc.publicChannelId = :id" +
+            " OR dc.moderationChannelId = :id" +
+            " OR dc.consoleChannelId = :id")
     Optional<Server> findByDiscordChannel(@Param("id") long id);
 
     @Modifying
@@ -46,12 +48,12 @@ public interface ServerRepo extends CrudRepository<Server, UUID> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE Server s SET s.lastBackup = :time WHERE s.id = :srvId")
+    @Query("UPDATE BackupModulePrototype bak SET bak.lastBackup = :time WHERE bak.server.id = :srvId")
     void bumpLastBackup(@Param("srvId") UUID srvId, @Param("time") Instant time);
 
     @Modifying
     @Transactional
-    @Query("UPDATE Server s SET s.lastUpdate = :time WHERE s.id = :srvId")
+    @Query("UPDATE UpdateModulePrototype up SET up.lastUpdate = :time WHERE up.server.id = :srvId")
     void bumpLastUpdate(@Param("srvId") UUID srvId, @Param("time") Instant time);
 
     default void bumpLastBackup(Server srv) {

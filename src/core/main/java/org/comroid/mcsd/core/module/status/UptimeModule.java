@@ -7,11 +7,12 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.Component;
 import org.comroid.api.os.OS;
-import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.entity.ServerUptimeEntry;
+import org.comroid.mcsd.core.entity.module.status.UptimeModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.server.ServerUptimeEntry;
 import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.mcsd.core.repo.ServerUptimeRepo;
+import org.comroid.mcsd.core.repo.server.ServerUptimeRepo;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -23,19 +24,12 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Component.Requires({LocalExecutionModule.class, StatusModule.class})
-public class UptimeModule extends ServerModule {
-    public static final Factory<UptimeModule> Factory = new Factory<>(UptimeModule.class) {
-        @Override
-        public UptimeModule create(Server parent) {
-            return new UptimeModule(parent);
-        }
-    };
-
+public class UptimeModule extends ServerModule<UptimeModulePrototype> {
     LocalExecutionModule execution;
     StatusModule statusModule;
 
-    private UptimeModule(Server parent) {
-        super(parent);
+    public UptimeModule(Server server, UptimeModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override

@@ -9,12 +9,15 @@ import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.api.model.Status;
-import org.comroid.mcsd.core.entity.Backup;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.FileModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
+import org.comroid.mcsd.core.entity.server.Backup;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.local.LocalShellModule;
-import org.comroid.mcsd.core.repo.BackupRepo;
+import org.comroid.mcsd.core.repo.server.BackupRepo;
 import org.comroid.util.Archiver;
 import org.comroid.util.PathUtil;
 import org.comroid.util.Stopwatch;
@@ -36,20 +39,13 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Component.Requires(LocalShellModule.class)
-public class BackupModule extends ServerModule {
+public class BackupModule extends ServerModule<BackupModulePrototype> {
     public static final Pattern SaveCompletePattern = ConsoleModule.pattern("Saved the game");
-    public static final Factory<BackupModule> Factory = new Factory<>(BackupModule.class) {
-        @Override
-        public BackupModule create(Server parent) {
-            return new BackupModule(parent);
-        }
-    };
-
     final AtomicReference<CompletableFuture<File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
-    ConsoleModule consoleModule;
+    @Component.Inject ConsoleModule<?> consoleModule;
 
-    private BackupModule(Server parent) {
-        super(parent);
+    public BackupModule(Server server, BackupModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override
@@ -60,9 +56,9 @@ public class BackupModule extends ServerModule {
     @Override
     protected void $tick() {
         var status = server.component(StatusModule.class).assertion().getCurrentStatus().getStatus();
-        if (server.getBackupPeriod() == null
+        if (proto.getBackupPeriod() == null
                 || Stream.of(Status.online,Status.in_maintenance_mode,Status.offline).noneMatch(status::equals)
-                || server.getLastBackup().plus(server.getBackupPeriod()).isAfter(now())
+                || proto.getLastBackup().plus(proto.getBackupPeriod()).isAfter(now())
                 || !currentBackup.get().isDone())
             return;
         runBackup(false).exceptionally(Polyfill.exceptionLogger());
@@ -78,7 +74,7 @@ public class BackupModule extends ServerModule {
         status.pushStatus(Status.running_backup);
         final var stopwatch = Stopwatch.start("backup-" + server.getId());
 
-        var backupDir = new FileHandle(server.shCon().orElseThrow().getBackupsDir()).createSubDir(server.getName());
+        var backupDir = new FileHandle(((FileModulePrototype) component(FileModule.class).require(ServerModule::getProto)).getBackupsDir()).createSubDir(server.getName());
         if (!backupDir.exists() && !backupDir.mkdirs())
             return CompletableFuture.failedFuture(new RuntimeException("Could not create backup directory"));
 
@@ -111,7 +107,7 @@ public class BackupModule extends ServerModule {
                                 stat = Status.in_Trouble;
                                 msg = "Unable to complete Backup";
                                 log.log(Level.SEVERE, msg + " for " + server, t);
-                            }
+                            }//todo fixme: does not set lastBackup
                             consoleModule.execute("save-on");
                             status.pushStatus(stat.new Message(msg));
                         }));

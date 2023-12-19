@@ -6,7 +6,8 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.comroid.api.info.Log;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.ssh.SshFileModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 
@@ -15,18 +16,18 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.logging.Level;
 
-public class SshFileModule extends FileModule {
-    public SshFileModule(Server parent) {
-        super(parent);
-    }
-
+public class SshFileModule extends FileModule<SshFileModulePrototype> {
     private ClientSession session;
     private SftpClient sftp;
+
+    public SshFileModule(Server server, SshFileModulePrototype proto) {
+        super(server, proto);
+    }
 
     @Override
     @SneakyThrows
     protected void $initialize() {
-        var sh= server.getShConnection();
+        var sh= proto.getShConnection();
         session = ApplicationContextProvider.bean(SshClient.class)
                 .connect(sh.getUsername(),sh.getHost(),sh.getPort())
                 .verify()

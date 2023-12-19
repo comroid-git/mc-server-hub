@@ -4,7 +4,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.io.FileHandle;
-import org.comroid.mcsd.core.entity.Server;
+import org.comroid.mcsd.core.entity.module.local.LocalFileModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.FileModule;
 
 import java.io.*;
@@ -13,15 +14,9 @@ import java.io.*;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LocalFileModule extends FileModule {
-    public static final Factory<LocalFileModule> Factory = new Factory<>(LocalFileModule.class) {
-        @Override
-        public LocalFileModule create(Server parent) {
-            return new LocalFileModule(parent);
-        }
-    };
-    protected LocalFileModule(Server parent) {
-        super(parent);
+public class LocalFileModule extends FileModule<LocalFileModulePrototype> {
+    public LocalFileModule(Server server, LocalFileModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override

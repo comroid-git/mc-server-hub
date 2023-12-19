@@ -7,10 +7,11 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.Command;
 import org.comroid.api.Component;
-import org.comroid.mcsd.core.entity.Server;
-import org.comroid.mcsd.core.entity.User;
+import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.mcsd.core.repo.UserRepo;
+import org.comroid.mcsd.core.repo.system.UserRepo;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
 import org.comroid.mcsd.util.Utils;
@@ -27,25 +28,17 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Component.Requires(ConsoleModule.class)
-public class McsdCommandModule extends ServerModule implements Command.Handler {
+public class McsdCommandModule extends ServerModule<McsdCommandModulePrototype> implements Command.Handler {
     public static final Pattern McsdPattern = ConsoleModule.commandPattern("mcsd");
-    public static final Factory<McsdCommandModule> Factory = new Factory<>(McsdCommandModule.class) {
-        @Override
-        public McsdCommandModule create(Server parent) {
-            return new McsdCommandModule(parent);
-        }
-    };
-
     final Command.Manager cmdr = new Command.Manager(this);
-    ConsoleModule console;
+    ConsoleModule<?> console;
 
-    protected McsdCommandModule(Server parent) {
-        super(parent);
+    public McsdCommandModule(Server server, McsdCommandModulePrototype proto) {
+        super(server, proto);
     }
 
     @Override
     protected void $initialize() {
-        ;
         console = server.component(ConsoleModule.class).assertion();
 
         addChildren(Utils.listenForPattern(console.bus, McsdPattern).subscribeData(matcher -> {

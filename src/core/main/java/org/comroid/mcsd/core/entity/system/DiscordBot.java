@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.entity;
+package org.comroid.mcsd.core.entity.system;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Basic;
@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.jetbrains.annotations.Nullable;
 
 @Getter
