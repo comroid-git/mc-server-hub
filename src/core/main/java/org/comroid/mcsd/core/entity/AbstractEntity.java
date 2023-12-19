@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 @Data
 @Slf4j
@@ -52,6 +53,7 @@ public abstract class AbstractEntity implements Named {
                 .or(() -> Optional.ofNullable(owner)
                         .map(AbstractEntity::getBestName)
                         .map(n -> n + "s " + getClass().getSimpleName()))
+                .filter(Predicate.not("null"::equals))
                 .orElseGet(id::toString);
     }
 
@@ -85,7 +87,7 @@ public abstract class AbstractEntity implements Named {
     }
 
     public String toString() {
-        return getClass().getSimpleName() + ' ' + getName();
+        return getClass().getSimpleName() + ' ' + getBestName();
     }
 
     public final boolean equals(Object other) {
