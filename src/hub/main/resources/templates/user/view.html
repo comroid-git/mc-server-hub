@@ -8,7 +8,8 @@
     <div class="ui-content">
         <form action="/api/webapp/user/edit" method="post">
             <h2>User <b th:text="${target.getBestName()}"></b>
-                <div th:if="${user.canGovern(target)}"> - <a class="ui-button" th:href="@{'/user/edit/'+${id}}">Edit</a></div>
+                <span th:if="${user.canGovern(target)}"> - <a class="ui-button" th:href="@{'/user/edit/'+${id}}">Edit</a></span>
+            </h2>
             <table>
                 <tbody>
                 <tr><td>Internal ID</td><td><input name="id" readonly th:value="${target.id}" type="text"></td></tr>
