@@ -107,6 +107,8 @@ public class GenericController {
     public String userView(Model model, HttpSession session, @PathVariable("id") UUID userId) {
         var user = userRepo.get(session).assertion();
         var subject = userRepo.findById(userId).orElseThrow(() -> new EntityNotFoundException(User.class, userId));
+        if (!user.canGovern(subject))
+            throw new InsufficientPermissionsException(user, subject, AbstractEntity.Permission.ManageUsers);
         model.addAttribute("user", user)
                 .addAttribute("target", subject)
                 .addAttribute("canManageUsers", user.hasPermission(user, AbstractEntity.Permission.ManageUsers))

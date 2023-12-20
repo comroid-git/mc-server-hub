@@ -146,6 +146,10 @@ public class User extends AbstractEntity {
         return "https://cdn.discordapp.com/avatars/"+id+"/"+hash+".png";
     }
 
+    public boolean canGovern(User target) {
+        return this.getId().equals(target.getId()) || hasPermission(this, Permission.ManageUsers);
+    }
+
     public record DisplayUser(Type type, String username, String avatarUrl, @Nullable String url) {
         public enum Type implements Predicate<User> {
             Minecraft {
