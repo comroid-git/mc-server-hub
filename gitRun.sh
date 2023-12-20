@@ -44,6 +44,6 @@ if [ "$branch" != "main" ]; then
   debugOptions="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
 fi
 
-#$exec --no-daemon ":$1:bootRun";
-$exec --no-daemon ":$1:installDist";
-"$1/build/install/$1/bin/$1"
+$exec --no-daemon ":$1:bootRun";
+#$exec --no-daemon ":$1:installDist";
+#"$1/build/install/$1/bin/$1"
