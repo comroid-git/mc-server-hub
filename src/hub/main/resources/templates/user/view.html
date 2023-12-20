@@ -11,6 +11,7 @@
                 <div th:if="${user.canGovern(target)}"> - <a class="ui-button" th:href="@{'/user/edit/'+${id}}">Edit</a></div>
             <table>
                 <tbody>
+                <tr><td>Internal ID</td><td><input name="id" readonly th:value="${target.id}" type="text"></td></tr>
                 <tr><td>Name</td><td><input name="name" th:readonly="${!edit}" th:value="${target.name}" type="text"></td></tr>
                 <tr><td>Displayname</td><td><input name="name" th:readonly="${!edit}" th:value="${target.displayName}" type="text"></td></tr>
                 <tr><td>Email</td><td><input name="email" th:readonly="${!edit}" th:value="${target.email}" type="email"></td></tr>
