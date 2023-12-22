@@ -4,4 +4,6 @@ abstract entity version log
 no version / outdated
 
 # 1 - server module migration update
-this version introduces module settings via separate entities
+this version introduces
+- module settings via separate entities
+- agent id inside server entity
