@@ -11,13 +11,13 @@ import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.*;
-import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.*;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.StatusCode;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.repo.system.*;
@@ -77,8 +77,8 @@ public class ApiController {
 
     @ResponseBody
     @GetMapping("/webapp/modules")
-    public List<ModulePrototype.Type> modules() {
-        return Stream.of(ModulePrototype.Type.values()).toList();
+    public List<ModuleType> modules() {
+        return Stream.of(ModuleType.values()).toList();
     }
 
     @ResponseBody
