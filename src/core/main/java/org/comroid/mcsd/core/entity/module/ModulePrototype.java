@@ -21,15 +21,16 @@ import static org.comroid.util.StackTraceUtils.lessSimpleName;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("JpaDataSourceORMInspection") // false positive
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = {"server_id", "dtype"}))
 public abstract class ModulePrototype extends AbstractEntity {
     private @ManyToOne Server server;
-    private @Convert(attributeName = "name") ModuleType dtype = ModuleType.of(this).assertion("Unsupported type: " + lessSimpleName(getClass()));
+    private @Convert(converter = ModuleType.Converter.class) ModuleType<?, ?> dtype = ModuleType.of(this).assertion("Unsupported type: " + lessSimpleName(getClass()));
     private boolean enabled = true;
 
     @Override
     public @Nullable String getDisplayName() {
-        return Objects.requireNonNull(super.getDisplayName(), ()->dtype+" for "+server);
+        return Objects.requireNonNull(super.getDisplayName(), () -> dtype + " for " + server);
     }
 
     public <T extends ServerModule<P>, P extends ModulePrototype> T toModule(Server server) {

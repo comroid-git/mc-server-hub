@@ -1,7 +1,7 @@
 package org.comroid.mcsd.core.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
+import jakarta.persistence.AttributeConverter;
 import lombok.Value;
 import org.comroid.api.Invocable;
 import org.comroid.api.Named;
@@ -41,7 +41,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 @Value
 public class ModuleType<Module extends ServerModule<Proto>, Proto extends ModulePrototype> implements Named {
@@ -79,7 +78,7 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     @JsonIgnore Function<MCSD, ModuleRepo<Proto>> repo;
     @JsonIgnore Invocable<Module> ctor;
 
-    ModuleType(String name,
+    public ModuleType(String name,
                String description,
                Class<Module> impl,
                Class<Proto> proto,
@@ -116,5 +115,18 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
                 .filter(type -> type.proto.isInstance(proto))
                 .map(Polyfill::<ModuleType<?, Proto>>uncheckedCast)
                 .findAny());
+    }
+
+    @jakarta.persistence.Converter(autoApply = true) // autoApply doesn't work
+    public static class Converter implements AttributeConverter<ModuleType<?,?>,String> {
+        @Override
+        public String convertToDatabaseColumn(ModuleType<?, ?> attribute) {
+            return attribute.name;
+        }
+
+        @Override
+        public ModuleType<?, ?> convertToEntityAttribute(String dbData) {
+            return of(dbData).assertion("Unknown ModuleType: " + dbData);
+        }
     }
 }
