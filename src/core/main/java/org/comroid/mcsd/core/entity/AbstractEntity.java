@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class AbstractEntity implements Named {
-    public static final int CurrentVersion = 1;
+    public static final int CurrentVersion = 2;
     @Id
     private UUID id = UUID.randomUUID();
     @Setter
