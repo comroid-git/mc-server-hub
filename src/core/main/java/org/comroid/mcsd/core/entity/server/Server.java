@@ -57,10 +57,10 @@ public class Server extends AbstractEntity {
     private boolean maintenance = false;
     private int maxPlayers = 20;
     private int queryPort = 25565;
-    private int rConPort = Defaults.RCON_PORT;
-    private @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
     private @Nullable @ManyToOne Agent agent; // todo: make not nullable
+    private @Deprecated  int rConPort = Defaults.RCON_PORT;
+    private @Deprecated @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
     private @Deprecated @ManyToOne ShConnection shConnection;
     private @Deprecated @ManyToOne @Nullable DiscordBot discordBot;
     private @Deprecated @Nullable String PublicChannelWebhook;

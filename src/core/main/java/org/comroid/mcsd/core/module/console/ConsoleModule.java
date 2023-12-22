@@ -1,9 +1,12 @@
 package org.comroid.mcsd.core.module.console;
 
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
+import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Event;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.module.console.ConsoleModulePrototype;
@@ -20,9 +23,11 @@ import java.util.regex.Pattern;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public abstract class ConsoleModule<T extends ConsoleModulePrototype> extends ServerModule<T> {
     public static final Pattern McsdPattern = commandPattern("mcsd");
+    private Direction direction;
 
-    public ConsoleModule(Server server, T proto) {
+    public ConsoleModule(Direction direction, Server server, T proto) {
         super(server, proto);
+        this.direction = direction;
     }
 
     public static Pattern commandPattern(String command) {return pattern("(?<username>[\\S\\w_-]+) issued parent command: /"+command+" (?<command>[\\w\\s_-]+)\\r?\\n?.*");}
@@ -49,4 +54,14 @@ public abstract class ConsoleModule<T extends ConsoleModulePrototype> extends Se
     }
 
     public abstract CompletableFuture<String> execute(String input, @Nullable Pattern terminator);
+
+    @Getter
+    @AllArgsConstructor
+    public enum Direction implements BitmaskAttribute<Direction> {
+        Output(1),
+        Input(2),
+        Bidirectional(3);
+
+        private final int value;
+    }
 }

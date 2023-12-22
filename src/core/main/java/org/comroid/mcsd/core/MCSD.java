@@ -23,6 +23,7 @@ import org.comroid.mcsd.core.entity.module.local.LocalFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.local.LocalShellModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.PlayerListModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.RconModulePrototype;
 import org.comroid.mcsd.core.entity.module.ssh.SshFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
@@ -95,6 +96,7 @@ public class MCSD {
     @Lazy @Autowired private ModuleRepo<LocalExecutionModulePrototype> modules_localExecution;
     @Lazy @Autowired private ModuleRepo<LocalFileModulePrototype> modules_localFiles;
     @Lazy @Autowired private ModuleRepo<LocalShellModulePrototype> modules_localShell;
+    @Lazy @Autowired private ModuleRepo<RconModulePrototype> modules_rcon;
     @Lazy @Autowired private ModuleRepo<ConsolePlayerEventModulePrototype> modules_consolePlayerEvents;
     @Lazy @Autowired private ModuleRepo<PlayerListModulePrototype> modules_playerList;
     @Lazy @Autowired private ModuleRepo<SshFileModulePrototype> modules_sshFile;

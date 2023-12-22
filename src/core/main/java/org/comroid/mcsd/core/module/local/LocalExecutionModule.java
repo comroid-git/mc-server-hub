@@ -54,7 +54,7 @@ public final class LocalExecutionModule extends ConsoleModule<LocalExecutionModu
     CompletableFuture<Void> stop;
 
     public LocalExecutionModule(Server server, LocalExecutionModulePrototype proto) {
-        super(server, proto);
+        super(Direction.Bidirectional, server, proto);
     }
 
     @Override

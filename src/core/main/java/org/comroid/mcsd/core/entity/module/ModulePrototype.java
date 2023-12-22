@@ -18,6 +18,7 @@ import org.comroid.mcsd.core.entity.module.local.LocalFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.local.LocalShellModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.PlayerListModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.RconModulePrototype;
 import org.comroid.mcsd.core.entity.module.ssh.SshFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
@@ -33,6 +34,7 @@ import org.comroid.mcsd.core.module.local.LocalFileModule;
 import org.comroid.mcsd.core.module.local.LocalShellModule;
 import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.player.PlayerListModule;
+import org.comroid.mcsd.core.module.remote.RconModule;
 import org.comroid.mcsd.core.module.ssh.SshFileModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
@@ -81,14 +83,27 @@ public abstract class ModulePrototype extends AbstractEntity {
     @Getter
     public enum Type implements Named {
         // console
-        McsdCommand("MCSD Command from Console", McsdCommandModule.class, McsdCommandModulePrototype.class, MCSD::getModules_mcsd), // discord
-        Discord("Discord Integration from Console", DiscordModule.class, DiscordModulePrototype.class, MCSD::getModules_discord), // local
+        McsdCommand("MCSD Command from Console", McsdCommandModule.class, McsdCommandModulePrototype.class, MCSD::getModules_mcsd),
+
+        // discord
+        Discord("Discord Integration from Console", DiscordModule.class, DiscordModulePrototype.class, MCSD::getModules_discord),
+
+        // local
         LocalExecution("Local Execution Module", LocalExecutionModule.class, LocalExecutionModulePrototype.class, MCSD::getModules_localExecution),
         LocalFile("Local File Module", LocalFileModule.class, LocalFileModulePrototype.class, MCSD::getModules_localFiles),
-        LocalShell("Local Shell Execution Module", LocalShellModule.class, LocalShellModulePrototype.class, MCSD::getModules_localShell), // player
+        LocalShell("Local Shell Execution Module", LocalShellModule.class, LocalShellModulePrototype.class, MCSD::getModules_localShell),
+
+        // remote
+        Rcon("RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon),
+
+        // player
         ConsolePlayerEvent("Forward Console Player Events", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents),
-        PlayerList("Cache Player List from Player Events", PlayerListModule.class, PlayerListModulePrototype.class, MCSD::getModules_playerList), // ssh
-        SshFile("SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile), //status
+        PlayerList("Cache Player List from Player Events", PlayerListModule.class, PlayerListModulePrototype.class, MCSD::getModules_playerList),
+
+        // ssh
+        SshFile("SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile),
+
+        //status
         Backup("Automated Backups", BackupModule.class, BackupModulePrototype.class, MCSD::getModules_backup),
         Update("Automated Updates", UpdateModule.class, UpdateModulePrototype.class, MCSD::getModules_update),
         Status("Internal Status Logging", StatusModule.class, StatusModulePrototype.class, MCSD::getModules_status),
