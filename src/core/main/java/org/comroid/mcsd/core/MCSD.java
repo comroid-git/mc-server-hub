@@ -35,6 +35,7 @@ import org.comroid.mcsd.core.entity.system.ShConnection;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.BadRequestException;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.discord.DiscordAdapter;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
@@ -189,9 +190,9 @@ public class MCSD {
     @DependsOn("applicationContextProvider")
     public Set<AbstractEntity> migrateEntities() {
         class Helper {
-            <T extends AbstractEntity> void getOrMigrate(Server server, ModulePrototype.Type type, Supplier<T> migratedObj) {
+            <T extends AbstractEntity> void getOrMigrate(Server server, ModuleType<?,?> type, Supplier<T> migratedObj) {
                 var repo = type.getRepo().apply(MCSD.this);
-                if (repo.findByServerIdAndDtype(server.getId(), type.name()).isPresent())
+                if (repo.findByServerIdAndDtype(server.getId(), type.getName()).isPresent())
                     return;
                 var migrate = migratedObj.get();
                 save(repo, migrate);
@@ -222,37 +223,37 @@ public class MCSD {
                 .peek(server -> {
                     //todo: complete migration code
            //    StatusModule.Factory,
-                    helper.getOrMigrate(server, ModulePrototype.Type.Status,
+                    helper.getOrMigrate(server, ModuleType.Status,
                             () -> new StatusModulePrototype()
                                     .setServer(server));
            //    LocalFileModule.Factory,
-                    helper.getOrMigrate(server, ModulePrototype.Type.LocalFile,
+                    helper.getOrMigrate(server, ModuleType.LocalFile,
                             () -> new LocalFileModulePrototype()
                                     .setDirectory(server.getDirectory())
                                     .setBackupsDir(server.getShConnection().getBackupsDir())
                                     .setForceCustomJar(server.isForceCustomJar())
                                     .setServer(server));
            //    UptimeModule.Factory,
-                    helper.getOrMigrate(server, ModulePrototype.Type.Uptime,
+                    helper.getOrMigrate(server, ModuleType.Uptime,
                             () -> new UptimeModulePrototype()
                                     .setServer(server));
            //    LocalExecutionModule.Factory,
-                    helper.getOrMigrate(server, ModulePrototype.Type.LocalExecution,
+                    helper.getOrMigrate(server, ModuleType.LocalExecution,
                             ()->new LocalExecutionModulePrototype()
                                     .setRamGB(server.getRamGB())
                                     .setCustomCommand(server.getCustomCommand())
                                     .setServer(server));
            //    //todo: fix BackupModule.Factory,
-                    helper.getOrMigrate(server, ModulePrototype.Type.Backup,
+                    helper.getOrMigrate(server, ModuleType.Backup,
                             () -> new BackupModulePrototype()
                                     .setEnabled(false)
                                     .setServer(server));
            //    ConsolePlayerEventModule.Factory,
-                    helper.getOrMigrate(server, ModulePrototype.Type.ConsolePlayerEvent,
+                    helper.getOrMigrate(server, ModuleType.ConsolePlayerEvent,
                             () -> new ConsolePlayerEventModulePrototype()
                                     .setServer(server));
            //    DiscordModule.Factory
-                    helper.getOrMigrate(server, ModulePrototype.Type.Discord,
+                    helper.getOrMigrate(server, ModuleType.Discord,
                             () -> new DiscordModulePrototype()
                                     .setDiscordBot(server.getDiscordBot())
                                     .setPublicChannelId(server.getPublicChannelId())

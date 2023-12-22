@@ -33,10 +33,9 @@ public abstract class ModulePrototype extends AbstractEntity {
     }
 
     public <T extends ServerModule<P>, P extends ModulePrototype> T toModule(Server server) {
-        var type = ModuleType.valueOf(dtype);
-        if (!type.getProto().isAssignableFrom(getClass()))
+        if (!dtype.getProto().isAssignableFrom(getClass()))
             throw new RuntimeException("Invalid dtype " + dtype + " for module " + this);
-        var module = type.getCtor().autoInvoke(server, this);
+        var module = dtype.getCtor().autoInvoke(server, this);
         return Polyfill.uncheckedCast(module);
     }
 
@@ -44,5 +43,4 @@ public abstract class ModulePrototype extends AbstractEntity {
     public boolean hasPermission(@NotNull User user, Permission... permissions) {
         return super.hasPermission(user, permissions) || server.hasPermission(user, permissions);
     }
-
 }

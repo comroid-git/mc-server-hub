@@ -35,7 +35,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @Controller
@@ -77,8 +76,8 @@ public class ApiController {
 
     @ResponseBody
     @GetMapping("/webapp/modules")
-    public List<ModuleType> modules() {
-        return Stream.of(ModuleType.values()).toList();
+    public Map<String, ModuleType<?,?>> modules() {
+        return ModuleType.cache;
     }
 
     @ResponseBody
