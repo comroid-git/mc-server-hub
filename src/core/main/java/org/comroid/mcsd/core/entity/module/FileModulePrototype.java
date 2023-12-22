@@ -1,14 +1,13 @@
 package org.comroid.mcsd.core.entity.module;
 
-import jakarta.persistence.Basic;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
 
 @Entity
 @Getter
@@ -16,7 +15,11 @@ import org.jetbrains.annotations.Nullable;
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class FileModulePrototype extends ModulePrototype {
-    private @Nullable String directory = "~/minecraft";
-    private @Nullable boolean forceCustomJar = false;
-    private @Nullable String backupsDir = "$HOME/backups";
+    public static final String DefaultDirectory = "~/minecraft";
+    public static final boolean DefaultForceCustomJar = false;
+    public static final String DefaultBackupsDir = "~/backups";
+
+    private @Nullable String directory;
+    private @Nullable Boolean forceCustomJar;
+    private @Nullable String backupsDir;
 }

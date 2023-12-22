@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class PlayerEventModulePrototype extends ModulePrototype {
-    private @Nullable @Basic Pattern chatPattern = ConsoleModule.pattern(
+    public static final Pattern DefaultChatPattern = ConsoleModule.pattern(
             "([(\\[{<](?<prefix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
                     //"([(\\[{<]" +
                     "<" +
@@ -27,15 +27,20 @@ public abstract class PlayerEventModulePrototype extends ModulePrototype {
                     //"[>}\\])]\\s?)\\s?" +
                     "([(\\[{<](?<suffix>[\\w\\s_-]+)[>}\\])]\\s?)*" +
                     "(?<message>.+)\\r?\\n?.*");
-    private @Nullable Pattern broadcastPattern = ConsoleModule.pattern(
+    public static final Pattern DefaultBroadcastPattern = ConsoleModule.pattern(
             "(?<username>[\\S\\w_-]+) issued parent command: " +
                     "/(?<command>(me)|(say)|(broadcast)) " +
                     "(?<message>.+)\\r?\\n?.*");
-    private @Nullable Pattern joinLeavePattern = ConsoleModule.pattern(
+    public static final Pattern DefaultJoinLeavePattern = ConsoleModule.pattern(
             "(?<username>[\\S\\w_-]+) " +
                     "(?<message>(joined|left) the game)\\r?\\n?");
-    private @Nullable Pattern achievementPattern = ConsoleModule.pattern(
+    public static final Pattern DefaultAchievementPattern = ConsoleModule.pattern(
             "(?<username>[\\S\\w_-]+) " +
                     "(?<message>has (made the advancement|completed the challenge) " +
                     "(\\[(?<advancement>[\\w\\s]+)]))\\r?\\n?");
+
+    private @Nullable @Basic Pattern chatPattern;
+    private @Nullable Pattern broadcastPattern;
+    private @Nullable Pattern joinLeavePattern;
+    private @Nullable Pattern achievementPattern;
 }

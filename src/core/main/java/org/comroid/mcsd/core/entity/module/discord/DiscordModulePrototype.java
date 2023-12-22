@@ -17,12 +17,14 @@ import org.jetbrains.annotations.Nullable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DiscordModulePrototype extends ModulePrototype {
+    public static final int DefaultPublicChannelEvents = 0xFFFF_FFFF;
+
     private @Nullable @ManyToOne DiscordBot discordBot;
     private @Nullable String publicChannelWebhook;
     private @Nullable @Column(unique = true) Long publicChannelId;
     private @Nullable Long moderationChannelId;
     private @Nullable @Column(unique = true) Long consoleChannelId;
     private @Nullable String consoleChannelPrefix;
-    private @Nullable Integer publicChannelEvents = 0xFFFF_FFFF;
-    private @Nullable Boolean fancyConsole = true;
+    private @Nullable Integer publicChannelEvents;
+    private @Deprecated @Nullable Boolean fancyConsole = true;
 }

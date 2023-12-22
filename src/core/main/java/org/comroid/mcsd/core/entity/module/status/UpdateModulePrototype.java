@@ -18,6 +18,9 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateModulePrototype extends ModulePrototype {
-    private @Nullable @Basic Duration updatePeriod = Duration.ofDays(7);
-    private @Nullable Instant lastUpdate = Instant.ofEpochMilli(0);
+    public static final Duration DefaultUpdatePeriod = Duration.ofDays(7);
+    public static final Instant DefaultLastUpdate = Instant.ofEpochMilli(0);
+
+    private @Nullable @Basic Duration updatePeriod;
+    private @Nullable Instant lastUpdate;
 }
