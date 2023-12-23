@@ -42,6 +42,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
+
 @Value
 public class ModuleType<Module extends ServerModule<Proto>, Proto extends ModulePrototype> implements Named {
     private static final Map<String, ModuleType<?, ?>> $cache = new ConcurrentHashMap<>();
@@ -75,21 +77,21 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     String description;
     Class<Module> impl;
     Class<Proto> proto;
-    @JsonIgnore Function<MCSD, ModuleRepo<Proto>> repo;
     @JsonIgnore Invocable<Module> ctor;
+    @JsonIgnore Function<MCSD, ModuleRepo<Proto>> obtainRepo;
 
     public ModuleType(String name,
                String description,
                Class<Module> impl,
                Class<Proto> proto,
-               Function<MCSD, ModuleRepo<Proto>> repo
+               Function<MCSD, ModuleRepo<Proto>> obtainRepo
     ) {
         this.name = name;
         this.description = description;
         this.impl = impl;
         this.proto = proto;
-        this.repo = repo;
         this.ctor = Invocable.ofConstructor(impl, Server.class, proto);
+        this.obtainRepo = obtainRepo;
 
         $cache.put(name, this);
     }
@@ -97,6 +99,11 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     @Override
     public String getAlternateName() {
         return description;
+    }
+
+    @JsonIgnore
+    public ModuleRepo<Proto> getRepo() {
+        return obtainRepo.apply(bean(MCSD.class));
     }
 
     public static SupplierX<ModuleType<?, ?>> of(String name) {

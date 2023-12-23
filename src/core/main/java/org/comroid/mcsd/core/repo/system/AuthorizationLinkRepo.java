@@ -20,7 +20,7 @@ public interface AuthorizationLinkRepo extends CrudRepository<AuthorizationLink,
     default AuthorizationLink create(User user, UUID targetId, AbstractEntity.Permission... permissions) {
         return create(user,targetId, Bitmask.combine(permissions));
     }
-    default AuthorizationLink create(User user, UUID targetId, int permissions) {
+    default AuthorizationLink create(User user, UUID targetId, long permissions) {
         String code;
         do {
             code = Token.random(16, false);
@@ -32,7 +32,7 @@ public interface AuthorizationLinkRepo extends CrudRepository<AuthorizationLink,
     default SupplierX<AuthorizationLink> validate(User user, UUID target, String code, AbstractEntity.Permission... permissions) {
         return validate(user, target, code, Bitmask.combine(permissions));
     }
-    default SupplierX<AuthorizationLink> validate(User user, UUID target, String code, int permissions) {
+    default SupplierX<AuthorizationLink> validate(User user, UUID target, String code, long permissions) {
         return SupplierX.ofSupplier(()-> Optional.ofNullable(code)
                 .flatMap(this::findById)
                 .filter(link -> link.getCreator().equals(user))

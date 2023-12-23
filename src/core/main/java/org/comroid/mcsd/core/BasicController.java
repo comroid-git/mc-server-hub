@@ -3,6 +3,7 @@ package org.comroid.mcsd.core;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import org.comroid.api.IntegerAttribute;
+import org.comroid.api.LongAttribute;
 import org.comroid.api.Named;
 import org.comroid.api.info.Log;
 import org.comroid.mcsd.core.entity.AbstractEntity;
@@ -27,9 +28,9 @@ import java.util.stream.Collectors;
 public class BasicController implements org.springframework.boot.web.servlet.error.ErrorController {
     @ResponseBody
     @GetMapping("/api/webapp/permissions")
-    public Map<@NotNull Integer, String> permissions() {
+    public Map<@NotNull Long, String> permissions() {
         return Arrays.stream(AbstractEntity.Permission.values())
-                .collect(Collectors.toMap(IntegerAttribute::getAsInt, Named::getName));
+                .collect(Collectors.toMap(LongAttribute::getAsLong, Named::getName));
     }
 
     @Deprecated

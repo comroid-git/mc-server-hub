@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.IntegerAttribute;
+import org.comroid.api.LongAttribute;
 import org.comroid.mcsd.core.BasicController;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.*;
@@ -56,6 +57,8 @@ public class GenericController {
     private AuthorizationLinkRepo authorizationLinkRepo;
     @Autowired
     private BasicController basicController;
+    @Autowired
+    private MCSD mcsd;
 
     /*
     @GetMapping("/error")
@@ -97,6 +100,7 @@ public class GenericController {
         var user = userRepo.get(session).assertion();
         var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
         model.addAttribute("user", user)
+                .addAttribute("modules", Streams.of(mcsd.getModules().findAllByServerId(serverId)).toList())
                 .addAttribute("target", server)
                 .addAttribute("edit", false)
                 .addAttribute("editKey", null);
@@ -145,7 +149,7 @@ public class GenericController {
                                     HttpServletRequest request
     ) throws IOException {
         Constraint.anyOf(method, "method", HttpMethod.GET, HttpMethod.POST).run();
-        int permissions = 0;
+        var permissions = 0L;
         FormData.@Nullable Object data = null;
         if (method == HttpMethod.POST) {
             data = FormData.Parser.parse(request.getReader().lines().collect(Collectors.joining("")));
@@ -165,7 +169,7 @@ public class GenericController {
                 .addAttribute("subject", subject)
                 .addAttribute("permissions", Arrays.stream(AbstractEntity.Permission.values())
                         .filter(perm -> Stream.of(AbstractEntity.Permission.None, AbstractEntity.Permission.Any).noneMatch(perm::equals))
-                        .sorted(Comparator.comparingInt(IntegerAttribute::getAsInt))
+                        .sorted(Comparator.comparingLong(LongAttribute::getAsLong))
                         .toList())
                 .addAttribute("mask", Objects.requireNonNullElse(target.getPermissions().get(subject), 0))
                 .addAttribute("target", target)

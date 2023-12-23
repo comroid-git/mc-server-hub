@@ -44,7 +44,7 @@ public abstract class AbstractEntity implements Named {
     @ManyToOne
     private User owner;
     @ElementCollection(fetch = FetchType.EAGER)
-    private Map<User, @NotNull Integer> permissions;
+    private Map<User, @NotNull Long> permissions;
     private @Nullable Integer version = CurrentVersion;
 
     public String getBestName() {
@@ -67,7 +67,7 @@ public abstract class AbstractEntity implements Named {
 
     public boolean hasPermission(@NotNull User user, AbstractEntity.Permission... permissions) {
         Constraint.Length.min(1, permissions, "permissions").run();
-        final var mask = this.permissions.getOrDefault(user, 0);
+        final var mask = this.permissions.getOrDefault(user, 0L);
         return (owner != null && user.getId().equals(owner.getId()))
                 || Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag))
                 || Utils.SuperAdmins.contains(user.getId());
@@ -123,31 +123,33 @@ public abstract class AbstractEntity implements Named {
         CreateServer,
         CreateSh,
         Modify,
+        Refresh,
+        Reload,
 
-        View(0x0100_0000, Status),
-        Moderate(0x0200_0000, Whitelist, Kick, Mute),
-        Manage(0x0400_0000, Ban, Start, Stop, Backup, Update, Maintenance, Enable),
-        Administrate(0x0800_0000, Console, Execute, Files, ForceOP, TriggerCron),
-        Delete(0x1000_0000),
+        View(0x0100_0000_0000_0000L, Status),
+        Moderate(0x0200_0000_0000_0000L, Whitelist, Kick, Mute),
+        Manage(0x0400_0000_0000_0000L, Ban, Start, Stop, Backup, Update, Maintenance, Enable),
+        Administrate(0x0800_0000_0000_0000L, Console, Execute, Files, ForceOP, TriggerCron),
+        Delete(0x1000_0000_0000_0000L),
 
         ManageUsers(0x2000_0000),
 
-        Any(0xffff_ffff);
+        Any(0xffff_ffffL);
 
         static {
             log.info("Registered permissions up to "+Delete);
         }
 
-        private final int value;
+        private final long value;
 
         Permission() {
             this(Bitmask.nextFlag());
         }
 
-        Permission(int base, Permission... members) {this.value = base | Bitmask.combine(members);}
+        Permission(long base, Permission... members) {this.value = base | Bitmask.combine(members);}
 
         @Override
-        public @NotNull Integer getValue() {
+        public @NotNull Long getValue() {
             return value;
         }
 

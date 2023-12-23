@@ -188,7 +188,7 @@ public class MCSD {
     public Set<AbstractEntity> migrateEntities() {
         class Helper {
             <T extends AbstractEntity> void getOrMigrate(Server server, ModuleType<?,?> type, Supplier<T> migratedObj) {
-                var repo = type.getRepo().apply(MCSD.this);
+                var repo = type.getObtainRepo().apply(MCSD.this);
                 if (repo.findByServerIdAndDtype(server.getId(), type.getName()).isPresent())
                     return;
                 var migrate = migratedObj.get();

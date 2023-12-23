@@ -68,7 +68,7 @@ public class Server extends AbstractEntity {
     private @Deprecated @Nullable Long ModerationChannelId;
     private @Deprecated @Nullable @Column(unique = true) Long ConsoleChannelId;
     private @Deprecated @Nullable String ConsoleChannelPrefix;
-    private @Deprecated int publicChannelEvents = 0xFFFF_FFFF;
+    private @Deprecated long publicChannelEvents = 0xFFFF_FFFF;
     private @Deprecated boolean fancyConsole = true;
     private @Deprecated boolean forceCustomJar = false;
     private @Deprecated @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
