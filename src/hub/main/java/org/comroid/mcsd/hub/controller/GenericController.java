@@ -131,6 +131,8 @@ public class GenericController {
                 .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).cast())
                 .orElseThrow(() -> new InsufficientPermissionsException(user, id, AbstractEntity.Permission.Modify));
         var target = core.findEntity(type, id);
+        if (target instanceof Server)
+            model.addAttribute("modules", Streams.of(mcsd.getModules().findAllByServerId(target.getId())).toList());
         model.addAttribute("user", user)
                 .addAttribute("edit", true)
                 .addAttribute("editKey", null)

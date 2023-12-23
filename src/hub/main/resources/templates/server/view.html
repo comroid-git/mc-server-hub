@@ -2,7 +2,9 @@
 <!--suppress HtmlFormInputWithoutLabel -->
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:insert="~{/head}"></head>
-<body onbeforeunload="unload()" onload="load()">
+<script type="text/javascript" th:src="@{/static/modules.js}"></script>
+<script type="text/javascript" th:src="@{/static/common.js}"></script>
+<body onload="load()" onbeforeunload="unload()">
 <div class="ui-menubar" th:insert="~{/menubar}"></div>
 <div class="ui-container-page">
     <div class="ui-content">
@@ -85,59 +87,30 @@
                                th:value="${target.queryPort}"
                                type="number"></td>
                 </tr>
-                <tr>
-                    <td>Rcon Port</td>
-                    <td><input max="65535" min="1" name="rConPort" th:readonly="${!edit}" th:value="${target.RConPort}"
-                               type="number"></td>
-                </tr>
-                <tr>
-                    <td>Rcon Password</td>
-                    <td><input name="rConPassword"
-                               th:readonly="${!edit}"
-                               th:value="${edit?'':(target.getRConPassword()!=null?'hidden':'rcon disabled')}"
-                               type="password"></td>
-                </tr>
                 </tbody>
             </table>
-            <h3>Discord Integration</h3>
-            <h5 class="error-text" th:unless="${target.getDiscordBot() != null}">Not configured</h5>
-            <table th:if="${target.getDiscordBot() != null}">
-                <tbody>
-                <tr>
-                    <td>Bot</td>
-                    <td><input name="discordBot" th:readonly="${!edit}"
-                               th:value="${edit?target.discordBot.id:target.discordBot.bestName}"
-                               type="text"></td>
-                </tr>
-                <tr>
-                    <td>Public Channel ID</td>
-                    <td><input name="publicChannelId" th:readonly="${!edit}" th:value="${target.publicChannelId}"
-                               type="number"></td>
-                </tr>
-                <tr>
-                    <td>Moderation Channel ID</td>
-                    <td><input name="moderationChannelId" th:readonly="${!edit}"
-                               th:value="${target.moderationChannelId}"
-                               type="number"></td>
-                </tr>
-                <tr>
-                    <td>Console Channel ID</td>
-                    <td><input name="consoleChannelId" th:readonly="${!edit}" th:value="${target.consoleChannelId}"
-                               type="number"></td>
-                </tr>
-                <tr>
-                    <td>Console Prefix</td>
-                    <td><input name="consoleChannelPrefix" th:readonly="${!edit}"
-                               th:value="${target.consoleChannelPrefix}"
-                               type="text"></td>
-                </tr>
-                <tr>
-                    <td>Fancier Console</td>
-                    <td><input name="fancyConsole" th:readonly="${!edit}" th:value="${target.fancyConsole}"
-                               type="checkbox">
+            <h3>Modules</h3>
+            <table>
+                <thead><tr>
+                    <th><button class="ui-button" onclick="addModule()">Add</button></th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>
+                        <!-- todo: both of these cause NS_BINDING_ABORTED errors for some reason
+                        <button onclick="reload(false)">Refresh Config</button>
+                        <button onclick="confirmAction('do a full reload', 'This will restart the server', ()=>reload(true))">Full Reload</button>
+                        -->
+                    </th>
+                </tr></thead>
+                <tbody><tr th:each="module: ${modules}">
+                    <td><input th:id="'state_'+${module.id}" class="state-switch" type="checkbox" th:checked="${module.enabled}"></td>
+                    <td th:text="${module.dtype.name}"></td>
+                    <td th:text="${module.dtype.description}"></td>
+                    <td>
+                        <a class="ui-button" th:href="@{'/module/edit/'+${module.id}}">Edit</a>
+                        <a class="ui-button" th:href="@{'/module/delete/'+${module.id}}">Delete</a>
                     </td>
-                </tr>
-                </tbody>
+                </tr></tbody>
             </table>
             <input th:if="${editKey!=null}" type="hidden" name="auth_key" th:value="${editKey}">
             <input th:if="${edit}" type="submit" value="Apply">

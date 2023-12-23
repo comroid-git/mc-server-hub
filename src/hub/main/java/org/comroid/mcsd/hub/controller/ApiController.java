@@ -215,7 +215,7 @@ public class ApiController {
     }
 
     @ResponseBody
-    @GetMapping("/module/state/{id}")
+    @GetMapping("/webapp/module/state/{id}")
     public boolean moduleState(
             @Autowired HttpSession session,
             @PathVariable UUID id,
@@ -225,7 +225,7 @@ public class ApiController {
             @Nullable @RequestParam(value = "fullReload", required = false) Boolean fullReload
     ) {
         // check request validity; set and toggle must not both be present
-        new Constraint.API(() -> set != null && toggle != null)
+        new Constraint.API(() -> !(set != null && toggle != null))
                 .setConstraint("request validity")
                 .setNameof("set and toggle param")
                 .setShouldBe("not both present")

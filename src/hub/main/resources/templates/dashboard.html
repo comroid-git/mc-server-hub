@@ -29,8 +29,10 @@
           <td th:text="${server.getHost()}">Host</td>
           <td>:</td>
           <td th:text="${server.getPort()}">Port</td>
-          <td><a class="ui-button" th:href="@{'/server/edit/'+${server.id}}">Edit</a>
-            <a class="ui-button" th:href="@{'/server/delete/'+${server.id}}">Delete</a></td>
+          <td>
+            <a class="ui-button" th:href="@{'/server/edit/'+${server.id}}">Edit</a>
+            <a class="ui-button" th:href="@{'/server/delete/'+${server.id}}">Delete</a>
+          </td>
         </tr></tbody>
       </table>
     </div>
