@@ -1,12 +1,15 @@
 $(document).ready(()=>{
-    document.querySelectorAll('.state-switch').forEach(checkbox => checkbox.addEventListener('click', switchModuleState))
-    document.querySelectorAll('.ui-table-parent').forEach(header => header.addEventListener('click', toggleExpansion))
+    document.querySelectorAll('.state-switch').forEach(checkbox => checkbox.addEventListener('click', switchModuleState));
+    document.querySelectorAll('.ui-table-parent').forEach(header => header.addEventListener('click', toggleExpansion));
+    document.querySelectorAll('input')
 });
 
 function addModule() {
+    let id = document.querySelector('[name=id]').value;
 }
 
 function switchModuleState(event) {
+    event.stopPropagation();
     let id = event.target.id.substring('state_'.length);
     fetch('/api/webapp/module/state/'+id+'?toggle=true')
         .then(rsp => rsp.json())
