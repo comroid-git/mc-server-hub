@@ -30,11 +30,11 @@ public abstract class ModulePrototype extends AbstractEntity {
 
     @Override
     public @Nullable String getDisplayName() {
-        return Objects.requireNonNull(super.getDisplayName(), () -> dtype + " for " + server);
+        return Objects.requireNonNullElseGet(super.getDisplayName(), () -> dtype + " for " + server);
     }
 
     public <T extends ServerModule<P>, P extends ModulePrototype> T toModule(Server server) {
-        if (!dtype.getProto().isAssignableFrom(getClass()))
+        if (!dtype.getProto().getType().isAssignableFrom(getClass()))
             throw new RuntimeException("Invalid dtype " + dtype + " for module " + this);
         var module = dtype.getCtor().autoInvoke(server, this);
         return Polyfill.uncheckedCast(module);

@@ -2,11 +2,9 @@ package org.comroid.mcsd.core.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.AttributeConverter;
+import lombok.ToString;
 import lombok.Value;
-import org.comroid.api.Invocable;
-import org.comroid.api.Named;
-import org.comroid.api.Polyfill;
-import org.comroid.api.SupplierX;
+import org.comroid.api.*;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
@@ -75,10 +73,10 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
 
     String name;
     String description;
-    Class<Module> impl;
-    Class<Proto> proto;
-    @JsonIgnore Invocable<Module> ctor;
-    @JsonIgnore Function<MCSD, ModuleRepo<Proto>> obtainRepo;
+    @ToString.Exclude DataStructure<Module> impl;
+    @ToString.Exclude DataStructure<Proto> proto;
+    @ToString.Exclude @JsonIgnore Invocable<Module> ctor;
+    @ToString.Exclude @JsonIgnore Function<MCSD, ModuleRepo<Proto>> obtainRepo;
 
     public ModuleType(String name,
                String description,
@@ -88,8 +86,8 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     ) {
         this.name = name;
         this.description = description;
-        this.impl = impl;
-        this.proto = proto;
+        this.impl = DataStructure.of(impl);
+        this.proto = DataStructure.of(proto);
         this.ctor = Invocable.ofConstructor(impl, Server.class, proto);
         this.obtainRepo = obtainRepo;
 
@@ -112,14 +110,14 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
 
     public static <Module extends ServerModule<Proto>, Proto extends ModulePrototype> SupplierX<ModuleType<Module, ?>> of(Module module) {
         return SupplierX.ofOptional(cache.values().stream()
-                .filter(type -> type.impl.isInstance(module))
+                .filter(type -> type.impl.getType().isInstance(module))
                 .map(Polyfill::<ModuleType<Module, Proto>>uncheckedCast)
                 .findAny());
     }
 
     public static <Proto extends ModulePrototype> SupplierX<ModuleType<?, Proto>> of(Proto proto) {
         return SupplierX.ofOptional(cache.values().stream()
-                .filter(type -> type.proto.isInstance(proto))
+                .filter(type -> type.proto.getType().isInstance(proto))
                 .map(Polyfill::<ModuleType<?, Proto>>uncheckedCast)
                 .findAny());
     }
