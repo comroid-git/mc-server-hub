@@ -86,8 +86,8 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     ) {
         this.name = name;
         this.description = description;
-        this.impl = DataStructure.of(impl);
-        this.proto = DataStructure.of(proto);
+        this.impl = DataStructure.of(impl, true);
+        this.proto = DataStructure.of(proto, true);
         this.ctor = Invocable.ofConstructor(impl, Server.class, proto);
         this.obtainRepo = obtainRepo;
 
