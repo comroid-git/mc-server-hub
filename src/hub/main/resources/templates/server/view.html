@@ -132,7 +132,7 @@
                                 </tr></thead>
                                 <tbody>
                                 <tr th:each="e: ${module.dtype.proto.properties}" th:with="prop = ${e.value}">
-                                    <td th:text="${prop.name}"></td>
+                                    <td th:text="${prop.alternateName}"></td>
                                     <td><input type="text" th:value="${prop.getter.invokeSilent(module)}"></td>
                                 </tr>
                                 </tbody>
