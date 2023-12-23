@@ -6,6 +6,7 @@
     --background-color: #f5f5f5;
     --table-border-color: #ddd;
     --table-header-background-color: #f5f5f5;
+    --ui-table-header-background-color: #ccc;
     --button-background-color: var(--primary-color);
     --button-color: #fff;
     --button-hover-background-color: #0069d9;
@@ -23,8 +24,9 @@
         --secondary-color: #1c1c1c;
         --text-color: #fff;
         --background-color: #1c1c1c;
-        --table-border-color: #444;
+        --table-border-color: #555;
         --table-header-background-color: #444;
+        --ui-table-header-background-color: #333;
         --button-background-color: #0d6efd;
         --button-color: #fff;
         --button-hover-background-color: #005fcc;
@@ -112,7 +114,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 table {
-    border-collapse: collapse;
     width: 100%;
     margin-bottom: 1rem;
 }
@@ -131,6 +132,10 @@ tr.serverEntry:hover {
     background-color: var(--secondary-color);
 }
 
+td .state-switch {
+    width: 50px;
+}
+
 .ui-button, button {
     background-color: var(--button-background-color);
     color: var(--button-color);
@@ -143,6 +148,61 @@ tr.serverEntry:hover {
 
 .ui-button:hover, button:hover {
     background-color: var(--button-hover-background-color);
+}
+
+.ui-table-parent, .ui-table-child {
+}
+
+.ui-table-parent {
+    background-color: var(--ui-table-header-background-color);
+    transition: all 0.6s;
+}
+
+.ui-table-parent:hover {
+    background-color: var(--table-border-color);
+    transition: all 0.6s;
+    cursor: pointer;
+}
+
+.ui-table-child {
+    display: none;
+}
+
+.module-state-switch-col {
+    width: 40px;
+    height: 40px;
+}
+.module-name-col {
+    width: 20%;
+}
+.module-desc-col {
+    width: auto;
+}
+.module-ctrl-col {
+    width: 50px;
+}
+.module-prop-name-col, .module-prop-value-col {
+    width: 50%;
+    height: 0;
+    padding: 0;
+}
+
+.ui-table-child table {
+    margin: 0;
+}
+
+.ui-table-child td {
+    padding: 0.3% 0.6%;
+}
+
+.ui-table-child tr {
+    transition: all 0.6s;
+    border-style: solid;
+}
+
+.ui-table-child tr:hover {
+    transition: all 0.6s;
+    background-color: var(--table-header-background-color);
 }
 
 /* Specific styles for the dashboard */

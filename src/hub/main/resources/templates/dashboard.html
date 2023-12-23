@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:insert="~{/head}"></head>
 <script type="text/javascript" th:src="@{/static/dashboard.js}"></script>
-<body onload="load()" onbeforeunload="unload()">
+<body>
 <div class="ui-menubar" th:insert="~{/menubar}"></div>
 <h3>Hello <b th:text="${user.getBestName()}"></b></h3>
 <div class="ui-container-page">

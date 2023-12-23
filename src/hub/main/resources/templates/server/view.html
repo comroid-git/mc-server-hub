@@ -4,7 +4,7 @@
 <head th:insert="~{/head}"></head>
 <script th:src="@{/static/modules.js}" type="text/javascript"></script>
 <script th:src="@{/static/common.js}" type="text/javascript"></script>
-<body onbeforeunload="unload()" onload="load()">
+<body>
 <div class="ui-menubar" th:insert="~{/menubar}"></div>
 <div class="ui-container-page">
     <div class="ui-content">
@@ -111,21 +111,25 @@
             </tr>
             </thead>
             <tbody>
-            <th:block th:each="module: ${modules}" th:id="'module_'+${module.id}">
-                <tr class="ui-table-parent">
-                    <td><input class="state-switch" th:checked="${module.enabled}" th:id="'state_'+${module.id}"
+            <th:block th:each="module: ${modules}">
+                <tr class="ui-table-parent" th:id="'module_'+${module.id}" onclick="toggleExpansion">
+                    <td class="module-state-switch-col"><input class="state-switch" th:checked="${module.enabled}" th:id="'state_'+${module.id}"
                                type="checkbox"></td>
-                    <td th:text="${module.dtype.name}"></td>
-                    <td th:text="${module.dtype.description}"></td>
-                    <td>
-                        <a class="ui-button" th:href="@{'/module/edit/'+${module.id}}">Edit</a>
+                    <td class="module-name-col" th:text="${module.dtype.name}"></td>
+                    <td class="module-desc-col" th:text="${module.dtype.description}"></td>
+                    <td class="module-ctrl-col">
+                        <!-- <a class="ui-button" th:href="@{'/module/edit/'+${module.id}}">Edit</a> -->
                         <a class="ui-button" th:href="@{'/module/delete/'+${module.id}}">Delete</a>
                     </td>
                 </tr>
-                <tr class="ui-table-child">
+                <tr class="ui-table-child" th:id="'detail_'+${module.id}">
                     <td colspan="4">
-                        <form th:id="'detail_'+${module.id}">
+                        <form>
                             <table>
+                                <thead><tr>
+                                    <th class="module-prop-name-col"></th>
+                                    <th class="module-prop-value-col"></th>
+                                </tr></thead>
                                 <tbody>
                                 <tr th:each="e: ${module.dtype.proto.properties}" th:with="prop = ${e.value}">
                                     <td th:text="${prop.name}"></td>

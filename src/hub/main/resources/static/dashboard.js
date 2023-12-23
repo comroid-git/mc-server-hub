@@ -1,9 +1,6 @@
-function load() {
+$(document).ready(()=> {
     refreshServerList();
-}
-
-function unload() {
-}
+});
 
 function refreshServerList() {
     document.querySelectorAll('.serverEntry').forEach(entry => {
