@@ -101,7 +101,7 @@
                 <div class="ui-blur" id="dialogue-module-add">
                     <form class="ui-dialogue" method="post" th:action="@{'/module/add/'+${target.id}}">
                         <select name="dtype">
-                            <option th:each="option: ${target.getFreeModuleTypes()}" th:value="${option.name}" th:text="${option.alternateName}"></option>
+                            <option th:each="option: ${target.getFreeModuleTypes()}" th:value="${option.name}" th:text="${option.name}"></option>
                         </select>
                         <input type="hidden" name="userId" th:value="${user.id}">
                         <input type="submit" value="Apply">
