@@ -156,7 +156,7 @@ body {
     display: none;
 }
 
-.ui-button, button {
+.ui-button, button, input[type=button], input[type=submit] {
     width: 100%;
     height: auto;
     padding: 0.5rem;
@@ -164,7 +164,7 @@ body {
 
     background-color: var(--button-background-color);
     border-radius: 0.25rem;
-    border: none;
+    border: 1px solid darkblue;
 
     color: var(--button-color);
     font-size: 1.1rem;
@@ -172,7 +172,7 @@ body {
     cursor: pointer;
 }
 
-.ui-button:hover, button:hover {
+.ui-button:hover, button:hover, input[type=button]:hover, input[type=submit]:hover {
     background-color: var(--button-hover-background-color);
 }
 
@@ -352,9 +352,45 @@ td .state-switch {
 
 
 /* dialog window */
-#dialogue-module-add {
-
+#dialog-module-add {
     display: none;
+
+    .icon-close {
+        position: absolute;
+
+        top: 7px;
+        right: 0;
+        z-index: 75;
+
+        width: 50px;
+        height: 50px;
+
+        border-radius: 15px;
+    }
+
+    .ui-dialog {
+        #btn-module-add-submit {
+            position: absolute;
+            bottom: 1.1rem;
+            left: 50%;
+
+            width: 95%;
+            border-radius: 15px;
+
+            transform: translateX(-50%);
+        }
+
+        #module-selector {
+            position: absolute;
+            left: 50%;
+            top: 10%;
+
+            height: 60%;
+            width: 40%;
+
+            transform: translateX(-50%);
+        }
+    }
 }
 
 .ui-blur {
@@ -371,10 +407,9 @@ td .state-switch {
 
     background-color: rgba(1,1,1,0.3);
     backdrop-filter: blur(3px);
-    transition: all 0.6s;
 }
 
-.ui-blur .ui-dialogue {
+.ui-blur .ui-dialog {
     display: table;
     position: fixed;
 
@@ -395,7 +430,6 @@ td .state-switch {
     border: 3.8px solid #777;
     background: #AAA;/* linear-gradient(304deg, rgba(228, 228, 228, 1) 14%, rgba(126, 126, 126, 1) 41%, rgba(94, 94, 94, 1) 61%, rgba(172, 172, 172, 1) 85%, rgba(208, 208, 208, 1) 100%);*/
     backdrop-filter: blur(3px);
-    transition: all 0.6s;
 }
 
 

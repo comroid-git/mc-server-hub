@@ -1,10 +1,12 @@
 $(document).ready(()=>{
     document.querySelectorAll('.state-switch').forEach(checkbox => checkbox.addEventListener('click', switchModuleState));
     document.querySelectorAll('.ui-table-parent').forEach(header => header.addEventListener('click', toggleExpansion));
+    document.querySelectorAll('.ui-blur').forEach(bg => bg.addEventListener('click', event => {
+        if (event.target.className !== 'ui-blur')
+            return;
+        bg.querySelector('button.icon-close').click(event);
+    }))
 });
-
-function addModule() {
-}
 
 function switchModuleState(event) {
     event.stopPropagation();

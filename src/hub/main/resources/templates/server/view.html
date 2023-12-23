@@ -21,14 +21,15 @@
             </tr>
             <tr>
                 <td>Displayname</td>
-                <td colspan="2"><input name="displayName" th:readonly="${!edit}" th:value="${target.displayName}" type="text">
+                <td colspan="2"><input name="displayName" th:readonly="${!edit}" th:value="${target.displayName}"
+                                       type="text">
                 </td>
             </tr>
             <tr>
                 <td>Owner</td>
                 <td colspan="2"><input name="owner" th:readonly="${!edit}"
-                           th:value="${edit?target.owner.id:target.owner.bestName}"
-                           type="text"></td>
+                                       th:value="${edit?target.owner.id:target.owner.bestName}"
+                                       type="text"></td>
             </tr>
             <tr>
                 <td>ID</td>
@@ -36,19 +37,21 @@
             </tr>
             <tr>
                 <td>Minecraft Version</td>
-                <td colspan="2"><input name="mcVersion" th:readonly="${!edit}" th:value="${target.mcVersion}" type="text"></td>
+                <td colspan="2"><input name="mcVersion" th:readonly="${!edit}" th:value="${target.mcVersion}"
+                                       type="text"></td>
             </tr>
             <tr>
                 <td>Loader</td>
                 <td colspan="2"><input name="loader" readonly
-                           th:value="${target.forceCustomJar} ? 'Custom JAR' : ${target.loaderName}"
-                           type="text"></td>
+                                       th:value="${target.forceCustomJar} ? 'Custom JAR' : ${target.loaderName}"
+                                       type="text"></td>
             </tr>
             <tr>
                 <td th:if="${target.customCommand != null}">Runscript</td>
-                <td colspan="2" th:if="${target.customCommand != null}"><input name="customCommand" th:readonly="${!edit}"
-                                                                   th:value="${target.customCommand}"
-                                                                   type="text"></td>
+                <td colspan="2" th:if="${target.customCommand != null}"><input name="customCommand"
+                                                                               th:readonly="${!edit}"
+                                                                               th:value="${target.customCommand}"
+                                                                               type="text"></td>
             </tr>
             <tr>
                 <td>Host</td>
@@ -60,8 +63,8 @@
             <tr>
                 <td>Homepage</td>
                 <td colspan="2"><a th:href="${target.homepage}"><input name="homepage" th:if="${edit}"
-                                                           th:value="${target.homepage}"
-                                                           type="url"></a></td>
+                                                                       th:value="${target.homepage}"
+                                                                       type="url"></a></td>
             </tr>
             </tbody>
         </table>
@@ -97,15 +100,21 @@
         <thead>
         <tr>
             <th>
-                <button class="ui-button" onclick="addModule()">Add</button>
-                <div class="ui-blur" id="dialogue-module-add">
-                    <form class="ui-dialogue" method="post" th:action="@{'/module/add/'+${target.id}}">
-                        <select name="dtype">
-                            <option th:each="option: ${target.getFreeModuleTypes()}" th:value="${option.name}" th:text="${option.name}"></option>
-                        </select>
-                        <input type="hidden" name="userId" th:value="${user.id}">
-                        <input type="submit" value="Apply">
-                    </form>
+                <button class="ui-button" id="btn-module-add"
+                        onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">Add
+                </button>
+                <div class="ui-blur" id="dialog-module-add">
+                    <div class="ui-dialog">
+                        <form class="dialog-form" method="post" th:action="@{'/module/add/'+${target.id}}">
+                            <select id="module-selector" multiple name="dtype">
+                                <option th:each="option: ${target.getFreeModuleTypes()}" th:text="${option.name}"
+                                        th:value="${option.name}"></option>
+                            </select>
+                            <input name="userId" th:value="${user.id}" type="hidden">
+                            <input id="btn-module-add-submit" type="submit" value="Apply">
+                        </form>
+                        <button class="icon-close" onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">X</button>
+                    </div>
                 </div>
             </th>
             <th>Name</th>
