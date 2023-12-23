@@ -98,8 +98,8 @@
     <h3>Modules</h3>
     <table>
         <thead>
-        <tr>
-            <th>
+        <tr th:with="canManageModules = ${target.hasPermission(user,T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}">
+            <th th:if="${canManageModules}">
                 <button class="ui-button" id="btn-module-add"
                         onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">Add
                 </button>
@@ -117,6 +117,7 @@
                     </div>
                 </div>
             </th>
+            <th th:unless="${canManageModules}"></th>
             <th>Name</th>
             <th>Description</th>
             <th>

@@ -3,7 +3,6 @@ package org.comroid.mcsd.hub.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.api.IntegerAttribute;
 import org.comroid.api.LongAttribute;
 import org.comroid.mcsd.core.BasicController;
 import org.comroid.mcsd.core.MCSD;
@@ -30,10 +29,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -119,6 +115,15 @@ public class GenericController {
                 .addAttribute("edit", false)
                 .addAttribute("editKey", null);
         return "user/view";
+    }
+
+    @PostMapping("/module/add/{id}")
+    public String addModules(HttpSession session, @PathVariable("id") UUID serverId) {
+        var user = userRepo.get(session).assertion();
+        var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
+        server.requirePermission(user, AbstractEntity.Permission.ManageModules);
+
+        return "redirect:/server/view/"+serverId;
     }
 
     @GetMapping("/{type}/edit/{id}")

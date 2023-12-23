@@ -397,7 +397,7 @@ td .state-switch {
     display: flex;
     position: fixed;
 
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(200%);
     top: 50%;
     left: 50%;
     z-index: 25;
@@ -413,7 +413,7 @@ td .state-switch {
     display: table;
     position: fixed;
 
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(50%);
     top: 50%;
     left: 50%;
     z-index: 50;

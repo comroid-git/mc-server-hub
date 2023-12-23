@@ -65,6 +65,12 @@ public abstract class AbstractEntity implements Named {
         return hasPermission(user, Permission.Any);
     }
 
+    public boolean hasPermission(@NotNull User user, long anyOf) {
+        return hasPermission(user, BitmaskAttribute
+                .valueOf(anyOf, Permission.class)
+                .toArray(Permission[]::new));
+    }
+
     public boolean hasPermission(@NotNull User user, AbstractEntity.Permission... permissions) {
         Constraint.Length.min(1, permissions, "permissions").run();
         final var mask = this.permissions.getOrDefault(user, 0L);
@@ -125,6 +131,7 @@ public abstract class AbstractEntity implements Named {
         Modify,
         Refresh,
         Reload,
+        ManageModules,
 
         View(0x0100_0000_0000_0000L, Status),
         Moderate(0x0200_0000_0000_0000L, Whitelist, Kick, Mute),
