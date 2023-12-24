@@ -54,7 +54,7 @@
           </td>
           <td>
             <span class="null-text" th:unless="${user.discordId != null}">Not linked</span>
-            <a th:if="${user.discordId != null}" th:href="'https://discordapp.com/channels/@me/'+${user.discordId}" th:text="${user.discordId}">Discord ID</a>
+            <a th:if="${user.discordId != null}" th:href="'https://discordapp.com/channels/@me/'+${user.discordId}" th:text="${user.discordId}" target="_blank">Discord ID</a>
           </td>
           <td>
             <span class="null-text" th:unless="${user.hubId != null}">Not linked</span>
@@ -62,7 +62,7 @@
           </td>
           <td>
             <span class="null-text" th:unless="${user.email != null}">Not provided</span>
-            <a th:if="${user.email != null}" th:href="'mailto:'+${user.email}" th:text="${user.email}">E-Mail</a>
+            <a th:if="${user.email != null}" th:href="'mailto:'+${user.email}" th:text="${user.email}" target="_blank">E-Mail</a>
           </td>
         </tr></tbody>
       </table>
