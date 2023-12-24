@@ -198,24 +198,6 @@ public class ApiController {
     }
 
     @ResponseBody
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PostMapping("/open/agent/{agentId}/server/{serverId}/player/event")
-    public void playerEvent(
-            @PathVariable UUID agentId,
-            @PathVariable UUID serverId,
-            @NotNull @RequestHeader("Authorization") String token,
-            @RequestBody PlayerEvent event
-    ) {
-        if (agents.getByIdAndToken(agentId, token).isEmpty())
-            throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
-        manager.get(serverId).assertion("Server with ID " + serverId + " not found")
-                .<PlayerEventModule<PlayerEventModulePrototype>>component(PlayerEventModule.class)
-                .assertion("Server with ID " + serverId + " does not accept Player Events")
-                .getBus()
-                .publish(event);
-    }
-
-    @ResponseBody
     @GetMapping("/webapp/module/state/{id}")
     public boolean moduleState(
             @Autowired HttpSession session,
@@ -262,6 +244,12 @@ public class ApiController {
     }
 
     @ResponseBody
+    @GetMapping("/findUserByName/{name}")
+    public User findUserByName(@PathVariable String name) {
+        return users.findByName(name).orElseThrow(() -> new EntityNotFoundException(User.class, name));
+    }
+
+    @ResponseBody
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @GetMapping("/open/agent/hello/{id}")
     public void agentHello(
@@ -284,12 +272,23 @@ public class ApiController {
             return;
         log.info("Agent %s registered with new base url: %s".formatted(agent, baseUrl));
         agents.setBaseUrl(id, $baseUrl);
-        return;
     }
 
     @ResponseBody
-    @GetMapping("/findUserByName/{name}")
-    public User findUserByName(@PathVariable String name) {
-        return users.findByName(name).orElseThrow(() -> new EntityNotFoundException(User.class, name));
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PostMapping("/open/agent/{agentId}/server/{serverId}/player/event")
+    public void playerEvent(
+            @PathVariable UUID agentId,
+            @PathVariable UUID serverId,
+            @NotNull @RequestHeader("Authorization") String token,
+            @RequestBody PlayerEvent event
+    ) {
+        if (agents.getByIdAndToken(agentId, token).isEmpty())
+            throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
+        manager.get(serverId).assertion("Server with ID " + serverId + " not found")
+                .<PlayerEventModule<PlayerEventModulePrototype>>component(PlayerEventModule.class)
+                .assertion("Server with ID " + serverId + " does not accept Player Events")
+                .getBus()
+                .publish(event);
     }
 }
