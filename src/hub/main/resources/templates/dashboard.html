@@ -41,17 +41,13 @@
       <table>
         <thead><tr>
           <th></th>
-          <th>Hub Profile</th>
           <th>Minecraft</th>
           <th>Discord ID</th>
+          <th>Hub Profile</th>
           <th>E-Mail</th>
         </tr></thead>
         <tbody><tr th:each="user: ${userRepo}">
           <td><a class="ui-button" th:href="@{'/user/view/'+${user.id}}">View</a></td>
-          <td>
-            <span class="null-text" th:unless="${user.hubId != null}">Not linked</span>
-            <a th:if="${user.hubId != null}" th:href="'https://hub.comroid.org/hub/users/'+${user.hubId}" target="_blank">Hub</a>
-          </td>
           <td>
             <span class="null-text" th:unless="${user.minecraftId != null}">Not linked</span>
             <a th:if="${user.minecraftId != null}" th:href="${user.nameMcURL}" th:text="${user.blockingMinecraftName()}" target="_blank">Minecraft Profile</a>
@@ -59,6 +55,10 @@
           <td>
             <span class="null-text" th:unless="${user.discordId != null}">Not linked</span>
             <a th:if="${user.discordId != null}" th:href="'https://discordapp.com/channels/@me/'+${user.discordId}" th:text="${user.discordId}">Discord ID</a>
+          </td>
+          <td>
+            <span class="null-text" th:unless="${user.hubId != null}">Not linked</span>
+            <a th:if="${user.hubId != null}" th:href="'https://hub.comroid.org/hub/users/'+${user.hubId}" target="_blank">Hub</a>
           </td>
           <td>
             <span class="null-text" th:unless="${user.email != null}">Not provided</span>
