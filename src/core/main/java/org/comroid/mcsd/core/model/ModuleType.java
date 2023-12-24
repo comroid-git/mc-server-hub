@@ -36,6 +36,7 @@ import org.comroid.mcsd.core.module.status.UptimeModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -94,6 +95,13 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
         $cache.put(name, this);
     }
 
+    public List<String> getDependencies() {
+        return Component.requires(Polyfill.uncheckedCast(impl.getType())).stream()
+                .flatMap(type -> ModuleType.of(type).stream())
+                .map(Named::getName)
+                .toList();
+    }
+
     @Override
     public String getAlternateName() {
         return description;
@@ -108,9 +116,13 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
         return SupplierX.of(cache.getOrDefault(name, null));
     }
 
-    public static <Module extends ServerModule<Proto>, Proto extends ModulePrototype> SupplierX<ModuleType<Module, ?>> of(Module module) {
+    public static <Module extends ServerModule<Proto>, Proto extends ModulePrototype> SupplierX<ModuleType<Module, Proto>> of(Module module) {
+        return of(module.getClass());
+    }
+
+    public static <Module extends ServerModule<Proto>, Proto extends ModulePrototype> SupplierX<ModuleType<Module, Proto>> of(Class<?> moduleType) {
         return SupplierX.ofOptional(cache.values().stream()
-                .filter(type -> type.impl.getType().isInstance(module))
+                .filter(type -> type.impl.getType().isAssignableFrom(moduleType))
                 .map(Polyfill::<ModuleType<Module, Proto>>uncheckedCast)
                 .findAny());
     }
