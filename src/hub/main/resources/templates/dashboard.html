@@ -41,16 +41,13 @@
       <table>
         <thead><tr>
           <th></th>
-          <th>Name</th>
-          <th>E-Mail</th>
           <th>Hub Profile</th>
           <th>Minecraft</th>
           <th>Discord ID</th>
+          <th>E-Mail</th>
         </tr></thead>
         <tbody><tr th:each="user: ${userRepo}">
           <td><a class="ui-button" th:href="@{'/user/view/'+${user.id}}">View</a></td>
-          <td th:text="${user.bestName}">Name</td>
-          <td th:text="${user.email}">E-Mail</td>
           <td>
             <span class="null-text" th:unless="${user.hubId != null}">Not linked</span>
             <a th:if="${user.hubId != null}" th:href="'https://hub.comroid.org/hub/users/'+${user.hubId}" target="_blank">Hub</a>
@@ -63,6 +60,7 @@
             <span class="null-text" th:unless="${user.discordId != null}">Not linked</span>
             <span th:if="${user.discordId != null}" th:text="${user.discordId}">Discord ID</span>
           </td>
+          <td th:text="${user.email}">E-Mail</td>
         </tr></tbody>
       </table>
     </div>
