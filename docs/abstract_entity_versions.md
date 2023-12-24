@@ -7,7 +7,3 @@ no version / outdated
 this version introduces
 - module settings via separate entities
 - agent id inside server entity
-
-# 2 - add more server module implementations
-add the following modules:
-- RconModule
