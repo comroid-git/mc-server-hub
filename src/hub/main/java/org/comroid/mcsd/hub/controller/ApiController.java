@@ -198,7 +198,7 @@ public class ApiController {
         }
     }
 
-    @PostMapping("/agent/{agentId}/server/{serverId}/player/event")
+    @PostMapping("/open/agent/{agentId}/server/{serverId}/player/event")
     public void playerEvent(
             @PathVariable UUID agentId,
             @PathVariable UUID serverId,
@@ -261,7 +261,7 @@ public class ApiController {
     }
 
     @GetMapping("/open/agent/hello/{id}")
-    public void agentHello(
+    public Agent agentHello(
             @PathVariable UUID id,
             @Nullable @RequestParam(value = "baseUrl",required = false) String baseUrl,
             @NotNull @RequestHeader("Authorization") String token,
@@ -277,9 +277,10 @@ public class ApiController {
                 .orElseThrow();
         final var agent = agents.findById(id).orElseThrow();
         if ($baseUrl.equals(agent.getBaseUrl()))
-            return;
+            return agent;
         log.info("Agent %s registered with new base url: %s".formatted(agent, baseUrl));
         agents.setBaseUrl(id, $baseUrl);
+        return agent;
     }
 
     @GetMapping("/findUserByName/{name}")
