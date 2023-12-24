@@ -62,9 +62,10 @@
             </tr>
             <tr>
                 <td>Homepage</td>
-                <td colspan="2"><a th:href="${target.homepage}"><input name="homepage" th:if="${edit}"
-                                                                       th:value="${target.homepage}"
-                                                                       type="url"></a></td>
+                <td colspan="2">
+                    <a th:unless="${edit}" th:href="${target.homepage}" th:text="${target.homepage}"></a>
+                    <input name="homepage" th:if="${edit}" th:value="${target.homepage}" type="url">
+                </td>
             </tr>
             </tbody>
         </table>
