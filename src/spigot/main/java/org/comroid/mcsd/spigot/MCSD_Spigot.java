@@ -6,6 +6,7 @@ import org.comroid.api.Polyfill;
 import org.comroid.mcsd.api.dto.PlayerEvent;
 import org.comroid.util.PathUtil;
 import org.comroid.util.REST;
+import org.comroid.util.StackTraceUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -23,14 +24,15 @@ public final class MCSD_Spigot extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        try {
-            req(REST.Method.GET, "/open/agent/hello/" + config.getString("mcsd.agent.id"))
+            req(REST.Method.GET, "/agent/hello/" + config.getString("mcsd.agent.id"))
                     .execute()
                     .thenApply(REST.Response::validate2xxOK)
-                    .join();
-        } catch (Throwable t) {
-            getLogger().warning("Could not reach Hub @ " + config.getString("mcsd.hubBaseUrl"));
-        }
+                    .thenRun(() -> getLogger().info("Ping to Hub succeeded"))
+                    .exceptionally(t -> {
+                        getLogger().warning("Could not reach Hub @ " + config.getString("mcsd.hubBaseUrl"));
+                        getLogger().fine(StackTraceUtils.toString(t));
+                        return null;
+                    });
 
         this.eventManager = new EventManager(this);
 
@@ -39,9 +41,9 @@ public final class MCSD_Spigot extends JavaPlugin {
 
     public String hub(String path) {
         path = PathUtil.sanitize(path);
-        if (path.startsWith("/"))
+        if (!path.startsWith("/"))
             path = '/' + path;
-        return config.getString("mcsd.hubBaseUrl") + path;
+        return config.getString("mcsd.hubBaseUrl") + "/api/open" + path;
     }
 
     public REST.Request req(REST.Method method, String path) {
@@ -50,7 +52,7 @@ public final class MCSD_Spigot extends JavaPlugin {
     }
 
     public void forward(PlayerEvent event) {
-        req(REST.Method.POST, "/api/open/agent/%s/server/%s/player/event".formatted(
+        req(REST.Method.POST, "/agent/%s/server/%s/player/event".formatted(
                 config.getString("mcsd.agent.id"),
                 config.getString("mcsd.agent.serverId")))
                 .withBody(event.json())

@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Polyfill;
-import org.comroid.api.SupplierX;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.api.dto.PlayerEvent;
 import org.comroid.mcsd.api.dto.StatusMessage;
@@ -198,6 +197,8 @@ public class ApiController {
         }
     }
 
+    @ResponseBody
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/open/agent/{agentId}/server/{serverId}/player/event")
     public void playerEvent(
             @PathVariable UUID agentId,
@@ -205,7 +206,7 @@ public class ApiController {
             @NotNull @RequestHeader("Authorization") String token,
             @RequestBody PlayerEvent event
     ) {
-        if (!agents.isTokenValid(agentId, token))
+        if (agents.getByIdAndToken(agentId, token).isEmpty())
             throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
         manager.get(serverId).assertion("Server with ID " + serverId + " not found")
                 .<PlayerEventModule<PlayerEventModulePrototype>>component(PlayerEventModule.class)
@@ -260,14 +261,17 @@ public class ApiController {
         return state;
     }
 
+    @ResponseBody
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @GetMapping("/open/agent/hello/{id}")
-    public Agent agentHello(
+    public void agentHello(
             @PathVariable UUID id,
             @Nullable @RequestParam(value = "baseUrl",required = false) String baseUrl,
             @NotNull @RequestHeader("Authorization") String token,
             HttpServletRequest request
     ) {
-        if (!agents.isTokenValid(id, token))
+        var validation = agents.getByIdAndToken(id, token);
+        if (validation.isEmpty())
             throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
         var $baseUrl = Optional.ofNullable(baseUrl)
                 .or(() -> Optional.ofNullable(request.getHeader("X-Forwarded-Host"))
@@ -275,14 +279,15 @@ public class ApiController {
                         .or(() -> Optional.of(request.getRemoteHost()))
                         .map(MCSD::wrapHostname))
                 .orElseThrow();
-        final var agent = agents.findById(id).orElseThrow();
+        final var agent = validation.get();
         if ($baseUrl.equals(agent.getBaseUrl()))
-            return agent;
+            return;
         log.info("Agent %s registered with new base url: %s".formatted(agent, baseUrl));
         agents.setBaseUrl(id, $baseUrl);
-        return agent;
+        return;
     }
 
+    @ResponseBody
     @GetMapping("/findUserByName/{name}")
     public User findUserByName(@PathVariable String name) {
         return users.findByName(name).orElseThrow(() -> new EntityNotFoundException(User.class, name));
