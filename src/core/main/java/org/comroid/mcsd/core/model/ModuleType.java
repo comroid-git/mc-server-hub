@@ -1,6 +1,7 @@
 package org.comroid.mcsd.core.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.AttributeConverter;
 import lombok.ToString;
 import lombok.Value;
@@ -100,6 +101,7 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
         $cache.put(name, this);
     }
 
+    @JsonInclude
     public List<String> getDependencies() {
         return Component.requires(Polyfill.uncheckedCast(impl.getType())).stream()
                 .flatMap(type -> ModuleType.of(type).stream())
