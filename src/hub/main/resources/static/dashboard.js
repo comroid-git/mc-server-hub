@@ -4,7 +4,7 @@ $(document).ready(()=> {
 
 function refreshServerList() {
     document.querySelectorAll('.serverEntry').forEach(entry => {
-        entry.querySelector('.statusIcon').className = 'statusIcon serverStatusUnknown';
+        entry.querySelector('.statusIcon').className = 'statusIcon icon-loading';
         entry.querySelector('.motd').innerHTML = 'Fetching MOTD ...';
         entry.querySelector('.players').innerHTML = 'Fetching players ...';
         fetch('/api/webapp/server/'+entry.id+'/status')
@@ -15,7 +15,7 @@ function refreshServerList() {
             })
             .then(resp => resp.json())
             .then(data => {
-                entry.querySelector('.statusIcon').className = 'statusIcon serverStatus'+data.status;
+                entry.querySelector('.statusIcon').className = 'statusIcon icon-'+data.status;
                 entry.querySelector('.motd').innerHTML = data.status==='offline'?'---':data.motd;
                 entry.querySelector('.players').innerHTML = data.status==='offline'?'---':`${data.playerCount}/${data.playerMax}`;
             })

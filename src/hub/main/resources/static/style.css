@@ -442,7 +442,7 @@ td .state-switch {
 
 
 /* status badges */
-.serverStatusUnknown {
+.icon-loading {
     border: var(--status-icon-border) solid #f3f3f3; /* gray border */
     border-top: var(--status-icon-border) solid #3498db; /* blue border */
     border-radius: 50%;
@@ -462,7 +462,7 @@ td .state-switch {
     /* end position */
 }
 
-.serverStatusonline {
+.icon-online {
     display: inline-block;
     width: var(--status-icon-size);
     height: var(--status-icon-size);
@@ -471,7 +471,7 @@ td .state-switch {
     position: relative;
 }
 
-.serverStatusonline::before {
+.icon-online::before {
     content: "";
     position: absolute;
     top: 50%;
@@ -483,7 +483,79 @@ td .state-switch {
     border-right: 2px solid green;
 }
 
-.serverStatusoffline {
+.icon-refresh {
+    display: inline-block;
+    width: var(--status-icon-size);
+    height: var(--status-icon-size);
+    border-radius: 50%;
+    border: 2px solid #3498db; /* blue border */
+    position: relative;
+}
+
+.icon-refresh::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    width: calc(var(--status-icon-size) * 0.8);
+    height: 2px;
+    background-color: #3498db; /* blue color */
+}
+
+.icon-refresh::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: calc(var(--status-icon-size) * 0.8);
+    height: 2px;
+    background-color: #3498db; /* blue color */
+}
+
+.icon-maintenance {
+    display: inline-block;
+    width: var(--status-icon-size);
+    height: var(--status-icon-size);
+    border-radius: 50%;
+    border: 2px solid #e67e22; /* orange border */
+    position: relative;
+}
+
+.icon-maintenance::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    width: calc(var(--status-icon-size) * 0.8);
+    height: 2px;
+    background-color: #e67e22; /* orange color */
+}
+
+/* Warning icon */
+.icon-warning {
+    display: inline-block;
+    width: var(--status-icon-size);
+    height: var(--status-icon-size);
+    border-radius: 50%;
+    border: 2px solid #f39c12; /* yellow border */
+    position: relative;
+}
+
+.icon-warning::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    width: calc(var(--status-icon-size) * 0.8);
+    height: 2px;
+    background-color: #f39c12; /* yellow color */
+}
+
+.icon-offline {
     display: inline-block;
     width: var(--status-icon-size);
     height: var(--status-icon-size);
@@ -492,8 +564,8 @@ td .state-switch {
     position: relative;
 }
 
-.serverStatusoffline::before,
-.serverStatusoffline::after {
+.icon-offline::before,
+.icon-offline::after {
     content: "";
     position: absolute;
     top: 50%;
@@ -504,11 +576,11 @@ td .state-switch {
     background-color: red;
 }
 
-.serverStatusoffline::before {
+.icon-offline::before {
     transform: translate(-50%, -50%) rotate(45deg);
 }
 
-.serverStatusoffline::after {
+.icon-offline::after {
     transform: translate(-50%, -50%) rotate(-45deg);
 }
 

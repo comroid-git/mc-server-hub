@@ -21,7 +21,7 @@
           <th></th>
         </tr></thead>
         <tbody><tr th:each="server: ${serverRepo}" th:id="${server.id}" class="serverEntry">
-          <td><div class="statusIcon serverStatusUnknown"></div></td>
+          <td><div class="statusIcon icon-loading"></div></td>
           <td><a class="ui-button" th:href="@{'/server/view/'+${server.id}}">View</a>
             <a class="ui-button" th:href="@{'/server/console/'+${server.id}}">Console</a></td>
           <td><div class="motd">Loading MOTD ...</div></td>
