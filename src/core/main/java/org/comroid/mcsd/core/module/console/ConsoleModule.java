@@ -58,10 +58,10 @@ public abstract class ConsoleModule<T extends ConsoleModulePrototype> extends Se
     @Getter
     @AllArgsConstructor
     public enum Direction implements BitmaskAttribute<Direction> {
-        Output(1),
-        Input(2),
-        Bidirectional(3);
+        Output(1L),
+        Input(2L),
+        Bidirectional(3L);
 
-        private final int value;
+        private final @NotNull Long value;
     }
 }

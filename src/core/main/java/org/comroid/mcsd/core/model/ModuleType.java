@@ -14,6 +14,7 @@ import org.comroid.mcsd.core.entity.module.local.LocalFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.local.LocalShellModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.PlayerListModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.RconModulePrototype;
 import org.comroid.mcsd.core.entity.module.ssh.SshFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
@@ -28,6 +29,7 @@ import org.comroid.mcsd.core.module.local.LocalFileModule;
 import org.comroid.mcsd.core.module.local.LocalShellModule;
 import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.player.PlayerListModule;
+import org.comroid.mcsd.core.module.remote.RconModule;
 import org.comroid.mcsd.core.module.ssh.SshFileModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
@@ -58,6 +60,9 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     public static final ModuleType<LocalExecutionModule, LocalExecutionModulePrototype> LocalExecution = new ModuleType<>("LocalExecution", "Local Execution Module", LocalExecutionModule.class, LocalExecutionModulePrototype.class, MCSD::getModules_localExecution);
     public static final ModuleType<LocalFileModule, LocalFileModulePrototype> LocalFile = new ModuleType<>("LocalFile", "Local File Module", LocalFileModule.class, LocalFileModulePrototype.class, MCSD::getModules_localFiles);
     public static final ModuleType<LocalShellModule, LocalShellModulePrototype> LocalShell = new ModuleType<>("LocalShell", "Local Shell Execution Module", LocalShellModule.class, LocalShellModulePrototype.class, MCSD::getModules_localShell);
+
+    // remote
+    public static final ModuleType<RconModule, RconModulePrototype> Rcon = new ModuleType<>("RCon","RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon);
 
     // player
     public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>("ConsolePlayerEvent", "Forward Console Player Events", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents);
