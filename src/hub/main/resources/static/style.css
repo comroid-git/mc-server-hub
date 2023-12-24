@@ -256,7 +256,7 @@ h3, h4, h5, h6 {
 
 a {
     color: var(--text-color);
-    text-decoration: underline dotted 0.1rem;
+    text-decoration: underline dotted 0.07rem;
 }
 
 a:visited {
