@@ -13,7 +13,7 @@ import java.util.UUID;
 public class AgentInfo {
     @NotNull UUID target;
     @NotNull UUID agent;
-    @NotNull String hubBaseUrl;
+    @Deprecated @NotNull String hubBaseUrl;
     @NotNull String token;
     @Nullable String baseUrl;
 }
