@@ -42,7 +42,7 @@
     }
 
     .ui-sidebar {
-        display: none;
+        visibility: hidden;
     }
 
     .ui-content {
