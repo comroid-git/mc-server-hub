@@ -26,7 +26,9 @@ import org.comroid.mcsd.core.repo.system.UserRepo;
 import org.comroid.mcsd.util.Tellraw;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -71,8 +73,8 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
                                 .mapData(msg -> new EmbedBuilder()
                                         .setAuthor(server.getAlternateName(),
                                                 Optional.ofNullable(server.getHomepage())
-                                                        .orElse(server.getViewURL()),
-                                                server.getThumbnailURL())
+                                                        .filter(Predicate.not(String::isBlank))
+                                                        .orElse(server.getViewURL()))//,server.getThumbnailURL())
                                         .setDescription(msg.toStatusMessage())
                                         .setColor(msg.getStatus().getColor())
                                         .setFooter(msg.getMessage())
@@ -83,7 +85,7 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
 
                 addChildren(
                         // mc -> dc
-                        chatBus.filterData(msg -> msg.getType().isFlagSet(proto.getPublicChannelEvents()))
+                        chatBus.filterData(msg -> msg.getType().isFlagSet(Objects.requireNonNullElse(proto.getPublicChannelEvents(),DiscordModulePrototype.DefaultPublicChannelEvents)))
                                 .mapData(msg -> {
                                     var player = bean(UserRepo.class).get(msg.getUsername()).assertion();
                                     String str = msg.toString();

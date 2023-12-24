@@ -47,11 +47,11 @@
                                        type="text"></td>
             </tr>
             <tr>
-                <td th:if="${target.customCommand != null}">Runscript</td>
-                <td colspan="2" th:if="${target.customCommand != null}"><input name="customCommand"
-                                                                               th:readonly="${!edit}"
-                                                                               th:value="${target.customCommand}"
-                                                                               type="text"></td>
+                <td>Runscript</td>
+                <td colspan="2">
+                    <input name="customCommand" th:if="${edit || target.customCommand != null}" th:readonly="${!edit}" th:value="${target.customCommand}" type="text">
+                    <span class="null-text" th:if="${!edit && target.customCommand == null}">Starting via MCSD Agent</span>
+                </td>
             </tr>
             <tr>
                 <td>Host</td>

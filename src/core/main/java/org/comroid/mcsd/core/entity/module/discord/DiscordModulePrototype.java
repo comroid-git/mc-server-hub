@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DiscordModulePrototype extends ModulePrototype {
-    public static final int DefaultPublicChannelEvents = 0xFFFF_FFFF;
+    public static final long DefaultPublicChannelEvents = 0xFFFF_FFFF_FFFF_FFFFL;
 
     private @Nullable @ManyToOne DiscordBot discordBot;
     private @Nullable String publicChannelWebhook;
