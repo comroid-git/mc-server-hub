@@ -37,6 +37,10 @@
 
 /* Media queries for mobile devices */
 @media only screen and (max-width: 768px) {
+    body {
+        width: auto !important;
+    }
+
     th, td {
         padding: 0.25rem;
     }
@@ -60,12 +64,6 @@
 }
 
 
-
-
-
-
-
-
 /* Global styles */
 html, body, #main {
     height: 100%;
@@ -78,11 +76,9 @@ html {
     --c1: #1d1d1d;
     --c2: #4e4f51;
     --c3: #3c3c3c;
-    background:
-            repeating-conic-gradient(from 30deg,#0000 0 120deg,var(--c3) 0 180deg)
-            calc(.5*var(--s)) calc(.5*var(--s)*0.577),
-            repeating-conic-gradient(from 30deg,var(--c1) 0 60deg,var(--c2) 0 120deg,var(--c3) 0 180deg);
-    background-size: var(--s) calc(var(--s)*0.577);
+    background: repeating-conic-gradient(from 30deg, #0000 0 120deg, var(--c3) 0 180deg) calc(.5 * var(--s)) calc(.5 * var(--s) * 0.577),
+    repeating-conic-gradient(from 30deg, var(--c1) 0 60deg, var(--c2) 0 120deg, var(--c3) 0 180deg);
+    background-size: var(--s) calc(var(--s) * 0.577);
 }
 
 body {
@@ -101,13 +97,6 @@ body {
 }
 
 
-
-
-
-
-
-
-
 /* UI components */
 .ui-content {
     width: 80%;
@@ -116,7 +105,7 @@ body {
     padding: 13px 50px 2rem 50px;
 
     background-color: var(--background-color);
-    box-shadow: rgba(0,0,0,0.3) 0 0 30px 30px;
+    box-shadow: rgba(0, 0, 0, 0.3) 0 0 30px 30px;
 }
 
 .ui-menubar {
@@ -156,11 +145,10 @@ body {
     display: none;
 }
 
-.ui-button, button, input[type=button], input[type=submit] {
+.ui-button:not(.simple), button:not(.simple), input[type=button], input[type=submit] {
     width: 100%;
     height: auto;
-    padding: 0.5rem;
-    margin-right: 0.5rem;
+    padding: 0.3rem;
 
     background-color: var(--button-background-color);
     border-radius: 0.25rem;
@@ -172,15 +160,9 @@ body {
     cursor: pointer;
 }
 
-.ui-button:hover, button:hover, input[type=button]:hover, input[type=submit]:hover {
+.ui-button:not(.simple):hover, button:not(.simple):hover, input[type=button]:hover, input[type=submit]:hover {
     background-color: var(--button-hover-background-color);
 }
-
-
-
-
-
-
 
 
 /* utility components */
@@ -216,7 +198,7 @@ body {
     border-radius: 5px;
     background-color: #801616;
     border: 3px solid black;
-    box-shadow: rgba(0,0,0,0.3) 5px 6px 5px;
+    box-shadow: rgba(0, 0, 0, 0.3) 5px 6px 5px;
     align-items: center;
     justify-content: center;
 }
@@ -234,13 +216,6 @@ input[readonly] {
 }
 
 
-
-
-
-
-
-
-
 /* general style settings */
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Fira Mono', monospace;
@@ -250,6 +225,7 @@ h1, h2, h3, h4, h5, h6 {
 h1, h2 {
     text-decoration: underline 0.05rem;
 }
+
 h3, h4, h5, h6 {
     text-decoration: underline 0.02rem;
 }
@@ -276,21 +252,17 @@ a.ui-button, a.clean-link {
 }
 
 
-
-
-
-
-
-
-
 /* table configuration */
 tr {
     background-color: var(--ui-table-header-background-color);
 }
 
-tr:hover {
-    background-color: var(--table-header-background-color);
+tr.ui-table-parent:hover {
     cursor: pointer;
+}
+
+tr.ui-table-parent:hover {
+    background-color: var(--table-header-background-color);
 }
 
 table {
@@ -322,33 +294,29 @@ td .state-switch {
 }
 
 
-
-
-
 /* module tables */
 .module-state-switch-col {
     width: 40px;
     height: 40px;
 }
+
 .module-name-col {
     width: 20%;
 }
+
 .module-desc-col {
     width: auto;
 }
+
 .module-ctrl-col {
     width: 50px;
 }
+
 .module-prop-name-col, .module-prop-value-col {
     width: 50%;
     height: 0;
     padding: 0;
 }
-
-
-
-
-
 
 
 /* dialog window */
@@ -405,7 +373,7 @@ td .state-switch {
     width: 100%;
     height: 100%;
 
-    background-color: rgba(1,1,1,0.3);
+    background-color: rgba(1, 1, 1, 0.3);
     backdrop-filter: blur(3px);
 }
 
@@ -428,7 +396,7 @@ td .state-switch {
 
     border-radius: 20px;
     border: 3.8px solid #777;
-    background: #AAA;/* linear-gradient(304deg, rgba(228, 228, 228, 1) 14%, rgba(126, 126, 126, 1) 41%, rgba(94, 94, 94, 1) 61%, rgba(172, 172, 172, 1) 85%, rgba(208, 208, 208, 1) 100%);*/
+    background: #AAA; /* linear-gradient(304deg, rgba(228, 228, 228, 1) 14%, rgba(126, 126, 126, 1) 41%, rgba(94, 94, 94, 1) 61%, rgba(172, 172, 172, 1) 85%, rgba(208, 208, 208, 1) 100%);*/
     backdrop-filter: blur(3px);
 }
 
@@ -438,12 +406,10 @@ td .state-switch {
 
 
 
-
-
-
-/* status badges */
-.icon-loading {
-    display: inline-block;
+/* icons */
+/* Refresh icon */
+.icon-refresh {
+    margin: auto;
     width: var(--status-icon-size);
     height: var(--status-icon-size);
     border-radius: 50%;
@@ -451,7 +417,61 @@ td .state-switch {
     position: relative;
 }
 
-.icon-loading::before {
+.icon-refresh:hover {
+    transform: rotate(360deg);
+    cursor: pointer;
+}
+
+.icon-refresh::before {
+    content: "";
+    position: absolute;
+
+    height: 50%;
+    width: 50%;
+
+    border-radius: 100%;
+    border-color: #3498db; /* blue border */
+    border-style: solid;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
+    border-right-style: none;
+
+    transform: translate(38%, 28%) rotate(45deg)
+}
+
+.icon-refresh::after {
+    content: "";
+    position: absolute;
+
+    /*background-color: yellow;*/
+    height: 15%;
+    width: 15%;
+
+    border-color: #3498db; /* blue border */
+    border-style: solid;
+    border-top-style: none;
+    border-left-style: none;
+    border-bottom-width: 2px;
+    border-right-width: 2px;
+
+    transform: translate(309%, 170%) rotate(45deg);
+}
+
+
+/* Loading Icon */
+.icon-loading {
+    margin: auto;
+    width: var(--status-icon-size);
+    height: var(--status-icon-size);
+    border-radius: 50%;
+    border: 2px solid #3498db; /* blue border */
+    position: relative;
+}
+
+.icon-loading::before,
+.icon-loading::after {
+    content: "";
     position: absolute;
     top: 50%;
     left: 50%;
@@ -465,8 +485,13 @@ td .state-switch {
     animation: spin 2s linear infinite;
 }
 
+.icon-loading::after {
+    transform: translate(-50%, -50%) rotate(180deg);
+}
+
+/* Checkmark Icon */
 .icon-online {
-    display: inline-block;
+    margin: auto;
     width: var(--status-icon-size);
     height: var(--status-icon-size);
     border-radius: 50%;
@@ -486,48 +511,9 @@ td .state-switch {
     border-right: 2px solid green;
 }
 
-/* Refresh icon */
-.icon-refresh {
-    display: inline-block;
-    width: var(--status-icon-size);
-    height: var(--status-icon-size);
-    border-radius: 50%;
-    border: 2px solid #3498db; /* blue border */
-    position: relative;
-}
-
-.icon-refresh::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: calc(var(--status-icon-size) * 0.6);
-    height: calc(var(--status-icon-size) * 0.6);
-    border: 2px solid #3498db; /* blue color */
-    border-radius: 50%;
-    border-top: none;
-    border-right: none;
-    animation: rotateArrows 2s linear infinite;
-}
-
-.icon-refresh::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(180deg);
-    width: calc(var(--status-icon-size) * 0.6);
-    height: calc(var(--status-icon-size) * 0.6);
-    border: 2px solid #3498db; /* blue color */
-    border-radius: 50%;
-    border-top: none;
-    border-right: none;
-    animation: rotateArrows 2s linear infinite;
-}
-
+/* maintenance icon */
 .icon-maintenance {
-    display: inline-block;
+    margin: auto;
     width: var(--status-icon-size);
     height: var(--status-icon-size);
     border-radius: 50%;
@@ -548,7 +534,7 @@ td .state-switch {
 
 /* Warning icon */
 .icon-warning {
-    display: inline-block;
+    margin: auto;
     width: var(--status-icon-size);
     height: var(--status-icon-size);
     border-radius: 50%;
@@ -568,7 +554,7 @@ td .state-switch {
 }
 
 .icon-offline {
-    display: inline-block;
+    margin: auto;
     width: var(--status-icon-size);
     height: var(--status-icon-size);
     border-radius: 50%;
@@ -597,26 +583,17 @@ td .state-switch {
 }
 
 
-
-
-
-
-
 /* animations */
 @keyframes spin {
     0% {
-        transform: rotate(0deg);
+        transform: translate(-50%, -50%) rotate(0deg);
     }
     /* start position */
     100% {
-        transform: rotate(360deg);
+        transform: translate(-50%, -50%) rotate(360deg);
     }
     /* end position */
 }
-
-
-
-
 
 
 
