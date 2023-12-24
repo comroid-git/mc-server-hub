@@ -1,5 +1,5 @@
 name: MCSD-Spigot
-version: '${version}'
+version: '0.1.0'
 main: org.comroid.mcsd.spigot.MCSD_Spigot
 api-version: '1.18'
 load: STARTUP

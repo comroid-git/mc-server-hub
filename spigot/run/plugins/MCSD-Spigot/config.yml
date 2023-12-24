@@ -1,6 +1,6 @@
 mcsd:
+  hubBaseUrl: http://localhost
   agent:
     id: d3e3eb2f-233e-434e-8446-5174f1bf91e3
-    serverId: f7d51724-fc3d-4cdf-bb6a-25beca1b79c6
     token: agentToken
-    hubBaseUrl: 127.0.0.1
+    serverId: f7d51724-fc3d-4cdf-bb6a-25beca1b79c6
