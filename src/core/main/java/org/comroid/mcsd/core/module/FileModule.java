@@ -44,32 +44,4 @@ public abstract class FileModule<T extends FileModulePrototype> extends ServerMo
             return sourceMd5.equals(localMd5);
         }
     }
-
-    public AlmostComplete<Properties> updateProperties() throws IOException {
-        var serverProperties = server.path("server.properties").toAbsolutePath().toString();
-        mkDir(serverProperties);
-        final var prop = new Properties();
-        try (var input = readFile(serverProperties)) {
-            prop.load(input);
-        }
-
-        prop.setProperty("parent-port", String.valueOf(server.getPort()));
-        prop.setProperty("max-players", String.valueOf(server.getMaxPlayers()));
-        prop.setProperty("white-list", String.valueOf(server.isWhitelist() || server.isMaintenance()));
-
-        // query
-        prop.setProperty("enable-query", String.valueOf(true));
-        prop.setProperty("query.port", String.valueOf(server.getQueryPort()));
-
-        // rcon
-        prop.setProperty("enable-rcon", String.valueOf(server.getRConPassword() != null && !server.getRConPassword().isBlank()));
-        prop.setProperty("rcon.port", String.valueOf(server.getRConPort()));
-        prop.setProperty("rcon.password", Objects.requireNonNullElse(server.getRConPassword(), ""));
-
-        return new AlmostComplete<>(() -> prop, it -> {
-            try (var out = writeFile(serverProperties)) {
-                it.store(out, "Managed Server Properties by MCSD");
-            }
-        });
-    }
 }

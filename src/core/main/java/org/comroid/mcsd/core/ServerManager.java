@@ -1,19 +1,24 @@
 package org.comroid.mcsd.core;
 
+import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.extern.java.Log;
 import org.comroid.api.*;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.model.ServerPropertiesModifier;
+import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
+import org.comroid.util.AlmostComplete;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -73,6 +78,42 @@ public class ServerManager {
             }
         });
         AtomicReference<UncheckedCloseable> running = new AtomicReference<>();
+
+        @Override
+        @SneakyThrows
+        protected void $initialize() {
+            updateProperties();
+        }
+
+        public AlmostComplete<Properties> updateProperties() throws IOException {
+            var serverProperties = server.path("server.properties").toAbsolutePath().toString();
+            var files = component(FileModule.class).assertion("No file module is specified");
+            files.mkDir(serverProperties);
+            final var prop = new Properties();
+            try (var input = files.readFile(serverProperties)) {
+                prop.load(input);
+            }
+
+            // generic
+            prop.setProperty("server-port", String.valueOf(server.getPort()));
+            prop.setProperty("max-players", String.valueOf(server.getMaxPlayers()));
+            prop.setProperty("white-list", String.valueOf(server.isWhitelist() || server.isMaintenance()));
+
+            // query
+            prop.setProperty("enable-query", String.valueOf(true));
+            prop.setProperty("query.port", String.valueOf(server.getQueryPort()));
+
+            // modules
+            Streams.of(moduleRepo.findAllByServerId(server.getId()))
+                    .flatMap(Streams.cast(ServerPropertiesModifier.class))
+                    .forEach(it -> it.modifyServerProperties(prop));
+
+            return new AlmostComplete<>(() -> prop, it -> {
+                try (var out = files.writeFile(serverProperties)) {
+                    it.store(out, "Managed Server Properties by MCSD");
+                }
+            });
+        }
 
         @Override
         public Object addChildren(Object @NotNull ... children) {

@@ -48,10 +48,4 @@ public class LocalFileModule extends FileModule<LocalFileModulePrototype> {
             throw new IOException("Failed to create directory: " + path);
         return new FileOutputStream(path, false);
     }
-
-    @Override
-    @SneakyThrows
-    protected void $initialize() {
-        updateProperties().get();
-    }
 }
