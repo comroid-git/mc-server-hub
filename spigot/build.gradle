@@ -17,7 +17,7 @@ sourceSets {
 tasks.register('dlServerJar', Download).configure {
     src 'https://github.com/IzzelAliz/Arclight/releases/download/Trials%2F1.0.2/arclight-forge-1.20.1-1.0.2.jar'
     //src 'https://serverjars.com/api/fetchJar/servers/paper/1.19.4'
-    dest "${buildDir}/libs/"
+    dest "${buildDir}/libs/server.jar"
 }
 
 tasks.register('serverJar', Copy) {
