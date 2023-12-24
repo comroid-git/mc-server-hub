@@ -63,7 +63,7 @@ public class UpdateModule extends ServerModule<UpdateModulePrototype> {
         var fut = CompletableFuture.supplyAsync(() -> {
             try {
                 // modify parent.properties
-                files.updateProperties();
+                files.updateProperties().get();
                 //try (var prop = files.writeFile(serverProperties)) {properties.store(prop, "MCSD Managed Server Properties");}
 
                 // download server.jar

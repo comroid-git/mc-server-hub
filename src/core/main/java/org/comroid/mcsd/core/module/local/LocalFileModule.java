@@ -52,6 +52,6 @@ public class LocalFileModule extends FileModule<LocalFileModulePrototype> {
     @Override
     @SneakyThrows
     protected void $initialize() {
-        updateProperties();
+        updateProperties().get();
     }
 }

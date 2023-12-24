@@ -5,23 +5,26 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Polyfill;
+import org.comroid.api.SupplierX;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.api.dto.PlayerEvent;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.*;
-import org.comroid.mcsd.core.entity.module.ModulePrototype;
+import org.comroid.mcsd.core.entity.module.player.PlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.*;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.StatusCode;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.repo.system.*;
 import org.comroid.util.Bitmask;
+import org.comroid.util.Constraint;
 import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +38,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @Controller
@@ -43,7 +45,7 @@ import java.util.stream.Stream;
 public class ApiController {
     @Qualifier("MCSD")
     @Autowired
-    private MCSD core;
+    private MCSD mcsd;
     @Autowired
     private UserRepo users;
     @Autowired
@@ -77,8 +79,8 @@ public class ApiController {
 
     @ResponseBody
     @GetMapping("/webapp/modules")
-    public List<ModulePrototype.Type> modules() {
-        return Stream.of(ModulePrototype.Type.values()).toList();
+    public Map<String, ModuleType<?,?>> modules() {
+        return ModuleType.cache;
     }
 
     @ResponseBody
@@ -186,7 +188,7 @@ public class ApiController {
             return ("Successfully added the following permissions for " + user + " to " + link.getTarget() + ":\n\t- " +
                     Arrays.stream(AbstractEntity.Permission.values())
                             .filter(p -> p != AbstractEntity.Permission.Any)
-                            .filter(p -> p.getAsInt() < 0x0100_0000)
+                            .filter(p -> p.getAsLong() < 0x0100_0000)
                             .filter(p -> p.isFlagSet(link.getPermissions()))
                             .map(Enum::name)
                             .collect(Collectors.joining("\n\t- ")))
@@ -206,10 +208,56 @@ public class ApiController {
         if (!agents.isTokenValid(agentId, token))
             throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
         manager.get(serverId).assertion("Server with ID " + serverId + " not found")
-                .component(PlayerEventModule.class)
+                .<PlayerEventModule<PlayerEventModulePrototype>>component(PlayerEventModule.class)
                 .assertion("Server with ID " + serverId + " does not accept Player Events")
                 .getBus()
                 .publish(event);
+    }
+
+    @ResponseBody
+    @GetMapping("/webapp/module/state/{id}")
+    public boolean moduleState(
+            @Autowired HttpSession session,
+            @PathVariable UUID id,
+            // presence of this
+            @Nullable @RequestParam(value = "set", required = false) Boolean set,
+            @Nullable @RequestParam(value = "toggle", required = false) Boolean toggle,
+            @Nullable @RequestParam(value = "fullReload", required = false) Boolean fullReload
+    ) {
+        // check request validity; set and toggle must not both be present
+        new Constraint.API(() -> !(set != null && toggle != null))
+                .setConstraint("request validity")
+                .setNameof("set and toggle param")
+                .setShouldBe("not both present")
+                .setHandler(e -> {
+                    throw new BadRequestException(e.getMessage());
+                }).run();
+
+        // gather related objects
+        var user = user(session);
+        var module = mcsd.getModules().findById(id).orElseThrow(()->new EntityNotFoundException(Module.class, id));
+        var state = module.isEnabled();
+
+        // set or toggle
+        if (set != null || toggle != null) {
+            module.requirePermission(user, AbstractEntity.Permission.Modify);
+            if (set != null)
+                state = set;
+            else state = !state;
+            module.getDtype().getRepo().updateModuleState(id, state);
+        } else module.requirePermission(user, AbstractEntity.Permission.View);
+
+        // if requested, reload
+        if (fullReload != null) {
+            var server = module.getServer();
+            server.requirePermission(user, fullReload ? AbstractEntity.Permission.Reload : AbstractEntity.Permission.Refresh);
+            var entry = manager.get(server).assertion();
+            if (fullReload)
+                entry.reloadModules();
+            else entry.reloadProtos();
+        }
+
+        return state;
     }
 
     @GetMapping("/open/agent/hello/{id}")

@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import org.comroid.api.io.FileHandle;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.module.FileModulePrototype;
+import org.comroid.util.AlmostComplete;
 import org.comroid.util.JSON;
 import org.comroid.util.MD5;
 
@@ -20,14 +21,18 @@ public abstract class FileModule<T extends FileModulePrototype> extends ServerMo
     }
 
     public abstract boolean mkDir(String path);
+
     public abstract boolean exists(String path);
+
     public abstract long size(String path);
+
     public abstract InputStream readFile(String path);
+
     public abstract OutputStream writeFile(String path);
 
     @SneakyThrows
     public boolean isJarUpToDate() {
-        if (proto.isForceCustomJar())
+        if (Objects.requireNonNullElse(proto.getForceCustomJar(), FileModulePrototype.DefaultForceCustomJar))
             return true;
         var serverJar = new FileHandle(server.path("server.jar").toFile());
         if (!serverJar.exists())
@@ -40,10 +45,10 @@ public abstract class FileModule<T extends FileModulePrototype> extends ServerMo
         }
     }
 
-    public Properties updateProperties() throws IOException {
+    public AlmostComplete<Properties> updateProperties() throws IOException {
         var serverProperties = server.path("server.properties").toAbsolutePath().toString();
         mkDir(serverProperties);
-        var prop = new Properties();
+        final var prop = new Properties();
         try (var input = readFile(serverProperties)) {
             prop.load(input);
         }
@@ -61,9 +66,10 @@ public abstract class FileModule<T extends FileModulePrototype> extends ServerMo
         prop.setProperty("rcon.port", String.valueOf(server.getRConPort()));
         prop.setProperty("rcon.password", Objects.requireNonNullElse(server.getRConPassword(), ""));
 
-        try (var out = writeFile(serverProperties)) {
-            prop.store(out, "Managed Server Properties by MCSD");
-        }
-        return prop;
+        return new AlmostComplete<>(() -> prop, it -> {
+            try (var out = writeFile(serverProperties)) {
+                it.store(out, "Managed Server Properties by MCSD");
+            }
+        });
     }
 }

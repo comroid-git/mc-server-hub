@@ -10,14 +10,18 @@ import me.dilley.MineStat;
 import org.comroid.api.*;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
+import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.module.FileModulePrototype;
+import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.entity.system.DiscordBot;
 import org.comroid.mcsd.core.entity.system.ShConnection;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
+import org.comroid.util.Streams;
 import org.comroid.util.Token;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +34,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -68,7 +74,7 @@ public class Server extends AbstractEntity {
     private @Deprecated @Nullable Long ModerationChannelId;
     private @Deprecated @Nullable @Column(unique = true) Long ConsoleChannelId;
     private @Deprecated @Nullable String ConsoleChannelPrefix;
-    private @Deprecated int publicChannelEvents = 0xFFFF_FFFF;
+    private @Deprecated long publicChannelEvents = 0xFFFF_FFFF;
     private @Deprecated boolean fancyConsole = true;
     private @Deprecated boolean forceCustomJar = false;
     private @Deprecated @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
@@ -77,6 +83,18 @@ public class Server extends AbstractEntity {
     private @Deprecated Instant lastBackup = Instant.ofEpochMilli(0);
     private @Deprecated @Nullable Duration updatePeriod = Duration.ofDays(7);
     private @Deprecated Instant lastUpdate = Instant.ofEpochMilli(0);
+
+    public Set<ModuleType<?, ?>> getFreeModuleTypes() {
+        var existing = Streams.of(bean(MCSD.class)
+                        .getModules()
+                        .findAllByServerId(getId()))
+                .map(ModulePrototype::getDtype)
+                .toList();
+        return ModuleType.cache.values()
+                .stream()
+                .filter(Predicate.not(existing::contains))
+                .collect(Collectors.toUnmodifiableSet());
+    }
 
     @JsonIgnore
     public boolean isVanilla() {

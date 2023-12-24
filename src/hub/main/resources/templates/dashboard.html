@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:insert="~{/head}"></head>
 <script type="text/javascript" th:src="@{/static/dashboard.js}"></script>
-<body onload="load()" onbeforeunload="unload()">
+<body>
 <div class="ui-menubar" th:insert="~{/menubar}"></div>
 <h3>Hello <b th:text="${user.getBestName()}"></b></h3>
 <div class="ui-container-page">
@@ -11,7 +11,7 @@
       <h2>Servers</h2>
       <table>
         <thead><tr>
-          <th><button class="ui-button" onclick="refreshServerList()">Refresh</button></th>
+          <th><div class="simple ui-button icon-refresh" onclick="refreshServerList()"></div></th>
           <th><a class="ui-button" th:href="@{/server/create}">Create</a></th>
           <th>MOTD</th>
           <th>Players</th>
@@ -21,7 +21,7 @@
           <th></th>
         </tr></thead>
         <tbody><tr th:each="server: ${serverRepo}" th:id="${server.id}" class="serverEntry">
-          <td><div class="statusIcon serverStatusUnknown"></div></td>
+          <td><div class="statusIcon icon-loading"></div></td>
           <td><a class="ui-button" th:href="@{'/server/view/'+${server.id}}">View</a>
             <a class="ui-button" th:href="@{'/server/console/'+${server.id}}">Console</a></td>
           <td><div class="motd">Loading MOTD ...</div></td>
@@ -29,8 +29,10 @@
           <td th:text="${server.getHost()}">Host</td>
           <td>:</td>
           <td th:text="${server.getPort()}">Port</td>
-          <td><a class="ui-button" th:href="@{'/server/edit/'+${server.id}}">Edit</a>
-            <a class="ui-button" th:href="@{'/server/delete/'+${server.id}}">Delete</a></td>
+          <td>
+            <a class="ui-button" th:href="@{'/server/edit/'+${server.id}}">Edit</a>
+            <a class="ui-button" th:href="@{'/server/delete/'+${server.id}}">Delete</a>
+          </td>
         </tr></tbody>
       </table>
     </div>
@@ -39,16 +41,13 @@
       <table>
         <thead><tr>
           <th></th>
-          <th>Name</th>
-          <th>E-Mail</th>
           <th>Hub Profile</th>
           <th>Minecraft</th>
           <th>Discord ID</th>
+          <th>E-Mail</th>
         </tr></thead>
         <tbody><tr th:each="user: ${userRepo}">
           <td><a class="ui-button" th:href="@{'/user/view/'+${user.id}}">View</a></td>
-          <td th:text="${user.bestName}">Name</td>
-          <td th:text="${user.email}">E-Mail</td>
           <td>
             <span class="null-text" th:unless="${user.hubId != null}">Not linked</span>
             <a th:if="${user.hubId != null}" th:href="'https://hub.comroid.org/hub/users/'+${user.hubId}" target="_blank">Hub</a>
@@ -59,7 +58,11 @@
           </td>
           <td>
             <span class="null-text" th:unless="${user.discordId != null}">Not linked</span>
-            <span th:if="${user.discordId != null}" th:text="${user.discordId}">Discord ID</span>
+            <a th:if="${user.discordId != null}" th:href="'https://discordapp.com/channels/@me/'+${user.discordId}" th:text="${user.discordId}">Discord ID</a>
+          </td>
+          <td>
+            <span class="null-text" th:unless="${user.email != null}">Not provided</span>
+            <a th:if="${user.email != null}" th:href="'mailto:'+${user.email}" th:text="${user.email}">E-Mail</a>
           </td>
         </tr></tbody>
       </table>

@@ -18,10 +18,10 @@ public class AuthorizationLink {
     private @Id String code;
     private @ManyToOne User creator;
     private UUID target;
-    private int permissions;
+    private long permissions;
     private Instant validUntil;
 
-    public AuthorizationLink(String code, User creator, UUID target, int permissions) {
+    public AuthorizationLink(String code, User creator, UUID target, long permissions) {
         this.code = code;
         this.creator = creator;
         this.target = target;

@@ -25,6 +25,6 @@ public class DiscordModulePrototype extends ModulePrototype {
     private @Nullable Long moderationChannelId;
     private @Nullable @Column(unique = true) Long consoleChannelId;
     private @Nullable String consoleChannelPrefix;
-    private @Nullable Integer publicChannelEvents;
+    private @Nullable Long publicChannelEvents;
     private @Deprecated @Nullable Boolean fancyConsole = true;
 }
