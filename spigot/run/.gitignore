@@ -1,4 +1,5 @@
 *.*
 
 !plugins/MCSD-Spigot/config.yml
+!server.properties
 !eula.txt
