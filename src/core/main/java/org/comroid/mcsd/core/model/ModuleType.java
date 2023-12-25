@@ -15,6 +15,7 @@ import org.comroid.mcsd.core.entity.module.local.LocalExecutionModulePrototype;
 import org.comroid.mcsd.core.entity.module.local.LocalFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.local.LocalShellModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
+import org.comroid.mcsd.core.entity.module.player.ForceOpModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.PlayerListModulePrototype;
 import org.comroid.mcsd.core.entity.module.remote.RconModulePrototype;
 import org.comroid.mcsd.core.entity.module.ssh.SshFileModulePrototype;
@@ -30,6 +31,7 @@ import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.local.LocalFileModule;
 import org.comroid.mcsd.core.module.local.LocalShellModule;
 import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
+import org.comroid.mcsd.core.module.player.ForceOpModule;
 import org.comroid.mcsd.core.module.player.PlayerListModule;
 import org.comroid.mcsd.core.module.remote.RconModule;
 import org.comroid.mcsd.core.module.ssh.SshFileModule;
@@ -69,6 +71,7 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     // player
     public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>("ConsolePlayerEvent", "Forward Console Player Events", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents);
     public static final ModuleType<PlayerListModule, PlayerListModulePrototype> PlayerList = new ModuleType<>("PlayerList", "Cache Player List from Player Events", PlayerListModule.class, PlayerListModulePrototype.class, MCSD::getModules_playerList);
+    public static final ModuleType<ForceOpModule, ForceOpModulePrototype> ForceOP = new ModuleType<>("ForceOP", "Enforce OP for permitted players", ForceOpModule.class, ForceOpModulePrototype.class, MCSD::getModules_forceOp);
 
     // ssh
     public static final ModuleType<SshFileModule, SshFileModulePrototype> SshFile = new ModuleType<>("SshFile", "SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile);
