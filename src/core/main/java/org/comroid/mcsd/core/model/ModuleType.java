@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.AttributeConverter;
 import lombok.ToString;
 import lombok.Value;
+import org.comroid.annotations.Ignore;
 import org.comroid.api.*;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
@@ -82,8 +83,8 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     String description;
     @ToString.Exclude DataStructure<Module> impl;
     @ToString.Exclude DataStructure<Proto> proto;
-    @ToString.Exclude @JsonIgnore Invocable<Module> ctor;
-    @ToString.Exclude @JsonIgnore Function<MCSD, ModuleRepo<Proto>> obtainRepo;
+    @ToString.Exclude @JsonIgnore @Ignore Invocable<Module> ctor;
+    @ToString.Exclude @JsonIgnore @Ignore Function<MCSD, ModuleRepo<Proto>> obtainRepo;
 
     public ModuleType(String name,
                String description,
