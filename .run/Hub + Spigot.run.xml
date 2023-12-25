@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Hub + Spigot" type="CompoundRunConfigurationType">
+    <toRun name="Spigot Test Server" type="JarApplication" />
+    <toRun name="MinecraftServerHub" type="SpringBootApplicationConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>
