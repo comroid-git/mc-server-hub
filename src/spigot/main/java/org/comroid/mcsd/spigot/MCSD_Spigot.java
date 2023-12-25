@@ -11,6 +11,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 
 public final class MCSD_Spigot extends JavaPlugin {
     private EventManager eventManager;
@@ -24,15 +26,11 @@ public final class MCSD_Spigot extends JavaPlugin {
 
     @Override
     public void onEnable() {
-            req(REST.Method.GET, "/agent/hello/" + config.getString("mcsd.agent.id"))
-                    .execute()
-                    .thenApply(REST.Response::validate2xxOK)
-                    .thenRun(() -> getLogger().info("Ping to Hub succeeded"))
-                    .exceptionally(t -> {
-                        getLogger().warning("Could not reach Hub @ " + config.getString("mcsd.hubBaseUrl"));
-                        getLogger().fine(StackTraceUtils.toString(t));
-                        return null;
-                    });
+        req(REST.Method.GET, "/agent/hello/" + config.getString("mcsd.agent.id"))
+                .execute()
+                .thenApply(REST.Response::validate2xxOK)
+                .thenRun(() -> getLogger().info("Ping to Hub succeeded"))
+                .exceptionally(Polyfill.exceptionLogger(getLogger(), Level.WARNING, Level.FINE, "Could not reach Hub @ " + config.getString("mcsd.hubBaseUrl")));
 
         this.eventManager = new EventManager(this);
 
@@ -55,10 +53,10 @@ public final class MCSD_Spigot extends JavaPlugin {
         req(REST.Method.POST, "/agent/%s/server/%s/player/event".formatted(
                 config.getString("mcsd.agent.id"),
                 config.getString("mcsd.agent.serverId")))
-                .withBody(event.json())
+                .setBody(event.json())
                 .execute()
                 .thenApply(REST.Response::validate2xxOK)
-                .exceptionally(Polyfill.exceptionLogger(getLogger()));
+                .exceptionally(Polyfill.exceptionLogger(getLogger(), Level.WARNING, Level.FINE, "Could not forward PlayerEvent to Hub"));
     }
 
     @Override
