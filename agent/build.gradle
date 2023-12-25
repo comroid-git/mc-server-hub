@@ -28,7 +28,7 @@ sourceSets {
 repositories {
     maven { url 'https://maven.comroid.org' }
     mavenLocal()
-    jcenter()
+    mavencentral()
     maven { url 'https://jitpack.io' }
 }
 
