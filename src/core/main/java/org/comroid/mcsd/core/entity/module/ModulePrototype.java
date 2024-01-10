@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-import static org.comroid.util.StackTraceUtils.lessSimpleName;
+import static org.comroid.api.java.StackTraceUtils.lessSimpleName;
 
 @Entity
 @Getter

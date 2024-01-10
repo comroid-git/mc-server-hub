@@ -1,6 +1,6 @@
 package org.comroid.mcsd.core.module.local;
 
-import org.comroid.api.DelegateStream;
+import org.comroid.api.func.util.DelegateStream;
 import org.comroid.mcsd.core.entity.module.local.LocalShellModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.ShellModule;

@@ -1,16 +1,13 @@
 package org.comroid.mcsd.core.entity.system;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.Setter;
-import org.comroid.api.BitmaskAttribute;
+import org.comroid.api.attr.BitmaskAttribute;
+import org.comroid.api.func.util.Bitmask;
 import org.comroid.mcsd.core.entity.AbstractEntity;
-import org.comroid.util.Bitmask;
-
-import java.util.UUID;
 
 @Getter
 @Setter

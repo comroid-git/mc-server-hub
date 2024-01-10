@@ -5,14 +5,14 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.api.BitmaskAttribute;
-import org.comroid.api.Named;
-import org.comroid.api.SupplierX;
+import org.comroid.api.attr.BitmaskAttribute;
+import org.comroid.api.attr.Named;
+import org.comroid.api.func.ext.Wrap;
+import org.comroid.api.func.util.Bitmask;
+import org.comroid.api.info.Constraint;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.util.Utils;
-import org.comroid.util.Bitmask;
-import org.comroid.util.Constraint;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.data.jpa.repository.Query;
@@ -79,7 +79,7 @@ public abstract class AbstractEntity implements Named {
                 || Utils.SuperAdmins.contains(user.getId());
     }
 
-    public final SupplierX<AbstractEntity> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
+    public final Wrap<AbstractEntity> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
         return () -> hasPermission(user, permissions) ? this : null;
     }
 

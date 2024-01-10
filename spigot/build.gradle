@@ -15,8 +15,9 @@ sourceSets {
 }
 
 tasks.register('dlServerJar', Download).configure {
-    src 'https://serverjars.com/api/fetchJar/servers/paper/1.19.4'
-    dest "${buildDir}/libs"
+    src 'https://github.com/IzzelAliz/Arclight/releases/download/Trials%2F1.0.2/arclight-forge-1.20.1-1.0.2.jar'
+    //src 'https://serverjars.com/api/fetchJar/servers/paper/1.19.4'
+    dest "${buildDir}/libs/server.jar"
 }
 
 tasks.register('serverJar', Copy) {
@@ -53,12 +54,10 @@ repositories {
 }
 
 dependencies {
-    compileOnly "io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT"
-
-    compileOnly "org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT"
+    implementation 'org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT'
 
     // mcsd api
-    implementation project(':api') // todo: include as shadowjar
+    implementation project(':api')
 }
 
 def targetJavaVersion = 17

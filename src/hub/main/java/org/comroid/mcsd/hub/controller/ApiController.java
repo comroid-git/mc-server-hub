@@ -3,29 +3,28 @@ package org.comroid.mcsd.hub.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.api.BitmaskAttribute;
 import org.comroid.api.Polyfill;
-import org.comroid.api.SupplierX;
+import org.comroid.api.attr.BitmaskAttribute;
+import org.comroid.api.func.util.Bitmask;
+import org.comroid.api.func.util.Streams;
+import org.comroid.api.info.Constraint;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.api.dto.PlayerEvent;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
-import org.comroid.mcsd.core.entity.*;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.module.player.PlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.*;
+import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
-import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.StatusCode;
 import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.repo.system.*;
-import org.comroid.util.Bitmask;
-import org.comroid.util.Constraint;
-import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -198,22 +197,6 @@ public class ApiController {
         }
     }
 
-    @PostMapping("/agent/{agentId}/server/{serverId}/player/event")
-    public void playerEvent(
-            @PathVariable UUID agentId,
-            @PathVariable UUID serverId,
-            @NotNull @RequestHeader("Authorization") String token,
-            @RequestBody PlayerEvent event
-    ) {
-        if (!agents.isTokenValid(agentId, token))
-            throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
-        manager.get(serverId).assertion("Server with ID " + serverId + " not found")
-                .<PlayerEventModule<PlayerEventModulePrototype>>component(PlayerEventModule.class)
-                .assertion("Server with ID " + serverId + " does not accept Player Events")
-                .getBus()
-                .publish(event);
-    }
-
     @ResponseBody
     @GetMapping("/webapp/module/state/{id}")
     public boolean moduleState(
@@ -260,6 +243,14 @@ public class ApiController {
         return state;
     }
 
+    @ResponseBody
+    @GetMapping("/findUserByName/{name}")
+    public User findUserByName(@PathVariable String name) {
+        return users.findByName(name).orElseThrow(() -> new EntityNotFoundException(User.class, name));
+    }
+
+    @ResponseBody
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @GetMapping("/open/agent/hello/{id}")
     public void agentHello(
             @PathVariable UUID id,
@@ -267,7 +258,8 @@ public class ApiController {
             @NotNull @RequestHeader("Authorization") String token,
             HttpServletRequest request
     ) {
-        if (!agents.isTokenValid(id, token))
+        var validation = agents.getByIdAndToken(id, token);
+        if (validation.isEmpty())
             throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
         var $baseUrl = Optional.ofNullable(baseUrl)
                 .or(() -> Optional.ofNullable(request.getHeader("X-Forwarded-Host"))
@@ -275,15 +267,28 @@ public class ApiController {
                         .or(() -> Optional.of(request.getRemoteHost()))
                         .map(MCSD::wrapHostname))
                 .orElseThrow();
-        final var agent = agents.findById(id).orElseThrow();
+        final var agent = validation.get();
         if ($baseUrl.equals(agent.getBaseUrl()))
             return;
         log.info("Agent %s registered with new base url: %s".formatted(agent, baseUrl));
         agents.setBaseUrl(id, $baseUrl);
     }
 
-    @GetMapping("/findUserByName/{name}")
-    public User findUserByName(@PathVariable String name) {
-        return users.findByName(name).orElseThrow(() -> new EntityNotFoundException(User.class, name));
+    @ResponseBody
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PostMapping("/open/agent/{agentId}/server/{serverId}/player/event")
+    public void playerEvent(
+            @PathVariable UUID agentId,
+            @PathVariable UUID serverId,
+            @NotNull @RequestHeader("Authorization") String token,
+            @RequestBody PlayerEvent event
+    ) {
+        if (agents.getByIdAndToken(agentId, token).isEmpty())
+            throw new StatusCode(HttpStatus.UNAUTHORIZED, "Invalid token");
+        manager.get(serverId).assertion("Server with ID " + serverId + " not found")
+                .<PlayerEventModule<PlayerEventModulePrototype>>component(PlayerEventModule.class)
+                .assertion("Server with ID " + serverId + " does not accept Player Events")
+                .getBus()
+                .publish(event);
     }
 }

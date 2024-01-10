@@ -7,15 +7,15 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.comroid.api.Event;
+import org.comroid.api.func.util.Event;
+import org.comroid.api.func.util.Streams;
 import org.comroid.mcsd.api.dto.PlayerEvent;
-import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.module.player.PlayerEventModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.util.McFormatCode;
 import org.comroid.mcsd.util.Tellraw;
-import org.comroid.util.Streams;
 import org.intellij.lang.annotations.Language;
 
 import java.net.URL;

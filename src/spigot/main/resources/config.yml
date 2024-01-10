@@ -1,5 +1,0 @@
-mcsd:
-  agent:
-    serverId: <mcsd server id>
-    token: <mcsd server token>
-    hubBaseUrl: <mcsd hub base url>

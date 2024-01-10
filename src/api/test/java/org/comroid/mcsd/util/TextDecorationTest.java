@@ -1,7 +1,7 @@
 package org.comroid.mcsd.util;
 
-import org.comroid.api.TextDecoration;
-import org.comroid.util.Markdown;
+import org.comroid.api.text.Markdown;
+import org.comroid.api.text.TextDecoration;
 
 public class TextDecorationTest {
     public static void main(String[] args) {

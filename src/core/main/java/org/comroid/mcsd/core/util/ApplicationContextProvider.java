@@ -2,13 +2,12 @@ package org.comroid.mcsd.core.util;
 
 import lombok.extern.java.Log;
 import org.comroid.api.Polyfill;
-import org.comroid.api.SupplierX;
-import org.comroid.util.StackTraceUtils;
+import org.comroid.api.func.ext.Wrap;
+import org.comroid.api.java.StackTraceUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.Ordered;
@@ -26,7 +25,7 @@ public class ApplicationContextProvider implements ApplicationContextAware {
 
     private static ApplicationContext applicationContext;
 
-    public static SupplierX<ApplicationContext> get() {
+    public static Wrap<ApplicationContext> get() {
         return ()->applicationContext;
     }
 
@@ -41,7 +40,7 @@ public class ApplicationContextProvider implements ApplicationContextAware {
         } catch (NoUniqueBeanDefinitionException nubde) {
             throw new RuntimeException("More than one bean definition found for Bean '%s' of type %s".formatted(name, StackTraceUtils.lessSimpleName(type)), nubde);
         } catch (NoSuchBeanDefinitionException nsbde) {
-            throw new RuntimeException("No bean definition found for Bean of type "+StackTraceUtils.lessSimpleName(type), nsbde);
+            throw new RuntimeException("No bean definition found for Bean of type "+ StackTraceUtils.lessSimpleName(type), nsbde);
         }
     }
 

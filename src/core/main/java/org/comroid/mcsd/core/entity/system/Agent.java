@@ -1,16 +1,17 @@
 package org.comroid.mcsd.core.entity.system;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Entity;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import org.comroid.api.net.Token;
 import org.comroid.mcsd.core.entity.AbstractEntity;
-import org.comroid.util.Token;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
-
-import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Getter
 @Entity

@@ -23,7 +23,5 @@ public interface AgentRepo extends CrudRepository<Agent, UUID> {
     @Query("UPDATE Agent a SET a.baseUrl = :baseUrl WHERE a.id = :id")
     void setBaseUrl(@Param("id") UUID id, @Param("baseUrl") String baseUrl);
 
-    @Query("select case when a.token = :token then true else false end" +
-            " from Agent a where a.id = :id")
-    boolean isTokenValid(@Param("id") UUID id, @Param("token") String token);
+    Optional<Agent> getByIdAndToken(@Param("id") UUID id, @Param("token") String token);
 }

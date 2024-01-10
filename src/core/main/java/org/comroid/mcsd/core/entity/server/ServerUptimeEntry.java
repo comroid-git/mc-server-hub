@@ -1,7 +1,10 @@
 package org.comroid.mcsd.core.entity.server;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.comroid.mcsd.api.model.Status;
 
 import java.time.Instant;

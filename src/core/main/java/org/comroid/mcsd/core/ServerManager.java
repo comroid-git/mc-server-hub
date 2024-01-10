@@ -3,7 +3,13 @@ package org.comroid.mcsd.core;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.extern.java.Log;
-import org.comroid.api.*;
+import org.comroid.api.Polyfill;
+import org.comroid.api.func.exc.ThrowingFunction;
+import org.comroid.api.func.ext.Wrap;
+import org.comroid.api.func.util.AlmostComplete;
+import org.comroid.api.func.util.Streams;
+import org.comroid.api.tree.Component;
+import org.comroid.api.tree.UncheckedCloseable;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.model.ServerPropertiesModifier;
@@ -11,8 +17,6 @@ import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
-import org.comroid.util.AlmostComplete;
-import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -21,7 +25,10 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -40,7 +47,7 @@ public class ServerManager {
     public void startAll(List<Server> servers) {
         servers.stream()
                 .map(ThrowingFunction.logging(log, srv -> get(srv.getId()).assertion("Could not initialize " + srv)))
-                .flatMap(Streams.yield(Objects::nonNull, $ -> log.severe("A server was not initialized correctly")))
+                .flatMap(Streams.filter(Objects::nonNull, $ -> log.severe("A server was not initialized correctly")))
                 .map(entry -> {
                     var c = entry.reloadModules();
                     return "%s loaded %d modules".formatted(entry.server, c);
@@ -48,18 +55,18 @@ public class ServerManager {
                 .forEach(log::info);
     }
 
-    public SupplierX<Entry> get(Server server) {
+    public Wrap<Entry> get(Server server) {
         return get(server.getId());
     }
 
-    public SupplierX<Entry> get(final UUID id) {
+    public Wrap<Entry> get(final UUID id) {
         if (cache.containsKey(id))
             return () -> cache.get(id);
         var result = servers.findById(id);
         if (result.isEmpty())
-            return SupplierX.empty();
+            return Wrap.empty();
         final var server = result.get();
-        return SupplierX.of(cache.computeIfAbsent(id, k -> new Entry(server)));
+        return Wrap.of(cache.computeIfAbsent(id, k -> new Entry(server)));
     }
 
     public Component tree(Server server) {

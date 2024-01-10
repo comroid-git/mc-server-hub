@@ -1,6 +1,6 @@
 package org.comroid.mcsd.core.exception;
 
-import org.comroid.api.Command;
+import org.comroid.api.func.util.Command;
 import org.springframework.http.HttpStatus;
 
 public abstract class CommandStatusError extends Command.Error {

@@ -10,5 +10,4 @@ public class McsdConfig {
     DBInfo database;
     OAuth2Info oAuth;
     @Nullable AgentInfo agent;
-    @Nullable Integer sftpId;
 }

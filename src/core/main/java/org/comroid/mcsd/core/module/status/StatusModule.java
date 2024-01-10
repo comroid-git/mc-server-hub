@@ -6,7 +6,7 @@ import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.apache.commons.lang3.NotImplementedException;
-import org.comroid.api.Event;
+import org.comroid.api.func.util.Event;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
@@ -15,8 +15,6 @@ import org.comroid.mcsd.core.module.ServerModule;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-
-import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Getter

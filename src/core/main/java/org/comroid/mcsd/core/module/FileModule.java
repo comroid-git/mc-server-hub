@@ -1,19 +1,16 @@
 package org.comroid.mcsd.core.module;
 
 import lombok.SneakyThrows;
+import org.comroid.api.data.seri.JSON;
 import org.comroid.api.io.FileHandle;
-import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.api.net.MD5;
 import org.comroid.mcsd.core.entity.module.FileModulePrototype;
-import org.comroid.util.AlmostComplete;
-import org.comroid.util.JSON;
-import org.comroid.util.MD5;
+import org.comroid.mcsd.core.entity.server.Server;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.Objects;
-import java.util.Properties;
 
 public abstract class FileModule<T extends FileModulePrototype> extends ServerModule<T> {
     public FileModule(Server server, T proto) {

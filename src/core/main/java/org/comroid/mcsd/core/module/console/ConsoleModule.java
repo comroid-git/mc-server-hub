@@ -2,14 +2,13 @@ package org.comroid.mcsd.core.module.console;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.comroid.api.BitmaskAttribute;
-import org.comroid.api.Event;
-import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.api.attr.BitmaskAttribute;
+import org.comroid.api.func.util.Event;
 import org.comroid.mcsd.core.entity.module.console.ConsoleModulePrototype;
+import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;

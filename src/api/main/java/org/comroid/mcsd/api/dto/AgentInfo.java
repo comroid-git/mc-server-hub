@@ -1,7 +1,8 @@
 package org.comroid.mcsd.api.dto;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,7 +14,7 @@ import java.util.UUID;
 public class AgentInfo {
     @NotNull UUID target;
     @NotNull UUID agent;
-    @NotNull String hubBaseUrl;
+    @Deprecated @NotNull String hubBaseUrl;
     @NotNull String token;
     @Nullable String baseUrl;
 }

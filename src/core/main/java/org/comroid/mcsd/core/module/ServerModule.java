@@ -2,8 +2,8 @@ package org.comroid.mcsd.core.module;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.comroid.api.Component;
-import org.comroid.api.Named;
+import org.comroid.api.attr.Named;
+import org.comroid.api.tree.Component;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;

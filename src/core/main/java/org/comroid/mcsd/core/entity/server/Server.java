@@ -7,7 +7,11 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
-import org.comroid.api.*;
+import org.comroid.api.attr.BitmaskAttribute;
+import org.comroid.api.attr.IntegerAttribute;
+import org.comroid.api.func.ext.Wrap;
+import org.comroid.api.func.util.Streams;
+import org.comroid.api.net.Token;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.MCSD;
@@ -21,8 +25,6 @@ import org.comroid.mcsd.core.entity.system.ShConnection;
 import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
-import org.comroid.util.Streams;
-import org.comroid.util.Token;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
@@ -231,8 +233,8 @@ public class Server extends AbstractEntity {
                 .completeOnTimeout(new StatusMessage(getId()), (long) (statusTimeout.toSeconds() * 1.5), TimeUnit.SECONDS);
     }
 
-    public <T extends ServerModule<?>> SupplierX<T> component(Class<T> type) {
-        return SupplierX.ofStream(components(type));
+    public <T extends ServerModule<?>> Wrap<T> component(Class<T> type) {
+        return Wrap.ofStream(components(type));
     }
     public <T extends ServerModule<?>> Stream<T> components(Class<T> type) {
         return bean(ServerManager.class).get(getId())
