@@ -5,24 +5,19 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.comroid.api.Component;
-import org.comroid.api.Event;
-import org.comroid.api.Polyfill;
+import org.comroid.api.func.util.Event;
+import org.comroid.api.func.util.Streams;
+import org.comroid.api.java.Switch;
+import org.comroid.api.tree.Component;
 import org.comroid.mcsd.api.dto.PlayerEvent;
 import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
-import org.comroid.util.Streams;
-import org.comroid.util.Switch;
 import org.springframework.util.StringUtils;
 
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
-
-import static java.time.Instant.now;
-import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Getter

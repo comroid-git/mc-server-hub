@@ -5,7 +5,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.comroid.mcsd.core.entity.system.User;
 
 import java.time.Duration;
 import java.time.Instant;

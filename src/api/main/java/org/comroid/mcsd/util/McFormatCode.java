@@ -1,9 +1,8 @@
 package org.comroid.mcsd.util;
 
 import lombok.Getter;
-import org.comroid.api.Named;
-import org.comroid.api.TextDecoration;
-import org.comroid.util.Markdown;
+import org.comroid.api.attr.Named;
+import org.comroid.api.text.TextDecoration;
 
 import java.awt.*;
 import java.util.Arrays;

@@ -1,15 +1,9 @@
 package org.comroid.mcsd.api.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Value;
-import org.comroid.abstr.DataNode;
-import org.comroid.api.BitmaskAttribute;
-import org.comroid.util.Markdown;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.regex.Pattern;
+import org.comroid.api.attr.BitmaskAttribute;
+import org.comroid.api.data.seri.DataNode;
+import org.comroid.api.text.Markdown;
 
 @Value
 public class PlayerEvent implements DataNode {

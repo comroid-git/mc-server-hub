@@ -6,7 +6,13 @@ import jakarta.persistence.AttributeConverter;
 import lombok.ToString;
 import lombok.Value;
 import org.comroid.annotations.Ignore;
-import org.comroid.api.*;
+import org.comroid.api.Polyfill;
+import org.comroid.api.attr.BitmaskAttribute;
+import org.comroid.api.attr.Named;
+import org.comroid.api.data.seri.DataStructure;
+import org.comroid.api.func.ext.Wrap;
+import org.comroid.api.func.util.Invocable;
+import org.comroid.api.tree.Component;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
@@ -110,7 +116,8 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
 
     @JsonInclude
     public List<String> getDependencies() {
-        return Component.requires(Polyfill.uncheckedCast(impl.getType())).stream()
+        return Component.dependencies(Polyfill.uncheckedCast(impl.getType())).stream()
+                .map(Component.Dependency::getType)
                 .flatMap(type -> ModuleType.of(type).stream())
                 .map(Named::getName)
                 .toList();
@@ -126,23 +133,23 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
         return obtainRepo.apply(bean(MCSD.class));
     }
 
-    public static SupplierX<ModuleType<?, ?>> of(String name) {
-        return SupplierX.of(cache.getOrDefault(name, null));
+    public static Wrap<ModuleType<?, ?>> of(String name) {
+        return Wrap.of(cache.getOrDefault(name, null));
     }
 
-    public static <Module extends ServerModule<Proto>, Proto extends ModulePrototype> SupplierX<ModuleType<Module, Proto>> of(Module module) {
+    public static <Module extends ServerModule<Proto>, Proto extends ModulePrototype> Wrap<ModuleType<Module, Proto>> of(Module module) {
         return of(module.getClass());
     }
 
-    public static <Module extends ServerModule<Proto>, Proto extends ModulePrototype> SupplierX<ModuleType<Module, Proto>> of(Class<?> moduleType) {
-        return SupplierX.ofOptional(cache.values().stream()
+    public static <Module extends ServerModule<Proto>, Proto extends ModulePrototype> Wrap<ModuleType<Module, Proto>> of(Class<?> moduleType) {
+        return Wrap.ofOptional(cache.values().stream()
                 .filter(type -> type.impl.getType().isAssignableFrom(moduleType))
                 .map(Polyfill::<ModuleType<Module, Proto>>uncheckedCast)
                 .findAny());
     }
 
-    public static <Proto extends ModulePrototype> SupplierX<ModuleType<?, Proto>> of(Proto proto) {
-        return SupplierX.ofOptional(cache.values().stream()
+    public static <Proto extends ModulePrototype> Wrap<ModuleType<?, Proto>> of(Proto proto) {
+        return Wrap.ofOptional(cache.values().stream()
                 .filter(type -> type.proto.getType().isInstance(proto))
                 .map(Polyfill::<ModuleType<?, Proto>>uncheckedCast)
                 .findAny());

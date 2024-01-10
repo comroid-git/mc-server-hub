@@ -3,15 +3,13 @@ package org.comroid.mcsd.spigot;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.comroid.api.Polyfill;
+import org.comroid.api.net.REST;
 import org.comroid.mcsd.api.dto.PlayerEvent;
 import org.comroid.util.PathUtil;
-import org.comroid.util.REST;
-import org.comroid.util.StackTraceUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public final class MCSD_Spigot extends JavaPlugin {

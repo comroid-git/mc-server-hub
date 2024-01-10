@@ -5,18 +5,17 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.comroid.api.Component;
 import org.comroid.api.os.OS;
+import org.comroid.api.tree.Component;
 import org.comroid.mcsd.core.entity.module.status.UptimeModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.server.ServerUptimeEntry;
-import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.ServerModule;
+import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.repo.server.ServerUptimeRepo;
 
 import java.util.concurrent.CompletableFuture;
 
-import static java.time.Instant.now;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log

@@ -8,18 +8,18 @@ import lombok.extern.java.Log;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
-import org.comroid.api.Component;
 import org.comroid.api.Polyfill;
-import org.comroid.api.SupplierX;
-import org.comroid.api.ThrowingSupplier;
+import org.comroid.api.func.exc.ThrowingSupplier;
+import org.comroid.api.func.ext.Wrap;
+import org.comroid.api.tree.Component;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
-import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
-import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.ServerModule;
+import org.comroid.mcsd.core.module.console.ConsoleModule;
+import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.repo.system.UserRepo;
@@ -91,11 +91,11 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
                                     String str = msg.toString();
                                     str = EmojiPattern.matcher(str).replaceAll(match -> {
                                         var name = match.group(1);
-                                        var emoji = ThrowingSupplier.fallback(()->EmojiUtils.getEmoji(name),$->null).get();
+                                        var emoji = ThrowingSupplier.fallback(()->EmojiUtils.getEmoji(name), $->null).get();
                                         if (emoji != null)
                                             return emoji.getEmoji();
                                         var results = adapter.getJda().getEmojisByName(name, true);
-                                        return SupplierX.ofStream(results.stream())
+                                        return Wrap.ofStream(results.stream())
                                                 .map(CustomEmoji::getAsMention)
                                                 .orElse(match.group(0));
                                     });

@@ -1,6 +1,6 @@
 package org.comroid.mcsd.core.module.player;
 
-import org.comroid.api.Component;
+import org.comroid.api.tree.Component;
 import org.comroid.mcsd.api.dto.PlayerEvent;
 import org.comroid.mcsd.core.entity.module.player.PlayerListModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;

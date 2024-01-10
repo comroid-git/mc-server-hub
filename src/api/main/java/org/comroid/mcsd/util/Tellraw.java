@@ -1,10 +1,10 @@
 package org.comroid.mcsd.util;
 
 import lombok.*;
-import org.comroid.abstr.DataNode;
-import org.comroid.api.Named;
-import org.comroid.api.Vector;
-import org.comroid.util.JSON;
+import org.comroid.api.attr.Named;
+import org.comroid.api.data.Vector;
+import org.comroid.api.data.seri.DataNode;
+import org.comroid.api.data.seri.JSON;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.comroid.mcsd.util.McFormatCode.*;
+import static org.comroid.mcsd.util.McFormatCode.Reset;
+import static org.comroid.mcsd.util.McFormatCode.White;
 
 public interface Tellraw {
     static Command.Builder notify(Object selector, Component title, String content) {

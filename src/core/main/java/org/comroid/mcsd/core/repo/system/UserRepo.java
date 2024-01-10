@@ -2,11 +2,11 @@ package org.comroid.mcsd.core.repo.system;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
+import org.comroid.api.func.util.AlmostComplete;
+import org.comroid.api.func.util.Streams;
+import org.comroid.api.net.REST;
+import org.comroid.api.net.Token;
 import org.comroid.mcsd.core.entity.system.User;
-import org.comroid.util.AlmostComplete;
-import org.comroid.util.REST;
-import org.comroid.util.Streams;
-import org.comroid.util.Token;
 import org.jetbrains.annotations.ApiStatus;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -17,7 +17,9 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 public interface UserRepo extends CrudRepository<User, UUID> {

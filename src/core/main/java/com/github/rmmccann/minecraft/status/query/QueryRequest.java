@@ -1,7 +1,6 @@
 package com.github.rmmccann.minecraft.status.query;
 
 import lombok.AccessLevel;
-import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
 import java.io.ByteArrayOutputStream;

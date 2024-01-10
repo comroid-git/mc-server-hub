@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.comroid.api.Component;
+import org.comroid.api.tree.Component;
 import org.comroid.mcsd.core.entity.module.console.ConsoleModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ForceOpModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.PlayerEventModulePrototype;

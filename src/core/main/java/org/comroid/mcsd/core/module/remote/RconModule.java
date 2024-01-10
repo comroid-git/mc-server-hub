@@ -4,7 +4,7 @@ import io.graversen.minecraft.rcon.MinecraftRcon;
 import io.graversen.minecraft.rcon.service.ConnectOptions;
 import io.graversen.minecraft.rcon.service.MinecraftRconService;
 import io.graversen.minecraft.rcon.service.RconDetails;
-import org.comroid.api.DelegateStream;
+import org.comroid.api.func.util.DelegateStream;
 import org.comroid.mcsd.core.entity.module.remote.RconModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.console.ConsoleModule;

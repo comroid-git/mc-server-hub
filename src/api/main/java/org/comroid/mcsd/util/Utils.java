@@ -1,8 +1,8 @@
 package org.comroid.mcsd.util;
 
 import lombok.experimental.UtilityClass;
-import org.comroid.api.DelegateStream;
-import org.comroid.api.Event;
+import org.comroid.api.func.util.DelegateStream;
+import org.comroid.api.func.util.Event;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;

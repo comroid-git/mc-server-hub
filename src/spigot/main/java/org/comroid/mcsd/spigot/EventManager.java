@@ -8,7 +8,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
-import org.comroid.api.Component;
+import org.comroid.api.tree.Component;
 import org.comroid.mcsd.api.dto.PlayerEvent;
 
 @Value

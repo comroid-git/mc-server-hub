@@ -1,14 +1,19 @@
 package org.comroid.mcsd.core.module.local;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.SneakyThrows;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.comroid.api.Component;
-import org.comroid.api.DelegateStream;
-import org.comroid.api.Event;
 import org.comroid.api.Polyfill;
+import org.comroid.api.func.util.Debug;
+import org.comroid.api.func.util.DelegateStream;
+import org.comroid.api.func.util.Event;
+import org.comroid.api.func.util.Stopwatch;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.os.OS;
+import org.comroid.api.tree.Component;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.module.FileModulePrototype;
@@ -19,10 +24,8 @@ import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.util.Utils;
-import org.comroid.util.Debug;
 import org.comroid.util.MultithreadUtil;
 import org.comroid.util.PathUtil;
-import org.comroid.util.Stopwatch;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintStream;

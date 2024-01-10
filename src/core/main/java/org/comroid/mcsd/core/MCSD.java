@@ -9,12 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
-import org.comroid.api.DelegateStream;
 import org.comroid.api.Polyfill;
+import org.comroid.api.func.util.Debug;
+import org.comroid.api.func.util.DelegateStream;
+import org.comroid.api.func.util.Streams;
 import org.comroid.api.io.FileHandle;
+import org.comroid.api.net.REST;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.McsdConfig;
-import org.comroid.mcsd.core.entity.*;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
 import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
@@ -35,8 +38,8 @@ import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.entity.system.DiscordBot;
 import org.comroid.mcsd.core.entity.system.ShConnection;
 import org.comroid.mcsd.core.entity.system.User;
-import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.BadRequestException;
+import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.discord.DiscordAdapter;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
@@ -46,9 +49,6 @@ import org.comroid.mcsd.core.repo.system.DiscordBotRepo;
 import org.comroid.mcsd.core.repo.system.ShRepo;
 import org.comroid.mcsd.core.repo.system.UserRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
-import org.comroid.util.Debug;
-import org.comroid.util.REST;
-import org.comroid.util.Streams;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,8 +71,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Slf4j
 @Getter

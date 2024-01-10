@@ -2,9 +2,8 @@ package org.comroid.mcsd.core;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
-import org.comroid.api.IntegerAttribute;
-import org.comroid.api.LongAttribute;
-import org.comroid.api.Named;
+import org.comroid.api.attr.LongAttribute;
+import org.comroid.api.attr.Named;
 import org.comroid.api.info.Log;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.exception.CommandStatusError;
@@ -19,7 +18,10 @@ import org.springframework.web.util.NestedServletException;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 

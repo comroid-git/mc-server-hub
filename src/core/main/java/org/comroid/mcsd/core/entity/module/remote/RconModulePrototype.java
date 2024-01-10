@@ -6,11 +6,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.comroid.api.net.Token;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.module.console.ConsoleModulePrototype;
 import org.comroid.mcsd.core.model.ServerPropertiesModifier;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
-import org.comroid.util.Token;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;

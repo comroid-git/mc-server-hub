@@ -2,9 +2,9 @@ package org.comroid.mcsd.core.model;
 
 import lombok.Data;
 import net.dv8tion.jda.api.EmbedBuilder;
-import org.comroid.api.StreamSupplier;
+import org.comroid.api.func.ext.StreamSupplier;
+import org.comroid.api.func.util.Streams;
 import org.comroid.mcsd.core.entity.system.User;
-import org.comroid.util.Streams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
