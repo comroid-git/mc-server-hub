@@ -7,8 +7,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
+import org.comroid.annotations.Ignore;
 import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.IntegerAttribute;
+import org.comroid.api.data.seri.DataStructure;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.net.Token;
@@ -67,24 +69,24 @@ public class Server extends AbstractEntity {
     private int queryPort = 25565;
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
     private @Nullable @ManyToOne Agent agent; // todo: make not nullable
-    private @Deprecated  int rConPort = Defaults.RCON_PORT;
-    private @Deprecated @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
-    private @Deprecated @ManyToOne ShConnection shConnection;
-    private @Deprecated @ManyToOne @Nullable DiscordBot discordBot;
-    private @Deprecated @Nullable String PublicChannelWebhook;
-    private @Deprecated @Nullable @Column(unique = true) Long PublicChannelId;
-    private @Deprecated @Nullable Long ModerationChannelId;
-    private @Deprecated @Nullable @Column(unique = true) Long ConsoleChannelId;
-    private @Deprecated @Nullable String ConsoleChannelPrefix;
-    private @Deprecated long publicChannelEvents = 0xFFFF_FFFF;
-    private @Deprecated boolean fancyConsole = true;
-    private @Deprecated boolean forceCustomJar = false;
-    private @Deprecated @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
-    private @Deprecated byte ramGB = 4;
-    private @Deprecated @Nullable Duration backupPeriod = Duration.ofHours(12);
-    private @Deprecated Instant lastBackup = Instant.ofEpochMilli(0);
-    private @Deprecated @Nullable Duration updatePeriod = Duration.ofDays(7);
-    private @Deprecated Instant lastUpdate = Instant.ofEpochMilli(0);
+    private @Ignore(DataStructure.class) @Deprecated int rConPort = Defaults.RCON_PORT;
+    private @Ignore(DataStructure.class) @Deprecated @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
+    private @Ignore(DataStructure.class) @Deprecated @ManyToOne ShConnection shConnection;
+    private @Ignore(DataStructure.class) @Deprecated @ManyToOne @Nullable DiscordBot discordBot;
+    private @Ignore(DataStructure.class) @Deprecated @Nullable String PublicChannelWebhook;
+    private @Ignore(DataStructure.class) @Deprecated @Nullable @Column(unique = true) Long PublicChannelId;
+    private @Ignore(DataStructure.class) @Deprecated @Nullable Long ModerationChannelId;
+    private @Ignore(DataStructure.class) @Deprecated @Nullable @Column(unique = true) Long ConsoleChannelId;
+    private @Ignore(DataStructure.class) @Deprecated @Nullable String ConsoleChannelPrefix;
+    private @Ignore(DataStructure.class) @Deprecated long publicChannelEvents = 0xFFFF_FFFF;
+    private @Ignore(DataStructure.class) @Deprecated boolean fancyConsole = true;
+    private @Ignore(DataStructure.class) @Deprecated boolean forceCustomJar = false;
+    private @Ignore(DataStructure.class) @Deprecated @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
+    private @Ignore(DataStructure.class) @Deprecated byte ramGB = 4;
+    private @Ignore(DataStructure.class) @Deprecated @Nullable Duration backupPeriod = Duration.ofHours(12);
+    private @Ignore(DataStructure.class) @Deprecated Instant lastBackup = Instant.ofEpochMilli(0);
+    private @Ignore(DataStructure.class) @Deprecated @Nullable Duration updatePeriod = Duration.ofDays(7);
+    private @Ignore(DataStructure.class) @Deprecated Instant lastUpdate = Instant.ofEpochMilli(0);
 
     public Set<ModuleType<?, ?>> getFreeModuleTypes() {
         var existing = Streams.of(bean(MCSD.class)
@@ -129,10 +131,12 @@ public class Server extends AbstractEntity {
         return "Server " + getName();
     }
 
+    @Ignore(DataStructure.class)
     public String getDashboardURL() {
         return "https://mc.comroid.org/server/" + getId();
     }
 
+    @Ignore(DataStructure.class)
     public String getViewURL() {
         return "https://mc.comroid.org/server/view/" + getId();
     }
@@ -141,14 +145,17 @@ public class Server extends AbstractEntity {
         return host + ":" + port;
     }
 
+    @Ignore(DataStructure.class)
     public String getThumbnailURL() {
         return "https://mc-api.net/v3/server/favicon/" + getAddress();
     }
 
+    @Ignore(DataStructure.class)
     public String getStatusURL() {
         return "https://mc-api.net/v3/server/ping/" + getAddress();
     }
 
+    @Ignore(DataStructure.class)
     public String getJarInfoUrl() {
         var type = switch(mode){
             case Vanilla -> "vanilla";
@@ -158,6 +165,7 @@ public class Server extends AbstractEntity {
         return "https://serverjars.com/api/fetchDetails/%s/%s/%s".formatted(type,mode.name().toLowerCase(),mcVersion);
     }
 
+    @Ignore(DataStructure.class)
     public String getJarUrl() {
         var type = switch(mode){
             case Vanilla -> "vanilla";
@@ -167,6 +175,7 @@ public class Server extends AbstractEntity {
         return "https://serverjars.com/api/fetchJar/%s/%s/%s".formatted(type,mode.name().toLowerCase(),mcVersion);
     }
 
+    @Ignore(DataStructure.class)
     public String getLoaderName() {
         return mode.getName();
     }

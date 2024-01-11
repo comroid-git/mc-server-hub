@@ -5,11 +5,14 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.annotations.Ignore;
+import org.comroid.annotations.Order;
 import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.Named;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Bitmask;
 import org.comroid.api.info.Constraint;
+import org.comroid.api.text.Capitalization;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.util.Utils;
@@ -31,13 +34,15 @@ import java.util.function.Predicate;
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class AbstractEntity implements Named {
     public static final int CurrentVersion = 1;
-    @Id
+    @Id @Order(Integer.MIN_VALUE)
     private UUID id = UUID.randomUUID();
     @Setter
     @Nullable
+    @Order(Integer.MIN_VALUE+1)
     private String name;
     @Setter
     @Nullable
+    @Order(Integer.MIN_VALUE+2)
     private String displayName;
     @Setter
     @Nullable
@@ -45,7 +50,7 @@ public abstract class AbstractEntity implements Named {
     private User owner;
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<User, @NotNull Long> permissions;
-    private @Nullable Integer version = CurrentVersion;
+    private @Ignore @Nullable Integer version = CurrentVersion;
 
     public String getBestName() {
         return Optional.ofNullable(displayName)
@@ -55,6 +60,10 @@ public abstract class AbstractEntity implements Named {
                         .map(n -> n + "s " + getClass().getSimpleName()))
                 .filter(Predicate.not("null"::equals))
                 .orElseGet(id::toString);
+    }
+
+    public String getTypeName() {
+        return Capitalization.Title_Case.convert(getClass().getSimpleName());
     }
 
     public boolean isUser() {

@@ -7,17 +7,20 @@
 <div class="ui-container-page">
     <div class="ui-content">
         <form th:action="'/api/webapp/'+${type}+'/'+${target.id}" method="post">
-            <h2>User <b th:text="${target.getBestName()}"></b>
-                <span th:if="${user.canGovern(target)}"> - <a class="ui-button" th:href="@{'/user/edit/'+${id}}">Edit</a></span>
+            <h2>
+                <b th:text="${target.typeName}"></b> <b th:text="${target.getBestName()}"></b>
+                <!--<span th:if="${user.canGovern(target)}"> - <a class="ui-button" th:href="@{'/user/edit/'+${id}}">Edit</a></span>-->
             </h2>
             <table><tbody>
-                <tr th:each="prop: ${struct.properties.values()}">
+                <tr th:each="prop: ${struct.orderedProperties}" th:object="${prop}" th:if="${prop.type.standard}">
                     <td th:text="${prop.alternateName}"></td>
                     <td><input th:name="${prop.name}"
+                               th:value="${prop.getFrom(target)}"
                                th:placeholder="${prop.defaultValue}"
                                th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
-                               th:type="${prop.name.equals('email') ? 'email' : prop.type.htmlInputType}"
-                               data-th-attr="${String.join(', ', prop.type.htmlInputAttributes)}"></td>
+                               th:type="${prop.name.equals('email') ? 'email' : prop.type.htmlInputType}">
+                    <!--           data-th-attr="${String.join(', ', prop.type.htmlInputAttributes)}"-->
+                    </td>
                 </tr>
             </tbody></table>
             <input th:if="${editKey!=null}" type="hidden" name="auth_key" th:value="${editKey}">
