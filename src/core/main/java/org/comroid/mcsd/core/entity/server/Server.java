@@ -69,6 +69,7 @@ public class Server extends AbstractEntity {
     private int queryPort = 25565;
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
     private @Nullable @ManyToOne Agent agent; // todo: make not nullable
+    // cannot remove these because they are needed for migration
     private @Ignore(DataStructure.class) @Deprecated int rConPort = Defaults.RCON_PORT;
     private @Ignore(DataStructure.class) @Deprecated @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
     private @Ignore(DataStructure.class) @Deprecated @ManyToOne ShConnection shConnection;
