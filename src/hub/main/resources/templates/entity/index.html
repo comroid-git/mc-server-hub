@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!--suppress HtmlFormInputWithoutLabel -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{/head}"></head>
+<body>
+<div class="ui-menubar" th:insert="~{/menubar}"></div>
+<div class="ui-container-page">
+    <div class="ui-content">
+        <form th:action="'/api/webapp/'+${type}+'/'+${target.id}" method="post">
+            <h2>User <b th:text="${target.getBestName()}"></b>
+                <span th:if="${user.canGovern(target)}"> - <a class="ui-button" th:href="@{'/user/edit/'+${id}}">Edit</a></span>
+            </h2>
+            <table><tbody>
+                <tr th:each="prop: ${struct.properties.values()}">
+                    <td th:text="${prop.alternateName}"></td>
+                    <td><input th:name="${prop.name}"
+                               th:placeholder="${prop.defaultValue}"
+                               th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
+                               th:type="${prop.name.equals('email') ? 'email' : prop.type.htmlInputType}"
+                               data-th-attr="${String.join(', ', prop.type.htmlInputAttributes)}"></td>
+                </tr>
+            </tbody></table>
+            <input th:if="${editKey!=null}" type="hidden" name="auth_key" th:value="${editKey}">
+            <input th:if="${edit}" type="submit" value="Apply">
+        </form>
+    </div>
+</div>
+<div class="ui-footer" th:insert="~{/footer}"></div>
+</body>
+</html>

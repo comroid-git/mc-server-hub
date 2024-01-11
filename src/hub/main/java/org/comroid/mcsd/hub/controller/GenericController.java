@@ -3,7 +3,9 @@ package org.comroid.mcsd.hub.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.api.Polyfill;
 import org.comroid.api.attr.LongAttribute;
+import org.comroid.api.data.seri.DataStructure;
 import org.comroid.api.data.seri.FormData;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.info.Constraint;
@@ -29,10 +31,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -94,32 +93,6 @@ public class GenericController {
         return "dashboard";
     }
 
-    @GetMapping("/server/view/{id}")
-    public String serverView(Model model, HttpSession session, @PathVariable("id") UUID serverId) {
-        var user = userRepo.get(session).assertion();
-        var server = serverRepo.findById(serverId).orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
-        model.addAttribute("user", user)
-                .addAttribute("modules", Streams.of(mcsd.getModules().findAllByServerId(serverId)).toList())
-                .addAttribute("target", server)
-                .addAttribute("edit", false)
-                .addAttribute("editKey", null);
-        return "server/view";
-    }
-
-    @GetMapping("/user/view/{id}")
-    public String userView(Model model, HttpSession session, @PathVariable("id") UUID userId) {
-        var user = userRepo.get(session).assertion();
-        var subject = userRepo.findById(userId).orElseThrow(() -> new EntityNotFoundException(User.class, userId));
-        if (!user.canGovern(subject))
-            throw new InsufficientPermissionsException(user, subject, AbstractEntity.Permission.ManageUsers);
-        model.addAttribute("user", user)
-                .addAttribute("target", subject)
-                .addAttribute("canManageUsers", user.hasPermission(user, AbstractEntity.Permission.ManageUsers))
-                .addAttribute("edit", false)
-                .addAttribute("editKey", null);
-        return "user/view";
-    }
-
     @PostMapping("/module/add/{id}")
     public String addModules(HttpSession session, @PathVariable("id") UUID serverId) {
         var user = userRepo.get(session).assertion();
@@ -129,26 +102,49 @@ public class GenericController {
         return "redirect:/server/view/"+serverId;
     }
 
-    @GetMapping("/{type}/edit/{id}")
-    public String entityEdit(HttpSession session, Model model,
+    @GetMapping("/{type}/{action}/{id}")
+    public String entityPage(HttpSession session, Model model,
                              @PathVariable("type") String type,
+                             @PathVariable("action") String action,
                              @PathVariable("id") UUID id,
                              @RequestParam(value = "auth_code", required = false) String code) {
         var user = userRepo.get(session).assertion();
+        var target = core.findEntity(type, id);
         user.verifyPermission(user, AbstractEntity.Permission.Modify)
+                .or(() -> target instanceof User subject && user.canGovern(subject) ? subject : null)
                 .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).cast())
                 .orElseThrow(() -> new InsufficientPermissionsException(user, id, AbstractEntity.Permission.Modify));
-        var target = core.findEntity(type, id);
         if (target instanceof Server)
             model.addAttribute("modules", Streams.of(mcsd.getModules().findAllByServerId(target.getId())).toList());
         model.addAttribute("user", user)
-                .addAttribute("edit", true)
-                .addAttribute("editKey", null)
+                .addAttribute("edit", "edit".equals(action))
+                .addAttribute("editKey", code)
                 .addAttribute("target", target)
-                .addAttribute("type", type);
-        if (!type.equals("user"))
-            model.addAttribute(type, target);
-        return type + "/view";
+                .addAttribute("type", type)
+                .addAttribute("struct", DataStructure.of(target.getClass()));
+        return "entity/index";
+    }
+
+    @PostMapping("/api/webapp/{type}/{id}")
+    public String entityPage(HttpSession session, Model model,
+                             @PathVariable("type") String type,
+                             @PathVariable("id") UUID id,
+                             @RequestParam Map<String, String> data) {
+        var user = userRepo.get(session).assertion();
+        var target = core.findEntity(type, id);
+        var code = data.getOrDefault("auth_key", null);
+        user.verifyPermission(user, AbstractEntity.Permission.Modify)
+                .or(() -> target instanceof User subject && user.canGovern(subject) ? subject : null)
+                .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).cast())
+                .orElseThrow(() -> new InsufficientPermissionsException(user, id, AbstractEntity.Permission.Modify));
+        var affected = DataStructure.of(target.getClass()).update(data, Polyfill.uncheckedCast(target));
+        if (affected.isEmpty())
+            log.debug("No properties of " + target + " were affected");
+        else log.debug("Following properties of " + target + " were affected:"
+                + affected.stream()
+                .map(DataStructure.Member::getName)
+                .collect(Collectors.joining("\n\t- ", "\n\t- ", "")));
+        return "redirect:/%s/view/%s".formatted(type, id);
     }
 
     @RequestMapping(value = "/{type}/permissions/{target}/{user}")
