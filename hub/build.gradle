@@ -12,8 +12,10 @@ targetCompatibility = '17'
 mainClassName = 'org.comroid.mcsd.hub.Program'
 
 bootRun {
-    if (System.getenv().containsKey('DEBUGGER'))
+    if (System.getenv().containsKey('DEBUGGER')) {
+        System.out.println("Using remote Debugger")
         jvmArgs(['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'])
+    }
 }
 
 sourceSets {
