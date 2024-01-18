@@ -29,17 +29,18 @@ public class SecurityConfig {
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(@Autowired McsdConfig config) {
-        var info = config.getOAuth();
-        return new InMemoryClientRegistrationRepository(ClientRegistration.withRegistrationId(info.getName())
-                .clientId(info.getClientId())
-                .clientSecret(info.getSecret())
-                .scope(info.getScope())
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri(info.getAgentRedirectUrl())
-                .authorizationUri(info.getAuthorizationUrl())
-                .tokenUri(info.getTokenUrl())
-                .userInfoUri(info.getUserInfoUrl())
-                .userNameAttributeName(info.getUserNameAttributeName())
-                .build());
+        return new InMemoryClientRegistrationRepository(config.getOAuth().stream()
+                .map(info -> ClientRegistration.withRegistrationId(info.getName())
+                        .clientId(info.getClientId())
+                        .clientSecret(info.getSecret())
+                        .scope(info.getScope())
+                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                        .redirectUri(info.getAgentRedirectUrl())
+                        .authorizationUri(info.getAuthorizationUrl())
+                        .tokenUri(info.getTokenUrl())
+                        .userInfoUri(info.getUserInfoUrl())
+                        .userNameAttributeName(info.getUserNameAttributeName())
+                        .build())
+                .toArray(ClientRegistration[]::new));
     }
 }
