@@ -88,7 +88,7 @@ public interface UserRepo extends CrudRepository<User, UUID> {
     default AlmostComplete<User> get(HttpSession session) {
         var oAuth2User = ((OAuth2User) ((SecurityContext) session.getAttribute("SPRING_SECURITY_CONTEXT"))
                 .getAuthentication().getPrincipal());
-        var idStr = String.valueOf(Objects.requireNonNull(oAuth2User.getAttribute("id"), "User ID cannot be null"));
+        String idStr = Objects.requireNonNull(oAuth2User.getAttribute("id"), "User ID cannot be null");
         if (!idStr.matches(RegExpUtil.UUID4_PATTERN))
             return get(Long.parseLong(idStr));
         var id = UUID.fromString(idStr);
