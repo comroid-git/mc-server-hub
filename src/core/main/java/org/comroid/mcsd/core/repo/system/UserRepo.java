@@ -2,11 +2,17 @@ package org.comroid.mcsd.core.repo.system;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
+import org.comroid.api.data.seri.RegExpUtil;
+import org.comroid.api.data.seri.StandardValueType;
+import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.AlmostComplete;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.net.REST;
 import org.comroid.api.net.Token;
 import org.comroid.mcsd.core.entity.system.User;
+import org.comroid.mcsd.core.exception.EntityNotFoundException;
+import org.comroid.mcsd.core.module.discord.DiscordAdapter;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.jetbrains.annotations.ApiStatus;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +27,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 public interface UserRepo extends CrudRepository<User, UUID> {
     Optional<User> findByVerification(String verification);
@@ -59,6 +67,12 @@ public interface UserRepo extends CrudRepository<User, UUID> {
         }, this::save));
     }
 
+    default AlmostComplete<User> get(long discordId) {
+        var user = bean(DiscordAdapter.class).getJda().getUserById(discordId);
+        return Wrap.of(user).ifPresentMapOrElseThrow(this::get,
+                () -> new EntityNotFoundException(User.class, discordId));
+    }
+
     default AlmostComplete<User> get(net.dv8tion.jda.api.entities.User discordUser) {
         final var id = discordUser.getIdLong();
         return findByDiscordId(id).map(AlmostComplete::of).orElseGet(() -> new AlmostComplete<>(() -> {
@@ -74,7 +88,10 @@ public interface UserRepo extends CrudRepository<User, UUID> {
     default AlmostComplete<User> get(HttpSession session) {
         var oAuth2User = ((OAuth2User) ((SecurityContext) session.getAttribute("SPRING_SECURITY_CONTEXT"))
                 .getAuthentication().getPrincipal());
-        UUID id = UUID.fromString(Objects.requireNonNull(oAuth2User.getAttribute("id"), "User ID cannot be null"));
+        String idStr = Objects.requireNonNull(oAuth2User.getAttribute("id"), "User ID cannot be null");
+        if (!idStr.matches(RegExpUtil.UUID4_PATTERN))
+            return get(Long.parseLong(idStr));
+        var id = UUID.fromString(idStr);
         return findById(id).map(AlmostComplete::of).orElseGet(() -> new AlmostComplete<>(() -> {
             var usr = new User();
             usr.setId(id);

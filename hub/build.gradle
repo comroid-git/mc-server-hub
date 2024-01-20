@@ -11,12 +11,11 @@ sourceCompatibility = '17'
 targetCompatibility = '17'
 mainClassName = 'org.comroid.mcsd.hub.Program'
 
-tasks.register('simplify', Copy) {
-    dependsOn 'bootJar'
-    from bootJar.outputs.files.singleFile
-    into "$buildDir/libs"
-    rename { "${project.name}.jar" }
-    doLast { System.out.println("Boot Jar saved as $buildDir/libs/${project.name}.jar") }
+bootRun {
+    if (System.getenv().containsKey('DEBUGGER')) {
+        System.out.println("Using remote Debugger")
+        jvmArgs(['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'])
+    }
 }
 
 sourceSets {
