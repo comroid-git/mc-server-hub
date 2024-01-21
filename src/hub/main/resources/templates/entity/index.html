@@ -19,6 +19,7 @@
                         <td th:text="${prop.alternateName}"></td>
                         <td><input th:name="${prop.name}"
                                    th:value="${prop.getFrom(target)}"
+                                   th:checked="${prop.getFrom(target)}"
                                    th:placeholder="${prop.defaultValue}"
                                    th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
                                    th:type="${prop.name.equals('email') ? 'email' : prop.type.htmlInputType}">
