@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.annotations.Category;
+import org.comroid.annotations.Description;
 import org.comroid.annotations.Ignore;
 import org.comroid.annotations.Order;
 import org.comroid.api.attr.BitmaskAttribute;
@@ -33,7 +34,7 @@ import java.util.function.Predicate;
 @Slf4j
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
-@Category(value = "Entity", order = @Order(Integer.MIN_VALUE))
+@Category(value = "Entity", order = Integer.MIN_VALUE, desc = @Description("Basic Entity related Information"))
 public abstract class AbstractEntity implements Named {
     public static final int CurrentVersion = 1;
     @Id @Order(Integer.MIN_VALUE)
