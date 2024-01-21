@@ -10,10 +10,12 @@ import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.comroid.api.Polyfill;
+import org.comroid.api.data.seri.DataStructure;
 import org.comroid.api.func.util.Debug;
 import org.comroid.api.func.util.DelegateStream;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.io.FileHandle;
+import org.comroid.api.java.JITAssistant;
 import org.comroid.api.net.REST;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.McsdConfig;
@@ -65,10 +67,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -274,6 +273,9 @@ public class MCSD {
                     .map(Objects::toString)
                     .collect(Collectors.joining("\n\t- ","\n\t- ","")));
 
+        // early init for better load times
+        log.info(ModuleType.cache.size()+" Module types loaded");
+
         return yield;
     }
 
@@ -281,15 +283,30 @@ public class MCSD {
         return "http%s://%s%s".formatted(Debug.isDebug() ? "" : "s", hostname, Debug.isDebug() ? ":42064" : "");
     }
 
-    public AbstractEntity findEntity(String type, UUID id) {
-        return switch(type){
-            case "agent" -> agents.findById(id).orElseThrow(()->new EntityNotFoundException(Agent.class,id));
-            case "discordBot" -> discordBotRepo.findById(id).orElseThrow(()->new EntityNotFoundException(DiscordBot.class,id));
-            case "server" -> servers.findById(id).orElseThrow(()->new EntityNotFoundException(Server.class,id));
-            case "sh" -> shRepo.findById(id).orElseThrow(()->new EntityNotFoundException(ShConnection.class,id));
-            case "user" -> users.findById(id).orElseThrow(()->new EntityNotFoundException(User.class,id));
+    public <E extends AbstractEntity> Class<E> findType(String type) {
+        return Polyfill.uncheckedCast(switch (type) {
+            case "agent" -> Agent.class;
+            case "discordBot" -> DiscordBot.class;
+            case "server" -> Server.class;
+            case "sh" -> ShConnection.class;
+            case "user" -> User.class;
             default -> throw new BadRequestException("unknown type: " + type);
-        };
+        });
+    }
+
+    public <E extends AbstractEntity> AbstractEntity.Repo<E> findRepository(String type) {
+        return Polyfill.uncheckedCast(switch (type) {
+            case "agent" -> agents;
+            case "discordBot" -> discordBotRepo;
+            case "server" -> servers;
+            case "sh" -> shRepo;
+            case "user" -> users;
+            default -> throw new BadRequestException("unknown type: " + type);
+        });
+    }
+
+    public AbstractEntity findEntity(String type, UUID id) {
+        return findRepository(type).findById(id).orElseThrow(()->new EntityNotFoundException(findType(type),id));
     }
 
     @ApiStatus.Internal

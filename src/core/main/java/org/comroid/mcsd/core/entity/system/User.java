@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.java.Log;
+import org.comroid.annotations.Category;
+import org.comroid.annotations.Description;
+import org.comroid.annotations.Ignore;
 import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Cache;
@@ -30,19 +33,24 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @Setter
 @Entity
+@Category(value = "General", order = -99, desc = @Description("User Details"))
 public class User extends AbstractEntity {
     private @Column(unique = true) @Nullable UUID hubId;
     private @Column(unique = true) @Nullable UUID minecraftId;
     private @Column(unique = true) @Nullable Long discordId;
     private @Column(unique = true) @Nullable String email;
-    private @Column(unique = true)
+    @Ignore
+    @Nullable
     @ToString.Exclude
+    @Column(unique = true)
     @Getter(onMethod = @__(@JsonIgnore))
-    @Nullable String verification;
-    private @Column(unique = true)
+    private String verification;
+    @Ignore
+    @Nullable
     @ToString.Exclude
+    @Column(unique = true)
     @Getter(onMethod = @__(@JsonIgnore))
-    @Nullable Instant verificationTimeout;
+    private Instant verificationTimeout;
 
     @JsonIgnore
     public CompletableFuture<String> getMinecraftName() {

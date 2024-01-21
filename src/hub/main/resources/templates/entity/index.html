@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<!--suppress HtmlFormInputWithoutLabel -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{/head}"></head>
+<body>
+<div class="ui-menubar" th:insert="~{/menubar}"></div>
+<div class="ui-container-page">
+    <div class="ui-content">
+        <form th:action="'/api/webapp/'+${type}+'/'+${target.id}" method="post">
+            <h2>
+                <b th:text="${target.typeName}"></b>: <b th:text="${target.getBestName()}"></b>
+                <!--<span th:if="${user.canGovern(target)}"> - <a class="ui-button" th:href="@{'/user/edit/'+${id}}">Edit</a></span>-->
+            </h2>
+            <th:block th:each="entry: ${struct.categorizedOrderedProperties}" th:object="${entry}" th:with="category = ${entry.getKey()}">
+                <h3 th:text="${category.name}"></h3>
+                <h4 th:text="${category.description}"></h4>
+                <table><tbody>
+                    <tr th:each="prop: ${entry.getValue()}" th:object="${prop}" th:if="${prop.type.standard}">
+                        <td th:text="${prop.alternateName}"></td>
+                        <td><input th:name="${prop.name}"
+                                   th:value="${prop.getFrom(target)}"
+                                   th:checked="${prop.getFrom(target)}"
+                                   th:placeholder="${prop.defaultValue}"
+                                   th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
+                                   th:type="${prop.name.equals('email') ? 'email' : prop.type.htmlInputType}">
+                        <!--           data-th-attr="${String.join(', ', prop.type.htmlInputAttributes)}"-->
+                        </td>
+                    </tr>
+                </tbody></table>
+            </th:block>
+            <input th:if="${editKey!=null}" type="hidden" name="auth_key" th:value="${editKey}">
+            <input th:if="${edit}" type="submit" value="Apply">
+        </form>
+    </div>
+</div>
+<div class="ui-footer" th:insert="~{/footer}"></div>
+</body>
+</html>
