@@ -7,7 +7,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import me.dilley.MineStat;
+import org.comroid.annotations.Category;
 import org.comroid.annotations.Ignore;
+import org.comroid.annotations.Order;
 import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.IntegerAttribute;
 import org.comroid.api.data.seri.DataStructure;
@@ -50,6 +52,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Entity
 @AllArgsConstructor
 @RequiredArgsConstructor
+@Category(value = "General", order = @Order(0))
 public class Server extends AbstractEntity {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
@@ -132,31 +135,32 @@ public class Server extends AbstractEntity {
         return "Server " + getName();
     }
 
-    @Ignore(DataStructure.class)
+    @Category(value = "Info", order = @Order(Integer.MAX_VALUE))
     public String getDashboardURL() {
         return "https://mc.comroid.org/server/" + getId();
     }
 
-    @Ignore(DataStructure.class)
+    @Category(value = "Info", order = @Order(Integer.MAX_VALUE))
     public String getViewURL() {
         return "https://mc.comroid.org/server/view/" + getId();
     }
 
+    @Category(value = "Info", order = @Order(Integer.MAX_VALUE))
     public String getAddress() {
         return host + ":" + port;
     }
 
-    @Ignore(DataStructure.class)
+    @Category(value = "Info", order = @Order(Integer.MAX_VALUE))
     public String getThumbnailURL() {
         return "https://mc-api.net/v3/server/favicon/" + getAddress();
     }
 
-    @Ignore(DataStructure.class)
+    @Category(value = "Info", order = @Order(Integer.MAX_VALUE))
     public String getStatusURL() {
         return "https://mc-api.net/v3/server/ping/" + getAddress();
     }
 
-    @Ignore(DataStructure.class)
+    @Category(value = "Info", order = @Order(Integer.MAX_VALUE))
     public String getJarInfoUrl() {
         var type = switch(mode){
             case Vanilla -> "vanilla";
@@ -166,7 +170,7 @@ public class Server extends AbstractEntity {
         return "https://serverjars.com/api/fetchDetails/%s/%s/%s".formatted(type,mode.name().toLowerCase(),mcVersion);
     }
 
-    @Ignore(DataStructure.class)
+    @Category(value = "Info", order = @Order(Integer.MAX_VALUE))
     public String getJarUrl() {
         var type = switch(mode){
             case Vanilla -> "vanilla";
@@ -176,7 +180,7 @@ public class Server extends AbstractEntity {
         return "https://serverjars.com/api/fetchJar/%s/%s/%s".formatted(type,mode.name().toLowerCase(),mcVersion);
     }
 
-    @Ignore(DataStructure.class)
+    @Category(value = "Info", order = @Order(Integer.MAX_VALUE))
     public String getLoaderName() {
         return mode.getName();
     }
