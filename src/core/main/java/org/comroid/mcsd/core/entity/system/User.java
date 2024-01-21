@@ -157,6 +157,10 @@ public class User extends AbstractEntity {
         return "https://cdn.discordapp.com/avatars/"+id+"/"+hash+".png";
     }
 
+    public boolean canModify(AbstractEntity target) {
+        return hasPermission(this, Permission.Modify) && (!(target instanceof User usr) || canGovern(usr));
+    }
+
     public boolean canGovern(User target) {
         return this.getId().equals(target.getId()) || hasPermission(this, Permission.ManageUsers);
     }

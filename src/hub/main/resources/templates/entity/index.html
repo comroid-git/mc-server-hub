@@ -9,7 +9,7 @@
         <form th:action="'/api/webapp/'+${type}+'/'+${target.id}" method="post">
             <h2>
                 <b th:text="${target.typeName}"></b>: <b th:text="${target.getBestName()}"></b>
-                <!--<span th:if="${user.canGovern(target)}"> - <a class="ui-button" th:href="@{'/user/edit/'+${id}}">Edit</a></span>-->
+                <span th:if="${user.canModify(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/edit/'+${id}}">Edit</a></span>
             </h2>
             <th:block th:each="entry: ${struct.categorizedOrderedProperties}" th:object="${entry}" th:with="category = ${entry.getKey()}">
                 <h3 th:text="${category.name}"></h3>
