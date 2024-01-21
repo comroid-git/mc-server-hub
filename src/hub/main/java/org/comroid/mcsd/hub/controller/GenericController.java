@@ -126,7 +126,7 @@ public class GenericController {
     }
 
     @PostMapping("/api/webapp/{type}/{id}")
-    public String entityPage(HttpSession session, Model model,
+    public String entityUpdate(HttpSession session, Model model,
                              @PathVariable("type") String type,
                              @PathVariable("id") UUID id,
                              @RequestParam Map<String, String> data) {
