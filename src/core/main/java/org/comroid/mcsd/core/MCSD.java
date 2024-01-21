@@ -283,15 +283,30 @@ public class MCSD {
         return "http%s://%s%s".formatted(Debug.isDebug() ? "" : "s", hostname, Debug.isDebug() ? ":42064" : "");
     }
 
-    public AbstractEntity findEntity(String type, UUID id) {
-        return switch(type){
-            case "agent" -> agents.findById(id).orElseThrow(()->new EntityNotFoundException(Agent.class,id));
-            case "discordBot" -> discordBotRepo.findById(id).orElseThrow(()->new EntityNotFoundException(DiscordBot.class,id));
-            case "server" -> servers.findById(id).orElseThrow(()->new EntityNotFoundException(Server.class,id));
-            case "sh" -> shRepo.findById(id).orElseThrow(()->new EntityNotFoundException(ShConnection.class,id));
-            case "user" -> users.findById(id).orElseThrow(()->new EntityNotFoundException(User.class,id));
+    public <E extends AbstractEntity> Class<E> findType(String type) {
+        return Polyfill.uncheckedCast(switch (type) {
+            case "agent" -> Agent.class;
+            case "discordBot" -> DiscordBot.class;
+            case "server" -> Server.class;
+            case "sh" -> ShConnection.class;
+            case "user" -> User.class;
             default -> throw new BadRequestException("unknown type: " + type);
-        };
+        });
+    }
+
+    public <E extends AbstractEntity> AbstractEntity.Repo<E> findRepository(String type) {
+        return Polyfill.uncheckedCast(switch (type) {
+            case "agent" -> agents;
+            case "discordBot" -> discordBotRepo;
+            case "server" -> servers;
+            case "sh" -> shRepo;
+            case "user" -> users;
+            default -> throw new BadRequestException("unknown type: " + type);
+        });
+    }
+
+    public AbstractEntity findEntity(String type, UUID id) {
+        return findRepository(type).findById(id).orElseThrow(()->new EntityNotFoundException(findType(type),id));
     }
 
     @ApiStatus.Internal
