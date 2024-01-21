@@ -144,6 +144,7 @@ public class GenericController {
                 + affected.stream()
                 .map(DataStructure.Member::getName)
                 .collect(Collectors.joining("\n\t- ", "\n\t- ", "")));
+        core.findRepository(type).save(target);
         return "redirect:/%s/view/%s".formatted(type, id);
     }
 
