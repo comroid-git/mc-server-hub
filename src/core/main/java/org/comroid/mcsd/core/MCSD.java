@@ -10,10 +10,12 @@ import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.comroid.api.Polyfill;
+import org.comroid.api.data.seri.DataStructure;
 import org.comroid.api.func.util.Debug;
 import org.comroid.api.func.util.DelegateStream;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.io.FileHandle;
+import org.comroid.api.java.JITAssistant;
 import org.comroid.api.net.REST;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.McsdConfig;
@@ -65,10 +67,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -273,6 +272,9 @@ public class MCSD {
             log.info("Migrated entities:"+yield.stream()
                     .map(Objects::toString)
                     .collect(Collectors.joining("\n\t- ","\n\t- ","")));
+
+        // early init for better load times
+        log.info(ModuleType.cache.size()+" Module types loaded");
 
         return yield;
     }
