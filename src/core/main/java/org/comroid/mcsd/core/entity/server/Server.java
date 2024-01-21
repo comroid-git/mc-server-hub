@@ -70,24 +70,24 @@ public class Server extends AbstractEntity {
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
     private @Nullable @ManyToOne Agent agent; // todo: make not nullable
     // cannot remove these because they are needed for migration
-    private @Ignore(DataStructure.class) @Deprecated int rConPort = Defaults.RCON_PORT;
-    private @Ignore(DataStructure.class) @Deprecated @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
-    private @Ignore(DataStructure.class) @Deprecated @ManyToOne ShConnection shConnection;
-    private @Ignore(DataStructure.class) @Deprecated @ManyToOne @Nullable DiscordBot discordBot;
-    private @Ignore(DataStructure.class) @Deprecated @Nullable String PublicChannelWebhook;
-    private @Ignore(DataStructure.class) @Deprecated @Nullable @Column(unique = true) Long PublicChannelId;
-    private @Ignore(DataStructure.class) @Deprecated @Nullable Long ModerationChannelId;
-    private @Ignore(DataStructure.class) @Deprecated @Nullable @Column(unique = true) Long ConsoleChannelId;
-    private @Ignore(DataStructure.class) @Deprecated @Nullable String ConsoleChannelPrefix;
-    private @Ignore(DataStructure.class) @Deprecated long publicChannelEvents = 0xFFFF_FFFF;
-    private @Ignore(DataStructure.class) @Deprecated boolean fancyConsole = true;
-    private @Ignore(DataStructure.class) @Deprecated boolean forceCustomJar = false;
-    private @Ignore(DataStructure.class) @Deprecated @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
-    private @Ignore(DataStructure.class) @Deprecated byte ramGB = 4;
-    private @Ignore(DataStructure.class) @Deprecated @Nullable Duration backupPeriod = Duration.ofHours(12);
-    private @Ignore(DataStructure.class) @Deprecated Instant lastBackup = Instant.ofEpochMilli(0);
-    private @Ignore(DataStructure.class) @Deprecated @Nullable Duration updatePeriod = Duration.ofDays(7);
-    private @Ignore(DataStructure.class) @Deprecated Instant lastUpdate = Instant.ofEpochMilli(0);
+    private @Ignore @Deprecated int rConPort = Defaults.RCON_PORT;
+    private @Ignore @Deprecated @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
+    private @Ignore @Deprecated @ManyToOne ShConnection shConnection;
+    private @Ignore @Deprecated @ManyToOne @Nullable DiscordBot discordBot;
+    private @Ignore @Deprecated @Nullable String PublicChannelWebhook;
+    private @Ignore @Deprecated @Nullable @Column(unique = true) Long PublicChannelId;
+    private @Ignore @Deprecated @Nullable Long ModerationChannelId;
+    private @Ignore @Deprecated @Nullable @Column(unique = true) Long ConsoleChannelId;
+    private @Ignore @Deprecated @Nullable String ConsoleChannelPrefix;
+    private @Ignore @Deprecated long publicChannelEvents = 0xFFFF_FFFF;
+    private @Ignore @Deprecated boolean fancyConsole = true;
+    private @Ignore @Deprecated boolean forceCustomJar = false;
+    private @Ignore @Deprecated @Nullable @Column(columnDefinition = "TEXT") String customCommand = null;
+    private @Ignore @Deprecated byte ramGB = 4;
+    private @Ignore @Deprecated @Nullable Duration backupPeriod = Duration.ofHours(12);
+    private @Ignore @Deprecated Instant lastBackup = Instant.ofEpochMilli(0);
+    private @Ignore @Deprecated @Nullable Duration updatePeriod = Duration.ofDays(7);
+    private @Ignore @Deprecated Instant lastUpdate = Instant.ofEpochMilli(0);
 
     public Set<ModuleType<?, ?>> getFreeModuleTypes() {
         var existing = Streams.of(bean(MCSD.class)
