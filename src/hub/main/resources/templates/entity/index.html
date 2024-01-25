@@ -2,6 +2,8 @@
 <!--suppress HtmlFormInputWithoutLabel -->
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:insert="~{/head}"></head>
+<script th:src="@{/static/modules.js}" type="text/javascript"></script>
+<script th:src="@{/static/common.js}" type="text/javascript"></script>
 <body>
 <div class="ui-menubar" th:insert="~{/menubar}"></div>
 <div class="ui-container-page">
@@ -27,6 +29,77 @@
                         </td>
                     </tr>
                 </tbody></table>
+            </th:block>
+            <th:block th:unless="${modules == null}">
+                <h3>Modules</h3>
+                <table>
+                    <thead>
+                    <tr th:with="canManageModules = ${target.hasPermission(user,T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}">
+                        <th th:if="${canManageModules}">
+                            <button class="ui-button" id="btn-module-add"
+                                    onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">Add
+                            </button>
+                            <div class="ui-blur" id="dialog-module-add">
+                                <div class="ui-dialog">
+                                    <form class="dialog-form" method="post" th:action="@{'/module/add/'+${target.id}}">
+                                        <select id="module-selector" multiple name="dtype">
+                                            <option th:each="option: ${target.getFreeModuleTypes()}" th:text="${option.name}"
+                                                    th:value="${option.name}"></option>
+                                        </select>
+                                        <input name="userId" th:value="${user.id}" type="hidden">
+                                        <input id="btn-module-add-submit" type="submit" value="Apply">
+                                    </form>
+                                    <button class="icon-close" onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">X</button>
+                                </div>
+                            </div>
+                        </th>
+                        <th th:unless="${canManageModules}"></th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>
+                            <!-- todo: both of these cause NS_BINDING_ABORTED errors for some reason
+                            <button onclick="reload(false)">Refresh Config</button>
+                            <button onclick="confirmAction('do a full reload', 'This will restart the server', ()=>reload(true))">Full Reload</button>
+                            -->
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <th:block th:each="module: ${modules}">
+                        <tr class="ui-table-parent" onclick="toggleExpansion" th:id="'module_'+${module.id}">
+                            <td class="module-state-switch-col"><input class="state-switch" th:checked="${module.enabled}"
+                                                                       th:id="'state_'+${module.id}"
+                                                                       type="checkbox"></td>
+                            <td class="module-name-col" th:text="${module.dtype.name}"></td>
+                            <td class="module-desc-col" th:text="${module.dtype.description}"></td>
+                            <td class="module-ctrl-col">
+                                <!-- <a class="ui-button" th:href="@{'/module/edit/'+${module.id}}">Edit</a> -->
+                                <a class="ui-button" th:href="@{'/module/delete/'+${module.id}}">Delete</a>
+                            </td>
+                        </tr>
+                        <tr class="ui-table-child" th:id="'detail_'+${module.id}">
+                            <td colspan="4">
+                                <form>
+                                    <table>
+                                        <thead>
+                                        <tr>
+                                            <th class="module-prop-name-col"></th>
+                                            <th class="module-prop-value-col"></th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="e: ${module.dtype.proto.properties}" th:with="prop = ${e.value}">
+                                            <td th:text="${prop.alternateName}"></td>
+                                            <td><input th:value="${prop.getter.invokeSilent(module)}" type="text"></td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </form>
+                            </td>
+                        </tr>
+                    </th:block>
+                    </tbody>
+                </table>
             </th:block>
             <input th:if="${editKey!=null}" type="hidden" name="auth_key" th:value="${editKey}">
             <input th:if="${edit}" type="submit" value="Apply">
