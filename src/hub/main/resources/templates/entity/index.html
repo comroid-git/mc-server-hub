@@ -24,7 +24,7 @@
                                    th:checked="${prop.getFrom(target)}"
                                    th:placeholder="${prop.defaultValue}"
                                    th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
-                                   th:type="${prop.name.equals('email') ? 'email' : prop.type.htmlInputType}">
+                                   th:type="${prop.name.contains('email') ? 'email' : prop.type.htmlInputType}">
                         <!--           data-th-attr="${String.join(', ', prop.type.htmlInputAttributes)}"-->
                         </td>
                     </tr>
@@ -77,34 +77,32 @@
                         </tr>
                         <tr class="ui-table-child" th:id="'detail_'+${module.id}">
                             <td colspan="4">
-                                <form>
-                                    <table>
-                                        <thead>
-                                        <tr>
-                                            <th class="module-prop-name-col"></th>
-                                            <th class="module-prop-value-col"></th>
+                                <table>
+                                    <thead>
+                                    <tr>
+                                        <th class="module-prop-name-col"></th>
+                                        <th class="module-prop-value-col"></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <!-- todo: introduce fragment for ordered properties of obj -->
+                                    <tr th:each="entry: ${module.dtype.proto.categorizedOrderedProperties}" th:with="category = ${entry.getKey()}">
+                                        <h3 th:text="${category.name}"></h3>
+                                        <h4 th:text="${category.description}"></h4>
+                                        <table><tbody>
+                                        <tr th:each="prop: ${entry.getValue()}" th:object="${prop}" th:if="${prop.type.standard}">
+                                            <td th:text="${prop.alternateName}"></td>
+                                            <td><input th:name="${prop.name}"
+                                                       th:value="${prop.getFrom(module)}"
+                                                       th:checked="${prop.getFrom(module)}"
+                                                       th:placeholder="${prop.defaultValue}"
+                                                       th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
+                                                       th:type="${prop.name.contains('email') ? 'email' : prop.type.htmlInputType}"></td>
                                         </tr>
-                                        </thead>
-                                        <tbody>
-                                        <!-- todo: introduce fragment for ordered properties of obj -->
-                                        <tr th:each="entry: ${module.dtype.proto.categorizedOrderedProperties}" th:with="category = ${entry.getKey()}">
-                                            <h3 th:text="${category.name}"></h3>
-                                            <h4 th:text="${category.description}"></h4>
-                                            <table><tbody>
-                                            <tr th:each="prop: ${entry.getValue()}" th:object="${prop}" th:if="${prop.type.standard}">
-                                                <td th:text="${prop.alternateName}"></td>
-                                                <td><input th:name="${prop.name}"
-                                                           th:value="${prop.getFrom(target)}"
-                                                           th:checked="${prop.getFrom(target)}"
-                                                           th:placeholder="${prop.defaultValue}"
-                                                           th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
-                                                           th:type="${prop.name.equals('email') ? 'email' : prop.type.htmlInputType}"></td>
-                                            </tr>
-                                            </tbody></table>
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                </form>
+                                        </tbody></table>
+                                    </tr>
+                                    </tbody>
+                                </table>
                             </td>
                         </tr>
                     </th:block>
