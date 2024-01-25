@@ -88,9 +88,9 @@
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        <tr th:each="e: ${module.dtype.proto.properties}" th:with="prop = ${e.value}">
+                                        <tr th:each="prop: ${module.dtype.proto.properties}">
                                             <td th:text="${prop.alternateName}"></td>
-                                            <td><input th:value="${prop.getter.invokeSilent(module)}" type="text"></td>
+                                            <td><input th:value="${prop.getFrom(module)}" type="text"></td>
                                         </tr>
                                         </tbody>
                                     </table>
