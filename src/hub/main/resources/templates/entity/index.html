@@ -32,8 +32,7 @@
             </th:block>
             <th:block th:unless="${modules == null}">
                 <h3>Modules</h3>
-                <table>
-                    <thead>
+                <table><thead>
                     <tr th:with="canManageModules = ${target.hasPermission(user,T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}">
                         <th th:if="${canManageModules}">
                             <button class="ui-button" id="btn-module-add"
@@ -62,8 +61,7 @@
                             <button onclick="confirmAction('do a full reload', 'This will restart the server', ()=>reload(true))">Full Reload</button>
                             -->
                         </th>
-                    </tr>
-                    </thead>
+                    </tr></thead>
                     <tbody>
                     <th:block th:each="module: ${modules}">
                         <tr class="ui-table-parent" onclick="toggleExpansion" th:id="'module_'+${module.id}">
@@ -88,9 +86,21 @@
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        <tr th:each="prop: ${module.dtype.proto.properties}">
-                                            <td th:text="${prop.alternateName}"></td>
-                                            <td><input th:value="${prop.getFrom(module)}" type="text"></td>
+                                        <!-- todo: introduce fragment for ordered properties of obj -->
+                                        <tr th:each="entry: ${module.dtype.proto.categorizedOrderedProperties}" th:with="category = ${entry.getKey()}">
+                                            <h3 th:text="${category.name}"></h3>
+                                            <h4 th:text="${category.description}"></h4>
+                                            <table><tbody>
+                                            <tr th:each="prop: ${entry.getValue()}" th:object="${prop}" th:if="${prop.type.standard}">
+                                                <td th:text="${prop.alternateName}"></td>
+                                                <td><input th:name="${prop.name}"
+                                                           th:value="${prop.getFrom(target)}"
+                                                           th:checked="${prop.getFrom(target)}"
+                                                           th:placeholder="${prop.defaultValue}"
+                                                           th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
+                                                           th:type="${prop.name.equals('email') ? 'email' : prop.type.htmlInputType}"></td>
+                                            </tr>
+                                            </tbody></table>
                                         </tr>
                                         </tbody>
                                     </table>
