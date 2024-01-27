@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <!--suppress HtmlFormInputWithoutLabel -->
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:insert="~{/head}"></head>
+<head th:insert="~{/layout/head}"></head>
 <body>
-<div class="ui-menubar" th:insert="~{/menubar}"></div>
+<div class="ui-menubar" th:insert="~{/layout/menubar}"></div>
 <div class="ui-container-page">
     <div class="ui-content">
         <form th:action="'/api/webapp/'+${type}+'/'+${target.id}" method="post">
@@ -34,6 +34,6 @@
         </form>
     </div>
 </div>
-<div class="ui-footer" th:insert="~{/footer}"></div>
+<div class="ui-footer" th:insert="~{/layout/footer}"></div>
 </body>
 </html>
