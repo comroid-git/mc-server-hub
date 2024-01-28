@@ -161,6 +161,10 @@ public class User extends AbstractEntity {
         return hasPermission(this, Permission.Modify) && (!(target instanceof User usr) || canGovern(usr));
     }
 
+    public boolean canAdmin(AbstractEntity target) {
+        return hasPermission(this, Permission.Administrate) && (!(target instanceof User usr) || canGovern(usr));
+    }
+
     public boolean canGovern(User target) {
         return this.getId().equals(target.getId()) || hasPermission(this, Permission.ManageUsers);
     }
