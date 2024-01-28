@@ -2,34 +2,84 @@
 <!--suppress HtmlFormInputWithoutLabel -->
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:insert="~{/layout/head}"></head>
+<script th:src="@{/static/modules.js}" type="text/javascript"></script>
+<script th:src="@{/static/common.js}" type="text/javascript"></script>
 <body>
 <div class="ui-menubar" th:insert="~{/layout/menubar}"></div>
 <div class="ui-container-page">
     <div class="ui-content">
-        <form th:action="'/api/webapp/'+${type}+'/'+${target.id}" method="post">
+        <form method="post" th:action="'/api/webapp/'+${type}+'/'+${target.id}">
             <h2>
                 <b th:text="${target.typeName}"></b>: <b th:text="${target.getBestName()}"></b>
                 <span th:if="${user.canModify(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/edit/'+${id}}">Edit</a></span>
             </h2>
-            <th:block th:each="entry: ${struct.categorizedOrderedProperties}" th:object="${entry}" th:with="category = ${entry.getKey()}">
-                <h3 th:text="${category.name}"></h3>
-                <h4 th:text="${category.description}"></h4>
-                <table><tbody>
-                    <tr th:each="prop: ${entry.getValue()}" th:object="${prop}" th:if="${prop.type.standard}">
-                        <td th:text="${prop.alternateName}"></td>
-                        <td><input th:name="${prop.name}"
-                                   th:value="${prop.getFrom(target)}"
-                                   th:checked="${prop.getFrom(target)}"
-                                   th:placeholder="${prop.defaultValue}"
-                                   th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
-                                   th:type="${prop.name.contains('email') ? 'email' : prop.type.htmlInputType}">
-                        <!--           data-th-attr="${String.join(', ', prop.type.htmlInputAttributes)}"-->
-                        </td>
+            <th:block th:replace="~{fragment/propView.html :: propView(${struct}, ${target})}"/>
+            <!--<th:block th:unless="${modules == null}">
+                <h3>Modules</h3>
+                <table>
+                    <thead>
+                    <tr th:with="canManageModules = ${target.hasPermission(user,T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}">
+                        <th th:if="${canManageModules}">
+                            <button class="ui-button" id="btn-module-add"
+                                    onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">Add
+                            </button>
+                            <div class="ui-blur" id="dialog-module-add">
+                                <div class="ui-dialog">
+                                    <form class="dialog-form" method="post" th:action="@{'/module/add/'+${target.id}}">
+                                        <select id="module-selector" multiple name="dtype">
+                                            <option th:each="option: ${target.getFreeModuleTypes()}"
+                                                    th:text="${option.name}"
+                                                    th:value="${option.name}"></option>
+                                        </select>
+                                        <input name="userId" th:value="${user.id}" type="hidden">
+                                        <input id="btn-module-add-submit" type="submit" value="Apply">
+                                    </form>
+                                    <button class="icon-close"
+                                            onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">X
+                                    </button>
+                                </div>
+                            </div>
+                        </th>
+                        <th th:unless="${canManageModules}"></th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th></th>
                     </tr>
-                </tbody></table>
-            </th:block>
-            <!-- todo: add modules list and fragment that prints ordered properties -->
-            <input th:if="${editKey!=null}" type="hidden" name="auth_key" th:value="${editKey}">
+                    </thead>
+                    <tbody>
+                    <th:block th:each="module: ${modules}">
+                        <tr class="ui-table-parent" onclick="toggleExpansion" th:id="'module_'+${module.id}">
+                            <td class="module-state-switch-col"><input class="state-switch"
+                                                                       th:checked="${module.enabled}"
+                                                                       th:id="'state_'+${module.id}"
+                                                                       type="checkbox"></td>
+                            <td class="module-name-col" th:text="${module.dtype.name}"></td>
+                            <td class="module-desc-col" th:text="${module.dtype.description}"></td>
+                            <td class="module-ctrl-col">
+                                < !-- <a class="ui-button" th:href="@{'/module/edit/'+${module.id}}">Edit</a> -- >
+                                <a class="ui-button" th:href="@{'/module/delete/'+${module.id}}">Delete</a>
+                            </td>
+                        </tr>
+                        <tr class="ui-table-child" th:id="'detail_'+${module.id}">
+                            <td colspan="4">
+                                <table>
+                                    <thead>
+                                    <tr>
+                                        <th class="module-prop-name-col"></th>
+                                        <th class="module-prop-value-col"></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <th:block th:replace="~{fragment/propView.html :: propView(${module.dtype.proto}, ${module})}"/>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    </th:block>
+                    </tbody>
+                </table>
+            </th:block>-->
+            <input name="auth_key" th:if="${editKey!=null}" th:value="${editKey}" type="hidden">
             <input th:if="${edit}" type="submit" value="Apply">
         </form>
     </div>
