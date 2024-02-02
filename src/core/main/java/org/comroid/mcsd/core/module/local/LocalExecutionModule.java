@@ -43,7 +43,6 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Log
 @Getter
 @ToString
-@Component.Requires(UpdateModule.class)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public final class LocalExecutionModule extends ConsoleModule<LocalExecutionModulePrototype> {
     public static final Pattern DonePattern = pattern("Done \\((?<time>[\\d.]+)s\\).*\\r?\\n?.*?");

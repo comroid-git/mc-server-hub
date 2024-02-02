@@ -27,7 +27,6 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Component.Requires(ConsoleModule.class)
 public class McsdCommandModule extends ServerModule<McsdCommandModulePrototype> implements Command.Handler {
     public static final Pattern McsdPattern = ConsoleModule.commandPattern("mcsd");
     final Command.Manager cmdr = new Command.Manager(this);

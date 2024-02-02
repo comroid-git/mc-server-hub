@@ -17,7 +17,6 @@ import org.comroid.mcsd.core.module.console.ConsoleModule;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Component.Requires({ConsoleModule.class, PlayerEventModule.class})
 public class ForceOpModule extends ServerModule<ForceOpModulePrototype> {
     private @Inject ConsoleModule<ConsoleModulePrototype> console;
     private @Inject PlayerEventModule<PlayerEventModulePrototype> events;

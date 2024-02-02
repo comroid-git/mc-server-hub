@@ -38,19 +38,13 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Component.Requires(LocalShellModule.class)
 public class BackupModule extends ServerModule<BackupModulePrototype> {
     public static final Pattern SaveCompletePattern = ConsoleModule.pattern("Saved the game");
     final AtomicReference<CompletableFuture<File>> currentBackup = new AtomicReference<>(CompletableFuture.completedFuture(null));
-    @Component.Inject ConsoleModule<?> consoleModule;
+    private @Inject ConsoleModule<?> consoleModule;
 
     public BackupModule(Server server, BackupModulePrototype proto) {
         super(server, proto);
-    }
-
-    @Override
-    protected void $initialize() {
-        consoleModule = server.component(ConsoleModule.class).assertion();
     }
 
     @Override

@@ -22,19 +22,12 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Component.Requires({LocalExecutionModule.class, StatusModule.class})
 public class UptimeModule extends ServerModule<UptimeModulePrototype> {
-    LocalExecutionModule execution;
-    StatusModule statusModule;
+    private @Inject LocalExecutionModule execution;
+    private @Inject StatusModule statusModule;
 
     public UptimeModule(Server server, UptimeModulePrototype proto) {
         super(server, proto);
-    }
-
-    @Override
-    protected void $initialize() {
-        execution = component(LocalExecutionModule.class).assertion();
-        statusModule = component(StatusModule.class).assertion();
     }
 
     @Override

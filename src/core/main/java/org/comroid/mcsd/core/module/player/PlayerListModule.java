@@ -13,10 +13,9 @@ import java.util.Set;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
-@Component.Requires(ConsolePlayerEventModule.class)
 public class PlayerListModule extends ServerModule<PlayerListModulePrototype> {
     private final Set<User> players = new HashSet<>();
-    private ConsolePlayerEventModule chat;
+    private @Inject PlayerEventModule<?> chat;
     private UserRepo users;
 
     public PlayerListModule(Server server, PlayerListModulePrototype proto) {
@@ -25,7 +24,6 @@ public class PlayerListModule extends ServerModule<PlayerListModulePrototype> {
 
     @Override
     protected void $initialize() {
-        chat = server.component(ConsolePlayerEventModule.class).assertion();
         users = bean(UserRepo.class);
 
         chat.getBus().filterData(e->e.getType().hasFlag(PlayerEvent.Type.JoinLeave))

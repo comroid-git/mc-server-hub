@@ -23,8 +23,9 @@ import java.util.stream.Stream;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Component.Requires(ConsoleModule.class)
 public class ConsolePlayerEventModule extends PlayerEventModule<ConsolePlayerEventModulePrototype> {
+    private @Inject ConsoleModule<?> console;
+
     public ConsolePlayerEventModule(Server server, ConsolePlayerEventModulePrototype proto) {
         super(server, proto);
     }
@@ -32,7 +33,6 @@ public class ConsolePlayerEventModule extends PlayerEventModule<ConsolePlayerEve
     @Override
     @SuppressWarnings({"RedundantSuppression", "RedundantTypeArguments", "RedundantCast"}) // intellij is being weird
     protected Event.Bus<PlayerEvent> initEventBus() {
-        ConsoleModule<?> console = server.component(ConsoleModule.class).orElseThrow(() -> new InitFailed("No Console module is loaded"));
         //noinspection unchecked
         return console.getBus()
                 .<Matcher>mapData(str -> Stream.of(ChatPattern, BroadcastPattern, JoinLeavePattern, AchievementPattern)

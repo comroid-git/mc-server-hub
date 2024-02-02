@@ -27,18 +27,12 @@ import static java.time.Instant.now;
 @Getter
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Component.Requires({FileModule.class, StatusModule.class})
 public class UpdateModule extends ServerModule<UpdateModulePrototype> {
     final AtomicReference<@Nullable CompletableFuture<Boolean>> updateRunning = new AtomicReference<>();
-    @Inject FileModule<?> files;
+    private @Inject FileModule<?> files;
 
     public UpdateModule(Server server, UpdateModulePrototype proto) {
         super(server, proto);
-    }
-
-    @Override
-    protected void $initialize() {
-        files= server.component(FileModule.class).assertion();
     }
 
     @Override
