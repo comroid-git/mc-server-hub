@@ -64,7 +64,7 @@ public abstract class PlayerEventModule<T extends PlayerEventModulePrototype> ex
     public static final @Language("RegExp") String CleanWord_Spaced = "\\\\[?([\\\\s\\\\w\\\\-_'?!.]+)]?";
     public static final List<Pattern> DeathMessagePatterns = new ArrayList<>();
     private final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
-    protected @Getter Event.Bus<PlayerEvent> bus;
+    protected @Getter Event.Bus<PlayerEvent> bus = new Event.Bus<>();
 
     public PlayerEventModule(Server server, T proto) {
         super(server, proto);
