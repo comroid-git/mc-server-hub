@@ -9,6 +9,7 @@ import java.util.List;
 public class McsdConfig {
     @Nullable String hubBaseUrl;
     @Nullable String discordToken;
+    @Nullable String rabbitUrl;
     DBInfo database;
     List<OAuth2Info> oAuth;
     @Nullable AgentInfo agent;
