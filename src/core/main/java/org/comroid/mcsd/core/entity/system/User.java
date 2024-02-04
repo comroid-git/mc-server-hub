@@ -146,7 +146,7 @@ public class User extends AbstractEntity {
     }
 
     public static String getMojangAccountUrl(UUID id) {
-        return "https://api.mojang.com/user/profile/" + id;
+        return "https://sessionserver.mojang.com/session/minecraft/profile/" + id;
     }
 
     public static String getDiscordUserUrl(long id) {
