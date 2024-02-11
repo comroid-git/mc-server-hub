@@ -13,7 +13,6 @@ import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.Agent;
-import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.local.LocalExecutionModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
@@ -268,7 +267,7 @@ public class AgentRunner implements Command.Handler {
 
     private Server getServer(String[] args) {
         var srv = serverRepo.findByAgentAndName(getMe().getId(), args[0]).orElse(null);
-        if (srv == null) throw new EntityNotFoundException(Server.class, getMe().getId());
+        if (srv == null) throw new Command.ArgumentError("name", "Server not found");
         return srv;
     }
 
