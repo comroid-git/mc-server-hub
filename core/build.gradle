@@ -86,6 +86,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework:spring-messaging:6.0.0'
 
+    // rabbit
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
 
     // jstl
@@ -122,5 +123,6 @@ dependencies {
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.amqp:spring-rabbit-test'
     testImplementation 'io.projectreactor:reactor-test'
 }
