@@ -14,6 +14,7 @@ import org.comroid.api.attr.Named;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Bitmask;
 import org.comroid.api.info.Constraint;
+import org.comroid.api.info.Maintenance;
 import org.comroid.api.text.Capitalization;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
@@ -36,6 +37,11 @@ import java.util.function.Predicate;
 @Inheritance(strategy = InheritanceType.JOINED)
 @Category(value = "Entity", order = Integer.MIN_VALUE, desc = @Description("Basic Entity related Information"))
 public abstract class AbstractEntity implements Named {
+    public static final Maintenance.Inspection MI_InsufficientPermission = Maintenance.Inspection.builder()
+            .name("InsufficientPermission")
+            .description("User has insufficient permission")
+            .description("User %s is missing required permission %s")
+            .build();
     public static final int CurrentVersion = 1;
     @Id @Order(Integer.MIN_VALUE)
     private UUID id = UUID.randomUUID();
@@ -73,6 +79,7 @@ public abstract class AbstractEntity implements Named {
         return owner == null;
     }
 
+    @Deprecated
     public final boolean hasAnyPermission(@NotNull User user) {
         return hasPermission(user, Permission.Any);
     }
@@ -84,7 +91,8 @@ public abstract class AbstractEntity implements Named {
     }
 
     public boolean hasPermission(@NotNull User user, AbstractEntity.Permission... permissions) {
-        Constraint.Length.min(1, permissions, "permissions").run();
+        if(permissions.length==0)
+            permissions=new Permission[]{Permission.Any};
         final var mask = this.permissions.getOrDefault(user, 0L);
         return (owner != null && user.getId().equals(owner.getId()))
                 || Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag))
@@ -144,6 +152,7 @@ public abstract class AbstractEntity implements Named {
         Refresh,
         Reload,
         ManageModules,
+        ManageUsers(0x2000_0000),
 
         View(0x0100_0000_0000_0000L, Status),
         Moderate(0x0200_0000_0000_0000L, Whitelist, Kick, Mute),
@@ -151,8 +160,7 @@ public abstract class AbstractEntity implements Named {
         Administrate(0x0800_0000_0000_0000L, Console, Execute, Files, ForceOP, TriggerCron),
         Delete(0x1000_0000_0000_0000L),
 
-        ManageUsers(0x2000_0000),
-
+        @Deprecated
         Any(0xffff_ffffL);
 
         static {
