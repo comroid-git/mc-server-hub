@@ -24,9 +24,9 @@ public interface ServerRepo extends AbstractEntity.Repo<Server> {
 
     @Query("SELECT s FROM Server s" +
             " JOIN Agent a ON a.id = :agentId" +
-            " JOIN SshFileModulePrototype fs ON fs.server.id = s.id" +
-            " JOIN ShConnection sh" +
-            " WHERE (sh.id = a.target AND sh.id = fs.shConnection.id) AND s.name = :name")
+            //" JOIN SshFileModulePrototype fs ON fs.server.id = s.id" +
+            " JOIN ShConnection sh ON sh.id = a.target" +
+            " WHERE s.name = :name")
     Optional<Server> findByAgentAndName(@Param("agentId") UUID agentId, @Param("name") String name);
 
     @Query("SELECT s FROM Server s" +
