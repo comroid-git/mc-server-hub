@@ -53,9 +53,7 @@
             <table>
                 <thead>
                 <tr>
-                    <th>
-                        <div class="simple ui-button icon-refresh" onclick="refreshServerList()"></div>
-                    </th>
+                    <!--<th><div class="simple ui-button icon-refresh" onclick="refreshServerList()"></div></th>-->
                     <th><a class="ui-button" th:href="@{/agent/create}">Create</a></th>
                     <th>Name</th>
                     <th>URL</th>
@@ -64,9 +62,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="agent: ${agentRepo}" th:id="${agent.id}">
-                    <td>
-                        <div class="statusIcon icon-loading"></div>
-                    </td>
+                    <!--<td><div class="statusIcon icon-loading"></div></td>-->
                     <td><a class="ui-button" th:href="@{'/agent/view/'+${agent.id}}">View</a></td>
                     <td th:text="${agent.bestName}"></td>
                     <td><a th:href="${agent.baseUrl}" th:text="${agent.baseUrl}"></a></td>
