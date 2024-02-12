@@ -72,7 +72,7 @@ public class Server extends AbstractEntity {
     private int maxPlayers = 20;
     private int queryPort = 25565;
     private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
-    private @Nullable @ManyToOne Agent agent; // todo: make not nullable
+    private @Nullable @ManyToOne Agent agent; // todo: make not nullable with db migration
     // cannot remove these because they are needed for migration
     private @Ignore @Deprecated int rConPort = Defaults.RCON_PORT;
     private @Ignore @Deprecated @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
