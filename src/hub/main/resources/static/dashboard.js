@@ -15,10 +15,24 @@ function refreshServerList() {
             })
             .then(resp => resp.json())
             .then(data => {
-                entry.querySelector('.statusIcon').className = 'statusIcon icon-'+data.status;
+                entry.querySelector('.statusIcon').className = 'statusIcon icon-'+statusIconName(data.status);
                 entry.querySelector('.motd').innerHTML = data.status==='offline'?'---':data.motd;
                 entry.querySelector('.players').innerHTML = data.status==='offline'?'---':`${data.playerCount}/${data.playerMax}`;
             })
             .catch(error => console.log('could not update status of '+entry.id, error))
     })
+}
+
+function statusIconName(status) {
+    switch (status) {
+        case 'unknown_status': return 'warning';
+        case 'offline': return 'offline';
+        case 'starting': return 'maintenance';
+        case 'in_maintenance_mode': return 'maintenance';
+        case 'running_backup': return 'maintenance';
+        case 'updating': return 'warning';
+        case 'in_Trouble': return 'warning';
+        case 'online': return 'online';
+        case 'shutting_down': return 'offline';
+    }
 }
