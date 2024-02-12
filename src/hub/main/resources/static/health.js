@@ -4,7 +4,7 @@ $(document).ready(()=> {
 
 function refreshVersion() {
     fetch('/api/open/info/commit')
-        .then(rsp = rsp.body())
+        .then(rsp => rsp.text())
         .then(current => fetch('https://api.github.com/repos/comroid-git/mc-server-hub/commits')
             .then(rsp => rsp.json())
             .then(data => data[0].sha)
