@@ -1,15 +1,13 @@
 # Minecraft Server Hub
-### A web-interface for managing multiple Minecraft Servers based on SSH Connections
-
-Manage all your Minecraft Servers from one Web interface!
-
-#### [Report a Problem](https://youtrack.comroid.org/newIssue?projectId=MCSD) (log in as guest if you dont want to create an account)
+### A web-interface for managing multiple Minecraft Servers
+###### Currently in alpha / preview state
+![Image](https://github.com/comroid-git/mc-server-hub/blob/main/docs/img/dashboard.png?raw=true)
 
 ## Warning
 #### Compatibility is very limited currently
 System Requirements:
-- Linux Operating System for full functionality
+- Linux Operating System for full Agent functionality
 - Required Programs
-  - `tar` (GNU tar)
+  - `tar` (GNU tar): For automated Backups
 - Database
-  - Currently only supports MySQL
+  - Currently only supports MySQL by default
