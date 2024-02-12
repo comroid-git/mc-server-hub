@@ -70,7 +70,7 @@ public class BasicController implements org.springframework.boot.web.servlet.err
                 codeMessage += "Internal Server Error";
             else codeMessage += status.getReasonPhrase();
             if (code == 404)
-                codeMessage += ": " + requestUri;
+                codeMessage += requestUri;
             return new ErrorInfo(codeMessage, message, sw.toString().replace("\r\n", "\n"));
         }
     }
