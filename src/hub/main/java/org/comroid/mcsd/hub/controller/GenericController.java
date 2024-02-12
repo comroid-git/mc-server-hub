@@ -9,6 +9,7 @@ import org.comroid.api.data.seri.DataStructure;
 import org.comroid.api.data.seri.FormData;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.info.Constraint;
+import org.comroid.api.info.Maintenance;
 import org.comroid.mcsd.core.BasicController;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.AbstractEntity;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -73,8 +75,7 @@ public class GenericController {
     @GetMapping
     public String dash(Model model, HttpSession session) {
         var user = userRepo.get(session).assertion();
-        model.addAttribute("user", user)
-                .addAttribute("serverRepo", Streams.of(serverRepo.findAll())
+        model.addAttribute("serverRepo", Streams.of(serverRepo.findAll())
                         .filter(x -> x.hasPermission(user, AbstractEntity.Permission.Administrate))
                         .toList())
                 .addAttribute("discordBotRepo", Streams.of(discordBotRepo.findAll())
@@ -91,6 +92,18 @@ public class GenericController {
                         .toList())
                 .addAttribute("canManageUsers", user.hasPermission(user, AbstractEntity.Permission.ManageUsers));
         return "dashboard";
+    }
+
+    @GetMapping("/health")
+    public String health(Model model, HttpSession session) {
+        model.addAttribute("inspections", Maintenance.INSPECTIONS.stream()
+                .collect(Collectors.toMap(Function.identity(), Maintenance.Inspection::getCheckResults)));
+        return "health";
+    }
+
+    @ModelAttribute("user")
+    public User modelUser(HttpSession session) {
+        return userRepo.get(session).assertion();
     }
 
     @PostMapping("/module/add/{id}")

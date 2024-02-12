@@ -4,7 +4,9 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import org.comroid.api.attr.LongAttribute;
 import org.comroid.api.attr.Named;
+import org.comroid.api.func.util.DelegateStream;
 import org.comroid.api.info.Log;
+import org.comroid.api.java.ResourceLoader;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.exception.CommandStatusError;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +36,12 @@ public class BasicController implements org.springframework.boot.web.servlet.err
     public Map<@NotNull Long, String> permissions() {
         return Arrays.stream(AbstractEntity.Permission.values())
                 .collect(Collectors.toMap(LongAttribute::getAsLong, Named::getName));
+    }
+
+    @ResponseBody
+    @GetMapping("/api/open/info/{name}")
+    public String info(@PathVariable("name") String name) {
+        return DelegateStream.readAll(ResourceLoader.SYSTEM_CLASS_LOADER.getResource("info/"+name+".txt"));
     }
 
     @GetMapping("/error")
