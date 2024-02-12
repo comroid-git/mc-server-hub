@@ -184,7 +184,7 @@ public class GenericController {
                 .addAttribute(type, target);
         var verify = target.verifyPermission(user, AbstractEntity.Permission.Administrate);
         if (method == HttpMethod.POST && data.containsKey("auth_code"))
-            verify = verify.or(authorizationLinkRepo.validate(user, targetId, data.get("auth_code").asString(), AbstractEntity.Permission.Administrate).cast());
+            verify = verify.or(authorizationLinkRepo.validate(user, targetId, data.get("auth_code").asString(), AbstractEntity.Permission.Administrate).castRef());
         verify.orElseThrow(() -> new InsufficientPermissionsException(user, target, AbstractEntity.Permission.Administrate));
         if (method == HttpMethod.POST) {
             target.getPermissions().put(subject, permissions);
