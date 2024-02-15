@@ -13,7 +13,6 @@ import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.Named;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Bitmask;
-import org.comroid.api.info.Constraint;
 import org.comroid.api.info.Maintenance;
 import org.comroid.api.text.Capitalization;
 import org.comroid.mcsd.core.entity.system.User;
@@ -25,11 +24,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 @Data
 @Slf4j
@@ -79,6 +76,10 @@ public abstract class AbstractEntity implements Named {
         return owner == null;
     }
 
+    public Stream<? extends AbstractEntity> managedChildren() {
+        return Stream.empty();
+    }
+
     @Deprecated
     public final boolean hasAnyPermission(@NotNull User user) {
         return hasPermission(user, Permission.Any);
@@ -91,12 +92,15 @@ public abstract class AbstractEntity implements Named {
     }
 
     public boolean hasPermission(@NotNull User user, AbstractEntity.Permission... permissions) {
+        Permission[] perms;
         if(permissions.length==0)
-            permissions=new Permission[]{Permission.Any};
+            perms=new Permission[]{Permission.Any};
+        else perms = permissions;
         final var mask = this.permissions.getOrDefault(user, 0L);
         return (owner != null && user.getId().equals(owner.getId()))
-                || Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag))
-                || Utils.SuperAdmins.contains(user.getId());
+                || Arrays.stream(perms).allMatch(flag -> Bitmask.isFlagSet(mask, flag))
+                || Utils.SuperAdmins.contains(user.getId())
+                || managedChildren().anyMatch(e->e.hasPermission(user,permissions));
     }
 
     public final Wrap<AbstractEntity> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
