@@ -143,6 +143,11 @@ public class MCSD {
     }
 
     @Bean
+    public void rabbitConfig(@Autowired McsdConfig config) {
+        // todo
+    }
+
+    @Bean
     public ScheduledExecutorService scheduler() {
         return Executors.newScheduledThreadPool(32);
     }
