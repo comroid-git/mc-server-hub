@@ -322,7 +322,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             if (msg.getStatus() == Status.in_maintenance_mode)
                 return completedFuture("Server is in maintenance mode");
             if (msg.getStatus() == Status.online)
-                return completedFuture("Server is pingable");
+                return completedFuture("Server is claiming to be " + msg.getStatus() + "!" +
+                        "\nIf you're still having issues, please re-run the command within 10 Minutes");
             util.report(user + " reported issues with " + server);
             return supplyAsync(() -> {
                 entry.terminate();
