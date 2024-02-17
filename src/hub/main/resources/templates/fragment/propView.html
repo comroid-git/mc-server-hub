@@ -5,7 +5,7 @@
         <h3 th:text="${category.name}"></h3>
         <h4 th:text="${category.description}"></h4>
         <table><tbody>
-        <tr th:each="prop: ${entry.getValue()}" th:object="${prop}" th:if="${prop.type.standard}">
+        <tr th:each="prop: ${entry.getValue()}" th:object="${prop}" th:if="${prop.type.standard && !prop.name.equals('token')}">
             <td th:text="${prop.alternateName}"></td>
             <td><input th:name="${prop.name}"
                        th:value="${prop.getFrom(obj)}"

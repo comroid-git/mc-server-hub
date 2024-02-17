@@ -9,6 +9,7 @@ import org.comroid.api.func.util.AlmostComplete;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.net.REST;
 import org.comroid.api.net.Token;
+import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.module.discord.DiscordAdapter;
@@ -30,7 +31,7 @@ import java.util.stream.Stream;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
-public interface UserRepo extends CrudRepository<User, UUID> {
+public interface UserRepo extends AbstractEntity.Repo<User> {
     Optional<User> findByVerification(String verification);
     Optional<User> findByName(String name);
     Optional<User> findByHubId(UUID id);

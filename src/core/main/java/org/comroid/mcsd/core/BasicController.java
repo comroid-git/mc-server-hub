@@ -4,7 +4,9 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import org.comroid.api.attr.LongAttribute;
 import org.comroid.api.attr.Named;
+import org.comroid.api.func.util.DelegateStream;
 import org.comroid.api.info.Log;
+import org.comroid.api.java.ResourceLoader;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.exception.CommandStatusError;
 import org.jetbrains.annotations.NotNull;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.NestedServletException;
 
@@ -35,14 +38,20 @@ public class BasicController implements org.springframework.boot.web.servlet.err
                 .collect(Collectors.toMap(LongAttribute::getAsLong, Named::getName));
     }
 
-    @Deprecated
+    @ResponseBody
+    @GetMapping("/api/open/info/{name}")
+    public String info(@PathVariable("name") String name) {
+        return DelegateStream.readAll(ResourceLoader.SYSTEM_CLASS_LOADER.getResource("info/"+name+".txt"));
+    }
+
     @GetMapping("/error")
-    public ErrorInfo error(HttpServletRequest request) {
+    public String error(Model model, HttpServletRequest request) {
         var ex = (Throwable) request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
         int code = (int) Objects.requireNonNullElse(request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE),500);
         var uri = Optional.ofNullable(request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI)).map(Object::toString).orElse(null);
         var msg = Optional.ofNullable(request.getAttribute(RequestDispatcher.ERROR_MESSAGE)).map(Object::toString).orElse(null);
-        return ErrorInfo.create(ex,code,uri,msg);
+        model.addAttribute("error", ErrorInfo.create(ex,code,uri,msg));
+        return "error";
     }
 
     @ExceptionHandler({ Throwable.class })
@@ -69,7 +78,7 @@ public class BasicController implements org.springframework.boot.web.servlet.err
                 codeMessage += "Internal Server Error";
             else codeMessage += status.getReasonPhrase();
             if (code == 404)
-                codeMessage += ": " + requestUri;
+                codeMessage += requestUri;
             return new ErrorInfo(codeMessage, message, sw.toString().replace("\r\n", "\n"));
         }
     }

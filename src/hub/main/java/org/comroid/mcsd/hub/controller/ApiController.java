@@ -72,7 +72,7 @@ public class ApiController {
     @GetMapping("/webapp/servers")
     public List<Server> servers(HttpSession session) {
         return Streams.of(servers.findAll())
-                .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
+                .filter(x->x.hasPermission(user(session)))
                 .toList();
     }
 
@@ -90,6 +90,7 @@ public class ApiController {
         return server.status().join();
     }
 
+    @Deprecated(forRemoval = true)
     @PostMapping(value = "/webapp/server/edit", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public String editServer(HttpSession session, @RequestParam Map<String, String> data) {
         var user = user(session);
@@ -125,7 +126,7 @@ public class ApiController {
     @GetMapping("/webapp/agents")
     public List<Agent> agents(HttpSession session) {
         return Streams.of(agents.findAll())
-                .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
+                .filter(x->x.hasPermission(user(session)))
                 .toList();
     }
 
@@ -133,7 +134,7 @@ public class ApiController {
     @GetMapping("/webapp/shells")
     public List<ShConnection> shells(HttpSession session) {
         return Streams.of(shRepo.findAll())
-                .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
+                .filter(x->x.hasPermission(user(session)))
                 .toList();
     }
 
@@ -141,7 +142,7 @@ public class ApiController {
     @GetMapping("/webapp/bots")
     public List<DiscordBot> bots(HttpSession session) {
         return Streams.of(discordBotRepo.findAll())
-                .filter(x->x.hasPermission(user(session), AbstractEntity.Permission.Any))
+                .filter(x->x.hasPermission(user(session)))
                 .toList();
     }
 

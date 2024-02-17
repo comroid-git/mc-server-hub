@@ -13,7 +13,7 @@ import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.Named;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Bitmask;
-import org.comroid.api.info.Constraint;
+import org.comroid.api.info.Maintenance;
 import org.comroid.api.text.Capitalization;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
@@ -24,11 +24,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 @Data
 @Slf4j
@@ -36,6 +34,11 @@ import java.util.function.Predicate;
 @Inheritance(strategy = InheritanceType.JOINED)
 @Category(value = "Entity", order = Integer.MIN_VALUE, desc = @Description("Basic Entity related Information"))
 public abstract class AbstractEntity implements Named {
+    public static final Maintenance.Inspection MI_InsufficientPermission = Maintenance.Inspection.builder()
+            .name("InsufficientPermission")
+            .description("User has insufficient permission")
+            .description("User %s is missing required permission %s")
+            .build();
     public static final int CurrentVersion = 1;
     @Id @Order(Integer.MIN_VALUE)
     private UUID id = UUID.randomUUID();
@@ -73,6 +76,11 @@ public abstract class AbstractEntity implements Named {
         return owner == null;
     }
 
+    public Stream<? extends AbstractEntity> managedChildren() {
+        return Stream.empty();
+    }
+
+    @Deprecated
     public final boolean hasAnyPermission(@NotNull User user) {
         return hasPermission(user, Permission.Any);
     }
@@ -84,11 +92,15 @@ public abstract class AbstractEntity implements Named {
     }
 
     public boolean hasPermission(@NotNull User user, AbstractEntity.Permission... permissions) {
-        Constraint.Length.min(1, permissions, "permissions").run();
+        Permission[] perms;
+        if(permissions.length==0)
+            perms=new Permission[]{Permission.Any};
+        else perms = permissions;
         final var mask = this.permissions.getOrDefault(user, 0L);
         return (owner != null && user.getId().equals(owner.getId()))
-                || Arrays.stream(permissions).allMatch(flag -> Bitmask.isFlagSet(mask, flag))
-                || Utils.SuperAdmins.contains(user.getId());
+                || Arrays.stream(perms).allMatch(flag -> Bitmask.isFlagSet(mask, flag))
+                || Utils.SuperAdmins.contains(user.getId())
+                || managedChildren().anyMatch(e->e.hasPermission(user,permissions));
     }
 
     public final Wrap<AbstractEntity> verifyPermission(final @NotNull User user, final AbstractEntity.Permission... permissions) {
@@ -144,6 +156,7 @@ public abstract class AbstractEntity implements Named {
         Refresh,
         Reload,
         ManageModules,
+        ManageUsers(0x2000_0000),
 
         View(0x0100_0000_0000_0000L, Status),
         Moderate(0x0200_0000_0000_0000L, Whitelist, Kick, Mute),
@@ -151,8 +164,7 @@ public abstract class AbstractEntity implements Named {
         Administrate(0x0800_0000_0000_0000L, Console, Execute, Files, ForceOP, TriggerCron),
         Delete(0x1000_0000_0000_0000L),
 
-        ManageUsers(0x2000_0000),
-
+        @Deprecated
         Any(0xffff_ffffL);
 
         static {
