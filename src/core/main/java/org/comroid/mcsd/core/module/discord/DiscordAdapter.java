@@ -298,21 +298,22 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         var server = bean(ServerRepo.class).findByDiscordChannel(e.getChannelIdLong())
                 .orElseThrow(() -> new EntityNotFoundException(Server.class, "Discord Channel: " + e.getChannelIdLong()));
         return server.status().thenCompose(msg -> {
-            if (msg.getStatus() == Status.in_maintenance_mode)
-                return completedFuture("Server is in maintenance mode");
-            if (msg.getStatus() == Status.online)
-                return completedFuture("Server is pingable");
             long lastReport = lastIssueReport.compute(server.getId(), (k, v) -> {
                 if (v == null)
                     return 0L;
                 return v;
             });
+            lastIssueReport.put(server.getId(), System.currentTimeMillis());
             if (Instant.now().minus(doubleIssueReportShutdownTimeout).toEpochMilli() < lastReport) {
                 log.info(user + " requested restart for " + server + " again; restarting Agent");
                 System.exit(0);
                 return completedFuture("Restarting " + server.getAgent());
-            } else log.info(user + " requested restart for " + server);
-            lastIssueReport.put(server.getId(), System.currentTimeMillis());
+            }
+            if (msg.getStatus() == Status.in_maintenance_mode)
+                return completedFuture("Server is in maintenance mode");
+            if (msg.getStatus() == Status.online)
+                return completedFuture("Server is pingable");
+            log.info(user + " requested restart for " + server);
             return supplyAsync(() -> {
                 bean(ServerManager.class).get(server).assertion().terminate();
                 return "Restarting " + server;
