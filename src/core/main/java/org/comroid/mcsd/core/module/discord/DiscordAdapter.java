@@ -297,6 +297,16 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .orElseThrow(() -> new EntityNotFoundException(User.class, e.getUser().getIdLong()));
         var server = bean(ServerRepo.class).findByDiscordChannel(e.getChannelIdLong())
                 .orElseThrow(() -> new EntityNotFoundException(Server.class, "Discord Channel: " + e.getChannelIdLong()));
+        var entry = bean(ServerManager.class).get(server).assertion();
+        final var util = new Object() {
+            public void report(String message) {
+                log.info(message);
+                entry.component(DiscordModule.class)
+                        .map(dc -> dc.getProto().getModerationChannelId())
+                        .map(jda::getTextChannelById)
+                        .ifPresent(tc -> tc.sendMessage(message).queue());
+            }
+        };
         return server.status().thenCompose(msg -> {
             long lastReport = lastIssueReport.compute(server.getId(), (k, v) -> {
                 if (v == null)
@@ -305,7 +315,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             });
             lastIssueReport.put(server.getId(), System.currentTimeMillis());
             if (Instant.now().minus(doubleIssueReportShutdownTimeout).toEpochMilli() < lastReport) {
-                log.info(user + " requested restart for " + server + " again; restarting Agent");
+                util.report(user + " reported issues with " + server + " again; restarting Agent");
                 System.exit(0);
                 return completedFuture("Restarting " + server.getAgent());
             }
@@ -313,9 +323,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 return completedFuture("Server is in maintenance mode");
             if (msg.getStatus() == Status.online)
                 return completedFuture("Server is pingable");
-            log.info(user + " requested restart for " + server);
+            util.report(user + " reported issues with " + server);
             return supplyAsync(() -> {
-                bean(ServerManager.class).get(server).assertion().terminate();
+                entry.terminate();
                 return "Restarting " + server;
             });
         });
