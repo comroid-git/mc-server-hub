@@ -188,7 +188,7 @@ public class MCSD {
     @DependsOn("applicationContextProvider")
     public Set<AbstractEntity> migrateEntities() {
         class Helper {
-            <T extends AbstractEntity> void getOrMigrate(Server server, ModuleType<?,?> type, Supplier<T> migratedObj) {
+            <T extends AbstractEntity> void getOrMigrate(Server server, ModuleType<?, ?> type, Supplier<T> migratedObj) {
                 var repo = type.getObtainRepo().apply(MCSD.this);
                 if (repo.findByServerIdAndDtype(server.getId(), type.getName()).isPresent())
                     return;
@@ -206,6 +206,14 @@ public class MCSD {
 
         log.info("Checking if DB needs migration");
 
+        var invalid = Streams.of(users.findAll())
+                .filter(usr -> usr.getDiscordId() == null && usr.getMinecraftId() == null && usr.getHubId() == null)
+                .toList();
+        if (!invalid.isEmpty()) {
+            log.info("Deleting " + invalid.size() + " invalid Users that have no IDs");
+            users.deleteAll(invalid);
+        }
+
         // migrate server.agent fields
         servers.saveAll(entityManager.createQuery("SELECT s FROM Server s WHERE s.agent = null", Server.class)
                 .getResultList().stream()
@@ -220,37 +228,37 @@ public class MCSD {
         Streams.of(servers.findMigrationCandidates(0))
                 .peek(server -> {
                     //todo: complete migration code
-           //    StatusModule.Factory,
+                    //    StatusModule.Factory,
                     helper.getOrMigrate(server, ModuleType.Status,
                             () -> new StatusModulePrototype()
                                     .setServer(server));
-           //    LocalFileModule.Factory,
+                    //    LocalFileModule.Factory,
                     helper.getOrMigrate(server, ModuleType.LocalFile,
                             () -> new LocalFileModulePrototype()
                                     .setDirectory(server.getDirectory())
                                     .setBackupsDir(server.getShConnection().getBackupsDir())
                                     .setForceCustomJar(server.isForceCustomJar())
                                     .setServer(server));
-           //    UptimeModule.Factory,
+                    //    UptimeModule.Factory,
                     helper.getOrMigrate(server, ModuleType.Uptime,
                             () -> new UptimeModulePrototype()
                                     .setServer(server));
-           //    LocalExecutionModule.Factory,
+                    //    LocalExecutionModule.Factory,
                     helper.getOrMigrate(server, ModuleType.LocalExecution,
-                            ()->new LocalExecutionModulePrototype()
+                            () -> new LocalExecutionModulePrototype()
                                     .setRamGB(server.getRamGB())
                                     .setCustomCommand(server.getCustomCommand())
                                     .setServer(server));
-           //    //todo: fix BackupModule.Factory,
+                    //    //todo: fix BackupModule.Factory,
                     helper.getOrMigrate(server, ModuleType.Backup,
                             () -> new BackupModulePrototype()
                                     .setEnabled(false)
                                     .setServer(server));
-           //    ConsolePlayerEventModule.Factory,
+                    //    ConsolePlayerEventModule.Factory,
                     helper.getOrMigrate(server, ModuleType.ConsolePlayerEvent,
                             () -> new ConsolePlayerEventModulePrototype()
                                     .setServer(server));
-           //    DiscordModule.Factory
+                    //    DiscordModule.Factory
                     helper.getOrMigrate(server, ModuleType.Discord,
                             () -> new DiscordModulePrototype()
                                     .setDiscordBot(server.getDiscordBot())
@@ -269,12 +277,12 @@ public class MCSD {
                 .forEach(yield::add);
 
         if (!yield.isEmpty())
-            log.info("Migrated entities:"+yield.stream()
+            log.info("Migrated entities:" + yield.stream()
                     .map(Objects::toString)
-                    .collect(Collectors.joining("\n\t- ","\n\t- ","")));
+                    .collect(Collectors.joining("\n\t- ", "\n\t- ", "")));
 
         // early init for better load times
-        log.info(ModuleType.cache.size()+" Module types loaded");
+        log.info(ModuleType.cache.size() + " Module types loaded");
 
         return yield;
     }
