@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.entity.module.ssh;
+package org.comroid.mcsd.core.entity.module.remote.ssh;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;

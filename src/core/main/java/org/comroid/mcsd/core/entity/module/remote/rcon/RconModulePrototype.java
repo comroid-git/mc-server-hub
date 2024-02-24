@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.entity.module.remote;
+package org.comroid.mcsd.core.entity.module.remote.rcon;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;

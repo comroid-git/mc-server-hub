@@ -23,8 +23,9 @@ import org.comroid.mcsd.core.entity.module.local.LocalShellModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ForceOpModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.PlayerListModulePrototype;
-import org.comroid.mcsd.core.entity.module.remote.RconModulePrototype;
-import org.comroid.mcsd.core.entity.module.ssh.SshFileModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.rabbit.RabbitModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.rcon.RconModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.ssh.SshFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.UpdateModulePrototype;
@@ -39,8 +40,9 @@ import org.comroid.mcsd.core.module.local.LocalShellModule;
 import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.player.ForceOpModule;
 import org.comroid.mcsd.core.module.player.PlayerListModule;
-import org.comroid.mcsd.core.module.remote.RconModule;
-import org.comroid.mcsd.core.module.ssh.SshFileModule;
+import org.comroid.mcsd.core.module.remote.rabbit.RabbitModule;
+import org.comroid.mcsd.core.module.remote.rcon.RconModule;
+import org.comroid.mcsd.core.module.remote.ssh.SshFileModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
@@ -72,21 +74,23 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     public static final ModuleType<LocalShellModule, LocalShellModulePrototype> LocalShell = new ModuleType<>(Side.Agent, "LocalShell", "Local Shell Execution Module", LocalShellModule.class, LocalShellModulePrototype.class, MCSD::getModules_localShell);
 
     // remote
-    public static final ModuleType<RconModule, RconModulePrototype> Rcon = new ModuleType<>(Side.Both, "RCon","RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon);
+    // - rabbit
+    public static final ModuleType<RabbitModule, RabbitModulePrototype> RabbitSender = new ModuleType<>(Side.Agent, "RabbitMQ", "RabbitMQ Connection module",RabbitModule.class, RabbitModulePrototype.class, MCSD::getModules_rabbit);
+    // - rcon
+    public static final ModuleType<RconModule, RconModulePrototype> Rcon = new ModuleType<>(Side.Hub, "RCon","RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon);
+    // - ssh
+    public static final ModuleType<SshFileModule, SshFileModulePrototype> SshFile = new ModuleType<>(Side.Hub, "SshFile", "SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile);
 
     // player
     public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>(Side.Both, "ConsolePlayerEvent", "Forward Console Player Events", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents);
     public static final ModuleType<PlayerListModule, PlayerListModulePrototype> PlayerList = new ModuleType<>(Side.Both, "PlayerList", "Cache Player List from Player Events", PlayerListModule.class, PlayerListModulePrototype.class, MCSD::getModules_playerList);
     public static final ModuleType<ForceOpModule, ForceOpModulePrototype> ForceOP = new ModuleType<>(Side.Both, "ForceOP", "Enforce OP for permitted players", ForceOpModule.class, ForceOpModulePrototype.class, MCSD::getModules_forceOp);
 
-    // ssh
-    public static final ModuleType<SshFileModule, SshFileModulePrototype> SshFile = new ModuleType<>(Side.Both, "SshFile", "SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile);
-
-    //status
+    // status
     public static final ModuleType<BackupModule, BackupModulePrototype> Backup = new ModuleType<>(Side.Both, "Backup", "Automated Backups", BackupModule.class, BackupModulePrototype.class, MCSD::getModules_backup);
     public static final ModuleType<UpdateModule, UpdateModulePrototype> Update = new ModuleType<>(Side.Both, "Update", "Automated Updates", UpdateModule.class, UpdateModulePrototype.class, MCSD::getModules_update);
-    public static final ModuleType<StatusModule, StatusModulePrototype> Status = new ModuleType<>(Side.Both, "Status", "Internal Status Logging", StatusModule.class, StatusModulePrototype.class, MCSD::getModules_status);
-    public static final ModuleType<UptimeModule, UptimeModulePrototype> Uptime = new ModuleType<>(Side.Both, "Uptime", "Internal Uptime Logging", UptimeModule.class, UptimeModulePrototype.class, MCSD::getModules_uptime);
+    public static final ModuleType<StatusModule, StatusModulePrototype> Status = new ModuleType<>(Side.Both, "Status", "Status Logging", StatusModule.class, StatusModulePrototype.class, MCSD::getModules_status);
+    public static final ModuleType<UptimeModule, UptimeModulePrototype> Uptime = new ModuleType<>(Side.Both, "Uptime", "Uptime Logging", UptimeModule.class, UptimeModulePrototype.class, MCSD::getModules_uptime);
 
     Side side;
     String name;
