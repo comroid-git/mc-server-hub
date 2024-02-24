@@ -17,6 +17,7 @@ import org.comroid.api.func.util.Streams;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.java.JITAssistant;
 import org.comroid.api.net.REST;
+import org.comroid.api.net.Rabbit;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.core.entity.AbstractEntity;
@@ -53,6 +54,11 @@ import org.comroid.mcsd.core.repo.system.UserRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.connection.Connection;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -143,8 +149,9 @@ public class MCSD {
     }
 
     @Bean
-    public void rabbitConfig(@Autowired McsdConfig config) {
-        // todo
+    @Nullable
+    public Rabbit rabbit(@Autowired McsdConfig config) {
+        return Rabbit.of(config.getRabbitUri()).get();
     }
 
     @Bean
