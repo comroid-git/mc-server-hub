@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{/layout/head}"></head>
+<script th:src="@{/static/common.js}" type="text/javascript"></script>
+<script th:src="@{/static/modules.js}" type="text/javascript"></script>
+<body>
+<div class="ui-menubar" th:insert="~{/layout/menubar}"></div>
+<div class="ui-container-page">
+    <div class="ui-content">
+        <h2>Modules for <span th:text="${server.bestName}"></span></h2>
+        <table>
+            <thead>
+            <tr th:with="canManageModules = ${target.hasPermission(user,T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}">
+                <th th:if="${canManageModules}">
+                    <button class="ui-button" id="btn-module-add"
+                            onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">Add
+                    </button>
+                    <div class="ui-blur" id="dialog-module-add">
+                        <div class="ui-dialog">
+                            <form class="dialog-form" method="post" th:action="@{'/module/add/'+${target.id}}">
+                                <select id="module-selector" multiple name="dtype">
+                                    <option th:each="option: ${target.getFreeModuleTypes()}"
+                                            th:text="${option.name}"
+                                            th:value="${option.name}"></option>
+                                </select>
+                                <input name="userId" th:value="${user.id}" type="hidden">
+                                <input id="btn-module-add-submit" type="submit" value="Apply">
+                            </form>
+                            <button class="icon-close"
+                                    onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">X
+                            </button>
+                        </div>
+                    </div>
+                </th>
+                <th th:unless="${canManageModules}"></th>
+                <th>Name</th>
+                <th>Description</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <th:block th:each="module: ${modules}">
+                <tr class="ui-table-parent" onclick="toggleExpansion" th:id="'module_'+${module.id}">
+                    <td class="module-state-switch-col"><input class="state-switch"
+                                                               th:checked="${module.enabled}"
+                                                               th:id="'state_'+${module.id}"
+                                                               type="checkbox"></td>
+                    <td class="module-name-col" th:text="${module.dtype.name}"></td>
+                    <td class="module-desc-col" th:text="${module.dtype.description}"></td>
+                    <td class="module-ctrl-col">
+                        < !-- <a class="ui-button" th:href="@{'/module/edit/'+${module.id}}">Edit</a> -- >
+                        <a class="ui-button" th:href="@{'/module/delete/'+${module.id}}">Delete</a>
+                    </td>
+                </tr>
+                <tr class="ui-table-child" th:id="'detail_'+${module.id}">
+                    <td colspan="4">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th class="module-prop-name-col"></th>
+                                <th class="module-prop-value-col"></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <th:block th:replace="~{fragment/propView.html :: propView(${module.dtype.proto}, ${module})}"/>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            </th:block>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="ui-footer" th:insert="~{/layout/footer}"></div>
+</body>
+</html>
