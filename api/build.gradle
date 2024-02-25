@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'maven-publish'
 }
 
 group = 'org.comroid.mcsd'
@@ -31,4 +32,10 @@ dependencies {
     // utility
     compileOnly 'org.projectlombok:lombok:+'
     annotationProcessor 'org.projectlombok:lombok:+'
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
 }
