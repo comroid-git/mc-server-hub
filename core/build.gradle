@@ -4,6 +4,21 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
 }
 
+def getCommitTimestampMinutes() {
+    // Run 'git log' command to get the timestamp of the latest commit
+    def result = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'log', '-1', '--format=%ct'
+        standardOutput = result
+    }
+
+    // Convert the timestamp to minutes
+    def timestampSeconds = result.toString().trim().toLong()
+    def timestampMinutes = timestampSeconds / 60
+
+    return (int) timestampMinutes
+}
+
 ext {
     artifactName = 'mcsd-core'
     projectDescription = 'comroid Minecraft Server Hub Core API'
@@ -11,7 +26,7 @@ ext {
 }
 
 group = 'org.comroid.mcsd'
-version = '0.1.0-SNAPSHOT'
+version = "0.1.${getCommitTimestampMinutes()}"
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
