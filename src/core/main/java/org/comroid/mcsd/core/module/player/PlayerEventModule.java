@@ -14,8 +14,8 @@ import org.comroid.mcsd.core.entity.module.player.PlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
-import org.comroid.mcsd.util.McFormatCode;
-import org.comroid.mcsd.util.Tellraw;
+import org.comroid.api.text.minecraft.McFormatCode;
+import org.comroid.api.text.minecraft.Tellraw;
 import org.intellij.lang.annotations.Language;
 
 import java.net.URL;

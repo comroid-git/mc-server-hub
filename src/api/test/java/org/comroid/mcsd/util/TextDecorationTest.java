@@ -2,6 +2,7 @@ package org.comroid.mcsd.util;
 
 import org.comroid.api.text.Markdown;
 import org.comroid.api.text.TextDecoration;
+import org.comroid.api.text.minecraft.McFormatCode;
 
 public class TextDecorationTest {
     public static void main(String[] args) {

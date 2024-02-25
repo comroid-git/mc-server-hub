@@ -3,7 +3,7 @@ package org.comroid.mcsd.api.model;
 import lombok.Getter;
 import lombok.Value;
 import org.comroid.api.attr.IntegerAttribute;
-import org.comroid.mcsd.util.McFormatCode;
+import org.comroid.api.text.minecraft.McFormatCode;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
