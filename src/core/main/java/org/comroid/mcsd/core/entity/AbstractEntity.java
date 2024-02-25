@@ -140,7 +140,7 @@ public abstract class AbstractEntity implements Named {
         Stop,
         Backup,
         Update,
-        Maintenance,
+        SwitchMaintenance,
         Enable,
         Console,
         Execute,
@@ -160,7 +160,7 @@ public abstract class AbstractEntity implements Named {
 
         View(0x0100_0000_0000_0000L, Status),
         Moderate(0x0200_0000_0000_0000L, Whitelist, Kick, Mute),
-        Manage(0x0400_0000_0000_0000L, Ban, Start, Stop, Backup, Update, Maintenance, Enable),
+        Manage(0x0400_0000_0000_0000L, Ban, Start, Stop, Backup, Update, SwitchMaintenance, Enable),
         Administrate(0x0800_0000_0000_0000L, Console, Execute, Files, ForceOP, TriggerCron),
         Delete(0x1000_0000_0000_0000L),
 

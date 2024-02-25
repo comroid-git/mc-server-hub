@@ -7,7 +7,7 @@
 <body>
 <div class="ui-menubar" th:insert="~{/layout/menubar}"></div>
 <div class="ui-container-page">
-    <div class="ui-content">
+    <div class="ui-content" th:with="edit = ${action.equals('edit')}">
         <form method="post" th:action="'/api/webapp/'+${type}+'/'+${target.id}">
             <h2>
                 <b th:text="${target.typeName}"></b>: <b th:text="${target.getBestName()}"></b>
@@ -80,6 +80,7 @@
                     </tbody>
                 </table>
             </th:block>-->
+            <input name="action" th:if="${action!=null}" th:value="${action}" type="hidden">
             <input name="auth_key" th:if="${editKey!=null}" th:value="${editKey}" type="hidden">
             <input th:if="${edit}" type="submit" value="Apply">
         </form>
