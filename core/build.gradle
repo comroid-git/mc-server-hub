@@ -109,7 +109,7 @@ dependencies {
     implementation 'org.apache.sshd:sshd-sftp:2.+'
 
     // minecraft
-    api 'com.mineaurion:api:SNAPSHOT'
+    api 'com.mineaurion:api:INDEV'
     implementation 'io.github.fragland:MineStat:3.+'
     implementation 'io.github.MrGraversen:minecraft-rcon:0.+'
     //implementation "dev.jaqobb:namemcapi:2.+" // not actually available ...
