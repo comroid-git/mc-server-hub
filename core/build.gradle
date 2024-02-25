@@ -65,13 +65,6 @@ compileJava {
     dependsOn 'gitCommitResource'
 }
 
-repositories {
-    maven { url 'https://maven.comroid.org' }
-    mavenLocal()
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
 dependencies {
     runtimeOnly 'javax.persistence:javax.persistence-api:2.2'
 
@@ -100,6 +93,7 @@ dependencies {
     implementation 'org.apache.sshd:sshd-sftp:2.+'
 
     // minecraft
+    api 'com.mineaurion:api:SNAPSHOT'
     implementation 'io.github.fragland:MineStat:3.+'
     implementation 'io.github.MrGraversen:minecraft-rcon:0.+'
     //implementation "dev.jaqobb:namemcapi:2.+" // not actually available ...
