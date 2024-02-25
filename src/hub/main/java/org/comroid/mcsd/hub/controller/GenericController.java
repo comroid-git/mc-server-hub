@@ -13,6 +13,7 @@ import org.comroid.api.info.Maintenance;
 import org.comroid.mcsd.core.BasicController;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.entity.AbstractEntity;
+import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.entity.system.DiscordBot;
@@ -21,6 +22,7 @@ import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.repo.system.*;
 import org.jetbrains.annotations.Nullable;
@@ -115,6 +117,25 @@ public class GenericController {
         return "redirect:/server/view/"+serverId;
     }
 
+    @GetMapping("/server/modules/{id}")
+    public String serverModulesPage(HttpSession session, Model model,
+                                    @PathVariable("id") UUID serverId,
+                                    @RequestParam(value = "auth_code", required = false) String code) {
+        var user = userRepo.get(session).assertion();
+        var server = core.getServers().findById(serverId)
+                .orElseThrow(()->new EntityNotFoundException(Server.class,serverId));
+        server.verifyPermission(user, AbstractEntity.Permission.ManageModules)
+                .or(authorizationLinkRepo.validate(user,serverId,code,AbstractEntity.Permission.ManageModules).castRef())
+                .orElseThrow(()->new InsufficientPermissionsException(user,serverId, AbstractEntity.Permission.ManageModules));
+        model.addAttribute("user", user)
+                .addAttribute("server", server)
+                .addAttribute("struct", DataStructure.of(server.getClass()))
+                .addAttribute("moduleTypes", ModuleType.cache)
+                .addAttribute("modules", Streams.of(mcsd.getModules().findAllByServerId(server.getId()))
+                        .collect(Collectors.toMap(ModulePrototype::getDtype,Function.identity())));
+        return "server/modules";
+    }
+
     @GetMapping("/{type}/{action}/{id}")
     public String entityPage(HttpSession session, Model model,
                              @PathVariable("type") String type,
@@ -125,7 +146,7 @@ public class GenericController {
         var target = core.findEntity(type, id);
         user.verifyPermission(user, AbstractEntity.Permission.Modify)
                 .or(() -> target instanceof User subject && user.canGovern(subject) ? subject : null)
-                .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).cast())
+                .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).castRef())
                 .orElseThrow(() -> new InsufficientPermissionsException(user, id, AbstractEntity.Permission.Modify));
         if (target instanceof Server)
             model.addAttribute("modules", Streams.of(mcsd.getModules().findAllByServerId(target.getId())).toList());

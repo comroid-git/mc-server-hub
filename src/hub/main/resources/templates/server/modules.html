@@ -8,18 +8,29 @@
 <div class="ui-container-page">
     <div class="ui-content">
         <h2>Modules for <span th:text="${server.bestName}"></span></h2>
+        <button class="ui-button state-switch"></button>
+        <table>
+            <thead><tr th:each="module: ${modules.values()}"
+                       th:with="isModulePresent = ${modules.keySet().contains()}">
+                <h3>Module <span th:text="${module.dtype.alternateName}"></span></h3>
+            </tr></thead>
+            <tbody><tr></tr></tbody>
+        </table>
+
+
+
         <table>
             <thead>
-            <tr th:with="canManageModules = ${target.hasPermission(user,T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}">
+            <tr th:with="canManageModules = ${server.hasPermission(user,T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}">
                 <th th:if="${canManageModules}">
                     <button class="ui-button" id="btn-module-add"
                             onclick="$('#dialog-module-add').slideToggle(500, ()=>{})">Add
                     </button>
                     <div class="ui-blur" id="dialog-module-add">
                         <div class="ui-dialog">
-                            <form class="dialog-form" method="post" th:action="@{'/module/add/'+${target.id}}">
+                            <form class="dialog-form" method="post" th:action="@{'/module/add/'+${server.id}}">
                                 <select id="module-selector" multiple name="dtype">
-                                    <option th:each="option: ${target.getFreeModuleTypes()}"
+                                    <option th:each="option: ${server.getFreeModuleTypes()}"
                                             th:text="${option.name}"
                                             th:value="${option.name}"></option>
                                 </select>
