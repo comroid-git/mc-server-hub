@@ -2,6 +2,12 @@ plugins {
     id 'java-library'
 }
 
+ext {
+    artifactName = 'mcsd-api'
+    projectDescription = 'comroid Minecraft Server Hub Base API'
+    userbase = 'comroid-git'
+}
+
 group = 'org.comroid.mcsd'
 version = '0.1.0-SNAPSHOT'
 sourceCompatibility = '17'
@@ -13,6 +19,8 @@ sourceSets {
     test.java.srcDirs       = files(parent.projectDir.toString() + "/src/api/test/java")
     test.resources.srcDirs  = files(parent.projectDir.toString() + "/src/api/test/java")
 }
+
+apply from: "$rootDir/gradle/publishing.gradle"
 
 repositories {
     maven { url 'https://maven.comroid.org' }
