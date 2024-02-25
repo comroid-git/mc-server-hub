@@ -12,6 +12,7 @@ import org.comroid.api.info.Constraint;
 import org.comroid.api.info.Maintenance;
 import org.comroid.mcsd.core.BasicController;
 import org.comroid.mcsd.core.MCSD;
+import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
@@ -61,6 +62,8 @@ public class GenericController {
     private BasicController basicController;
     @Autowired
     private MCSD mcsd;
+    @Autowired
+    private ServerManager serverManager;
 
     /*
     @GetMapping("/error")
@@ -79,7 +82,7 @@ public class GenericController {
         var user = userRepo.get(session).assertion();
         model.addAttribute("serverRepo", Streams.of(serverRepo.findAll())
                         .filter(x -> x.hasPermission(user, AbstractEntity.Permission.Administrate))
-                        .toList())
+                        .collect(Collectors.toMap(Function.identity(),serverManager::tree)))
                 .addAttribute("discordBotRepo", Streams.of(discordBotRepo.findAll())
                         .filter(x -> x.hasPermission(user, AbstractEntity.Permission.Administrate))
                         .toList())
@@ -148,7 +151,7 @@ public class GenericController {
                 .or(() -> target instanceof User subject && user.canGovern(subject) ? subject : null)
                 .or(authorizationLinkRepo.validate(user, id, code, AbstractEntity.Permission.Modify).castRef())
                 .orElseThrow(() -> new InsufficientPermissionsException(user, id, AbstractEntity.Permission.Modify));
-        if (target instanceof Server)
+        if (target instanceof Server server)
             model.addAttribute("modules", Streams.of(mcsd.getModules().findAllByServerId(target.getId())).toList());
         model.addAttribute("user", user)
                 .addAttribute("edit", "edit".equals(action))

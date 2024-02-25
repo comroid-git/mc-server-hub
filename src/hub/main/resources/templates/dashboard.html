@@ -25,12 +25,19 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr class="serverEntry" th:each="server: ${serverRepo}" th:id="${server.id}">
+                <tr class="serverEntry" th:each="entry: ${serverRepo.entrySet()}"
+                    th:with="server = ${entry.key}, tree = ${entry.value}"
+                    th:id="${server.id}">
                     <td>
                         <div class="statusIcon icon-loading"></div>
                     </td>
                     <td><a class="ui-button" th:href="@{'/server/view/'+${server.id}}">View</a>
-                        <a class="ui-button" th:href="@{'/server/console/'+${server.id}}">Console</a></td>
+                        <a class="ui-button"
+                           th:if="${tree.component(T(org.comroid.mcsd.core.module.console.ConsoleModule)).isNonNull()}"
+                           th:href="@{'/server/console/'+${server.id}}">Console</a></td>
+                        <a class="ui-button"
+                           th:if="${server.hasPermission(user, T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}"
+                           th:href="@{'/server/modules/'+${server.id}}">Modules</a></td>
                     <td>
                         <div class="motd">Loading MOTD ...</div>
                     </td>
