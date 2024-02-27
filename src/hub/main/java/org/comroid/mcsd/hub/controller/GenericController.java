@@ -83,7 +83,7 @@ public class GenericController {
     }
      */
 
-    @GetMapping({"","/users"})
+    @GetMapping({"/","/users"})
     public String dash(Model model, HttpSession session, HttpServletRequest request) {
         var user = userRepo.get(session).assertion();
         model.addAttribute("serverRepo", Streams.of(serverRepo.findAll())
@@ -102,7 +102,9 @@ public class GenericController {
                         .filter(x -> x.hasPermission(user, Administrate))
                         .toList())
                 .addAttribute("canManageUsers", user.hasPermission(user, ManageUsers));
-        return request.getContextPath();
+        var servletPath = request.getServletPath();
+        return servletPath.length() == 1 ? "dashboard"
+                : servletPath.substring(1);
     }
 
     @GetMapping("/health")
