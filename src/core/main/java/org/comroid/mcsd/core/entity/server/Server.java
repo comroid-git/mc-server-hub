@@ -187,7 +187,11 @@ public class Server extends AbstractEntity {
     }
 
     public Path path(String... extra) {
-        return Paths.get(((FileModulePrototype) component(FileModule.class).assertion().getProto()).getDirectory(), extra);
+        return Paths.get(component(FileModule.class)
+                .map(ServerModule::getProto)
+                .<FileModulePrototype>castRef()
+                .map(FileModulePrototype::getDirectory)
+                .orElse(""), extra);
     }
 
     @SneakyThrows
