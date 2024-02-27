@@ -12,6 +12,7 @@ import org.comroid.api.tree.Component;
 import org.comroid.api.tree.UncheckedCloseable;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.model.ServerPropertiesModifier;
 import org.comroid.mcsd.core.module.FileModule;
@@ -20,6 +21,7 @@ import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
@@ -77,6 +79,7 @@ public class ServerManager {
     @Value
     public class Entry extends Component.Base {
         Server server;
+        AtomicReference<@Nullable Agent> agent = new AtomicReference<>(null);
         Map<ModulePrototype, ServerModule<ModulePrototype>> tree = new ConcurrentHashMap<>();
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(4, new ThreadFactory() {
             public final AtomicInteger count = new AtomicInteger(0);
