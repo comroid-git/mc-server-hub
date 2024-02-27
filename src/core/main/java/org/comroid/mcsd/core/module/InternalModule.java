@@ -5,14 +5,13 @@ import lombok.experimental.NonFinal;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.module.InternalModulePrototype;
 import org.comroid.mcsd.core.model.IInternalModule;
-import org.jetbrains.annotations.Nullable;
 
 @Value @NonFinal
-public abstract class InternalModule extends ServerModule<@Nullable InternalModulePrototype> implements IInternalModule {
+public abstract class InternalModule extends ServerModule<InternalModulePrototype> implements IInternalModule {
     ServerManager.Entry managerEntry;
 
     public InternalModule(ServerManager.Entry managerEntry) {
-        super(managerEntry.getServer(), null);
+        super(managerEntry.getServer(), new InternalModulePrototype());
         this.managerEntry = managerEntry;
     }
 }

@@ -10,8 +10,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public interface ShRepo extends AbstractEntity.Repo<ShConnection> {
-    Iterable<ShConnection> findA
-
     default Map<String, UUID> toShMap() {
         return StreamSupport.stream(findAll().spliterator(), false)
                 .collect(Collectors.toUnmodifiableMap(ShConnection::toString, ShConnection::getId));

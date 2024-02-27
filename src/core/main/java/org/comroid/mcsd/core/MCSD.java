@@ -213,16 +213,6 @@ public class MCSD {
 
         log.info("Checking if DB needs migration");
 
-        // migrate server.agent fields
-        servers.saveAll(entityManager.createQuery("SELECT s FROM Server s WHERE s.agent = null", Server.class)
-                .getResultList().stream()
-                .peek(srv -> agents.findForServer(srv.getId()).ifPresentOrElse(
-                        srv::setAgent,
-                        () -> log.warn("Could not migrate " + srv + "s Agent ID. Please set Agent ID manually (Server ID: " + srv.getId() + ")")
-                ))
-                .peek(yield::add)
-                .toList());
-
         // migrate servers to use modules
         Streams.of(servers.findMigrationCandidates(0))
                 .peek(server -> {

@@ -23,7 +23,6 @@ import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.remote.ssh.SshFileModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
-import org.comroid.mcsd.core.repo.system.ShRepo;
 import org.comroid.mcsd.core.side.agent.RabbitLinkModule;
 import org.comroid.mcsd.core.side.hub.ConsoleFromRabbitModule;
 import org.jetbrains.annotations.NotNull;
@@ -62,9 +61,11 @@ public class ServerManager {
     public void startAll(List<Server> servers) {
         servers.stream()
                 .map(ThrowingFunction.logging(log, srv -> get(srv.getId()).assertion("Could not initialize " + srv)))
-                .flatMap(filter(Objects::nonNull, $ -> log.severe("A server was not initialized correctly")))
+                //.flatMap(filter(Objects::nonNull, $ -> log.severe("A server was not initialized correctly")))
                 .map(entry -> {
+                    assert entry!=null;
                     var c = entry.reloadModules();
+                    entry.reloadInternalModules();
                     return "%s loaded %d modules".formatted(entry.server, c);
                 })
                 .forEach(log::info);
@@ -107,7 +108,7 @@ public class ServerManager {
          * executor for modules
          */
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(4, new ThreadFactory() {
-            public final AtomicInteger count = new AtomicInteger(0);
+            private final AtomicInteger count = new AtomicInteger(0);
 
             @Override
             public Thread newThread(@NotNull Runnable r) {
@@ -119,10 +120,8 @@ public class ServerManager {
          */
         AtomicReference<UncheckedCloseable> running = new AtomicReference<>();
 
-        public Entry(Server server) {
-            super();
-            this.server = server;
-
+        public void reloadInternalModules() {
+            internal.clear();
             // load rabbitmq communication modules
             var hubConnect = bean(CompletableFuture.class, "hubConnect");
             var hubConnectSuccess = hubConnect.isDone() && !hubConnect.isCompletedExceptionally();
@@ -136,12 +135,11 @@ public class ServerManager {
                     }
                     noAutoFs:
                     if (component(FileModule.class).isNull()) {
-                        //var ssh = bean(ShRepo.class).fi;
-                        //if (ssh.isNull())
-                        //    break noAutoFs;
-                        //log.info(server + " did not load a ConsoleModule; using SSH/SFTP");
-                        //internal.add(new SshFileModule(server, new SshFileModulePrototype(ssh)));
-                        ; // todo: automatic fs provider with
+                        var ssh = server.getSsh();
+                        if (ssh==null)
+                            break noAutoFs;
+                        log.info(server + " did not load a ConsoleModule; using SSH/SFTP");
+                        internal.add(new SshFileModule(server, new SshFileModulePrototype(ssh)));
                     }
                 }
                 default -> throw new IllegalStateException("Unexpected value: " + side);
@@ -151,6 +149,8 @@ public class ServerManager {
         @Override
         @SneakyThrows
         protected void $initialize() {
+            if (side != ModuleType.Side.Agent)
+                return;
             updateProperties();
         }
 
