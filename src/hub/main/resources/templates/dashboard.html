@@ -39,7 +39,7 @@
                         <a class="ui-button"
                            th:href="@{'/server/modules/'+${server.id}}"
                            th:if="${server.hasPermission(user, T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}">Modules</a></td>
-                    <td><a th:href="~{'/user/'+server.owner.id}" th:text="${server.owner.bestName}"></a></td>
+                    <td><a th:href="@{'/user/view/'+${server.owner.id}}" th:text="${server.owner.bestName}"></a></td>
                     <td>
                         <div class="motd">Loading MOTD ...</div>
                     </td>
@@ -75,7 +75,7 @@
                     <!--<td><div class="statusIcon icon-loading"></div></td>-->
                     <td><a class="ui-button" th:href="@{'/agent/view/'+${agent.id}}">View</a></td>
                     <td th:text="${agent.bestName}"></td>
-                    <td><a th:href="~{'/user/'+agent.owner.id}" th:text="${agent.owner.bestName}"></a></td>
+                    <td><a th:href="@{'/user/view/'+${agent.owner.id}}" th:text="${agent.owner.bestName}"></a></td>
                     <td><a th:href="${agent.baseUrl}" th:text="${agent.baseUrl}"></a></td>
                     <td>
                         <a class="ui-button" th:href="@{'/agent/edit/'+${agent.id}}">Edit</a>
