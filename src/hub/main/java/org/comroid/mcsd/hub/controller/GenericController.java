@@ -105,6 +105,11 @@ public class GenericController {
         return "dashboard";
     }
 
+    @GetMapping("/users")
+    public String users(Model model, HttpSession session) {
+        return "users";
+    }
+
     @GetMapping("/health")
     public String health(Model model, HttpSession session) {
         model.addAttribute("inspections", Maintenance.INSPECTIONS.stream()
