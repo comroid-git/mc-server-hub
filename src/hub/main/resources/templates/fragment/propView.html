@@ -1,5 +1,6 @@
-<div th:fragment="propView(struct, obj)">
+<div th:fragment="propView(struct, prefill, obj)">
     <!--/*@thymesVar id="struct" type="org.comroid.api.data.seri.DataStructure"*/-->
+    <!--/*@thymesVar id="prefill" type="java.util.Map<java.lang.String, java.lang.String>"*/-->
     <!--/*@thymesVar id="obj" type="java.lang.Object"*/-->
     <th:block th:each="entry: ${struct.categorizedOrderedProperties}" th:object="${entry}" th:with="category = ${entry.getKey()}">
         <h3 th:text="${category.name}"></h3>
@@ -8,8 +9,8 @@
         <tr th:each="prop: ${entry.getValue()}" th:object="${prop}" th:if="${prop.type.standard && !prop.name.equals('token')}">
             <td th:text="${prop.alternateName}"></td>
             <td><input th:name="${prop.name}"
-                       th:value="${prop.getFrom(obj)}"
-                       th:checked="${prop.getFrom(obj)}"
+                       th:value="${obj==null?(prefill==null?'':(prefill.getOrDefault(prop.name,null))):prop.getFrom(obj)}"
+                       th:checked="${obj==null?(prefill==null?'':(prefill.getOrDefault(prop.name,null))):prop.getFrom(obj)}"
                        th:placeholder="${prop.defaultValue}"
                        th:readonly="${prop.name.equals('id') || !prop.canSet() || !edit}"
                        th:type="${prop.name.contains('email') ? 'email' : prop.type.htmlInputType}">

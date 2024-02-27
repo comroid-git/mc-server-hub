@@ -7,14 +7,14 @@
 <body>
 <div class="ui-menubar" th:insert="~{/layout/menubar}"></div>
 <div class="ui-container-page">
-    <div class="ui-content" th:with="edit = ${action.equals('edit')}">
-        <form method="post" th:action="'/api/webapp/'+${type}+'/'+${target.id}">
+    <div class="ui-content" th:with="edit = ${action != null && (action.equals('edit') || action.equals('create'))}">
+        <form method="post" th:action="'/api/webapp/'+${type}+'/'+${target==null?'create':target.id}">
             <h2>
-                <b th:text="${target.typeName}"></b>: <b th:text="${target.getBestName()}"></b>
+                <b th:text="${target.typeName}"></b>: <b th:text="${target==null?prefill.getOrDefault('display_name', 'Creating new'):target.getBestName()}"></b>
                 <span th:if="${user.canModify(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/edit/'+${id}}">Edit</a></span>
                 <span th:if="${user.canAdmin(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/permissions/'+${id}+'/'+${user.id}}">Permissions</a></span>
             </h2>
-            <th:block th:replace="~{fragment/propView.html :: propView(${struct}, ${target})}"/>
+            <th:block th:replace="~{fragment/propView.html :: propView(${struct}, ${prefill}, ${target})}"/>
             <!--<th:block th:unless="${modules == null}">
                 <h3>Modules</h3>
                 <table>

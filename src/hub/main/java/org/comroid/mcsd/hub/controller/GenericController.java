@@ -145,20 +145,23 @@ public class GenericController {
         return "server/modules";
     }
 
-    @GetMapping("/{type}/{action}/{id}")
+    @GetMapping({"/{type}/{action}/{id}", "/{type}/create"})
     public String entityPage(HttpSession session, Model model,
                              @PathVariable("type") String type,
-                             @PathVariable("action") String action,
-                             @PathVariable(value = "id", required = false) @Nullable UUID id,
-                             @RequestParam(value = "auth_code", required = false) String code) {
+                             @PathVariable(value = "action", required = false) @Nullable String action,
+                             @PathVariable(value = "id", required = false) @Nullable String uuid,
+                             @RequestParam Map<String, String> data) {
+        final var code = data.getOrDefault("auth_code", null);
         final var user = userRepo.get(session).assertion();
-        final var create = action.equals("create");
-        assert !create || id == null;
+        final var create = action == null;
+        assert create || uuid != null;
+        final var id = create?null:UUID.fromString(uuid);
         final var perm = create ? switch (type) {
             case "server" -> CreateServer;
             case "agent" -> CreateAgent;
             case "sh" -> CreateSh;
             case "bot" -> CreateDiscordBot;
+            case "module" -> ManageModules;
             default -> throw new IllegalStateException("Unexpected type: " + type);
         } : Modify;
         final var target = create ? null : core.findEntity(type, id);
@@ -173,11 +176,12 @@ public class GenericController {
                 .addAttribute("editKey", code)
                 .addAttribute("target", target)
                 .addAttribute("type", type)
+                .addAttribute("prefill", data)
                 .addAttribute("struct", DataStructure.of(core.findType(type)));
         return "entity/index";
     }
 
-    @PostMapping("/api/webapp/{type}/{id}")
+    @PostMapping({"/api/webapp/{type}/{id}", "/api/webapp/{type}/create"})
     public String entityUpdate(HttpSession session, Model model,
                                @PathVariable("type") String type,
                                @PathVariable(value = "id", required = false) @Nullable UUID id,
