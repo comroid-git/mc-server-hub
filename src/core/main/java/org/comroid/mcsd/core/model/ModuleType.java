@@ -62,37 +62,43 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     private static final Map<String, ModuleType<?, ?>> $cache = new ConcurrentHashMap<>();
     public static final Map<String, ModuleType<?, ?>> cache = Collections.unmodifiableMap($cache);
 
-    // console
-    public static final ModuleType<McsdCommandModule, McsdCommandModulePrototype> McsdCommand = new ModuleType<>(Side.Both, "McsdCommand", "MCSD Command from Console", McsdCommandModule.class, McsdCommandModulePrototype.class, MCSD::getModules_mcsd);
-
-    // discord
-    public static final ModuleType<DiscordModule, DiscordModulePrototype> Discord = new ModuleType<>(Side.Both, "Discord", "Discord Integration from Console", DiscordModule.class, DiscordModulePrototype.class, MCSD::getModules_discord);
-
     // local
+    /** java */
     public static final ModuleType<LocalExecutionModule, LocalExecutionModulePrototype> LocalExecution = new ModuleType<>(Side.Agent, "LocalExecution", "Local Execution Module", LocalExecutionModule.class, LocalExecutionModulePrototype.class, MCSD::getModules_localExecution);
+    /** fs */
     public static final ModuleType<LocalFileModule, LocalFileModulePrototype> LocalFile = new ModuleType<>(Side.Agent, "LocalFile", "Local File Module", LocalFileModule.class, LocalFileModulePrototype.class, MCSD::getModules_localFiles);
+    /** bash */
     public static final ModuleType<LocalShellModule, LocalShellModulePrototype> LocalShell = new ModuleType<>(Side.Agent, "LocalShell", "Local Shell Execution Module", LocalShellModule.class, LocalShellModulePrototype.class, MCSD::getModules_localShell);
 
     // remote
-    // - rabbit
-    public static final ModuleType<RabbitModule, RabbitModulePrototype> RabbitSender = new ModuleType<>(Side.Agent, "RabbitMQ", "RabbitMQ Connection module",RabbitModule.class, RabbitModulePrototype.class, MCSD::getModules_rabbit);
-    // - rcon
-    public static final ModuleType<RconModule, RconModulePrototype> Rcon = new ModuleType<>(Side.Hub, "RCon","RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon);
-    // - ssh
+    /** ssh */
     public static final ModuleType<SshFileModule, SshFileModulePrototype> SshFile = new ModuleType<>(Side.Hub, "SshFile", "SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile);
+    /** rabbit */
+    public static final ModuleType<RabbitModule, RabbitModulePrototype> Rabbit = new ModuleType<>(Side.Both, "RabbitMQ", "RabbitMQ Connection module",RabbitModule.class, RabbitModulePrototype.class, MCSD::getModules_rabbit);
+    /** rcon */
+    public static final ModuleType<RconModule, RconModulePrototype> Rcon = new ModuleType<>(Side.Hub, "RCon","RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon);
 
     // player
-    public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>(Side.Both, "ConsolePlayerEvent", "Forward Console Player Events", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents);
-    public static final ModuleType<PlayerListModule, PlayerListModulePrototype> PlayerList = new ModuleType<>(Side.Both, "PlayerList", "Cache Player List from Player Events", PlayerListModule.class, PlayerListModulePrototype.class, MCSD::getModules_playerList);
-    public static final ModuleType<ForceOpModule, ForceOpModulePrototype> ForceOP = new ModuleType<>(Side.Both, "ForceOP", "Enforce OP for permitted players", ForceOpModule.class, ForceOpModulePrototype.class, MCSD::getModules_forceOp);
+    /** event source: console */
+    public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>(Side.Hub, "ConsolePlayerEvent", "Forward Console Player Events", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents);
+    /** player list */
+    public static final ModuleType<PlayerListModule, PlayerListModulePrototype> PlayerList = new ModuleType<>(Side.Hub, "PlayerList", "Cache Player List from Player Events", PlayerListModule.class, PlayerListModulePrototype.class, MCSD::getModules_playerList);
+    /** force op */
+    public static final ModuleType<ForceOpModule, ForceOpModulePrototype> ForceOP = new ModuleType<>(Side.Hub, "ForceOP", "Enforce OP for permitted players", ForceOpModule.class, ForceOpModulePrototype.class, MCSD::getModules_forceOp);
 
     // status
-    public static final ModuleType<BackupModule, BackupModulePrototype> Backup = new ModuleType<>(Side.Both, "Backup", "Automated Backups", BackupModule.class, BackupModulePrototype.class, MCSD::getModules_backup);
-    public static final ModuleType<UpdateModule, UpdateModulePrototype> Update = new ModuleType<>(Side.Both, "Update", "Automated Updates", UpdateModule.class, UpdateModulePrototype.class, MCSD::getModules_update);
+    public static final ModuleType<BackupModule, BackupModulePrototype> Backup = new ModuleType<>(Side.Agent, "Backup", "Automated Backups", BackupModule.class, BackupModulePrototype.class, MCSD::getModules_backup);
+    public static final ModuleType<UpdateModule, UpdateModulePrototype> Update = new ModuleType<>(Side.Agent, "Update", "Automated Updates", UpdateModule.class, UpdateModulePrototype.class, MCSD::getModules_update);
     public static final ModuleType<StatusModule, StatusModulePrototype> Status = new ModuleType<>(Side.Both, "Status", "Status Logging", StatusModule.class, StatusModulePrototype.class, MCSD::getModules_status);
     public static final ModuleType<UptimeModule, UptimeModulePrototype> Uptime = new ModuleType<>(Side.Both, "Uptime", "Uptime Logging", UptimeModule.class, UptimeModulePrototype.class, MCSD::getModules_uptime);
 
-    Side side;
+    // utility
+    /** mcsd command */
+    public static final ModuleType<McsdCommandModule, McsdCommandModulePrototype> McsdCommand = new ModuleType<>(Side.Both, "McsdCommand", "MCSD Command from Console", McsdCommandModule.class, McsdCommandModulePrototype.class, MCSD::getModules_mcsd);
+    /** discord */
+    public static final ModuleType<DiscordModule, DiscordModulePrototype> Discord = new ModuleType<>(Side.Both, "Discord", "Discord Integration from Console", DiscordModule.class, DiscordModulePrototype.class, MCSD::getModules_discord);
+
+    Side preferredSide;
     String name;
     String description;
     @ToString.Exclude DataStructure<Module> impl;
@@ -100,14 +106,14 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     @ToString.Exclude @JsonIgnore @Ignore Invocable<Module> ctor;
     @ToString.Exclude @JsonIgnore @Ignore Function<MCSD, ModuleRepo<Proto>> obtainRepo;
 
-    public ModuleType(Side side,
+    public ModuleType(Side preferredSide,
                       String name,
                       String description,
                       Class<Module> impl,
                       Class<Proto> proto,
                       Function<MCSD, ModuleRepo<Proto>> obtainRepo
     ) {
-        this.side = side;
+        this.preferredSide = preferredSide;
         this.name = name;
         this.description = description;
         this.impl = DataStructure.of(impl, ServerModule.class);
