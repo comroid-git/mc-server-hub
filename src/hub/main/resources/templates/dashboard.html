@@ -35,7 +35,7 @@
                     <td><a class="ui-button" th:href="@{'/server/view/'+${server.id}}">View</a>
                         <a class="ui-button"
                            th:if="${tree.component(T(org.comroid.mcsd.core.module.console.ConsoleModule)).isNonNull()}"
-                           th:href="@{'/server/console/'+${server.id}}">Console</a></td>
+                           th:href="@{'/server/console/'+${server.id}}">Console</a>
                         <a class="ui-button"
                            th:if="${server.hasPermission(user, T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}"
                            th:href="@{'/server/modules/'+${server.id}}">Modules</a></td>
