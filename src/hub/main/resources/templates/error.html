@@ -8,7 +8,7 @@
     <h3>Error <span th:text="${error.code()}"></span></h3>
     <h4 th:if="${error.message() != null && !error.message().isBlank()}" th:text="${error.message()}"></h4>
     <label th:if="${error.stacktrace() != null && !error.stacktrace().isBlank()}">
-        <textarea th:text="${error.stacktrace()}" readonly></textarea>
+        <textarea readonly th:text="${error.stacktrace()}"></textarea>
     </label>
 </div>
 <div class="ui-footer" th:insert="~{/layout/footer}"></div>

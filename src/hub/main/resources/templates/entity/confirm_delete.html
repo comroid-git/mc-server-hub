@@ -8,7 +8,7 @@
     <div class="ui-content">
         <h1>You are about to delete <b th:text="${target.toString()}"></b>!</h1>
         <h3>Do you really want to do this?</h3>
-        <form th:action="'/'+${type}+'/delete/'+${target.id}" method="post">
+        <form method="post" th:action="'/'+${type}+'/delete/'+${target.id}">
             <input class="ui-button" type="submit" value="Yes">
             <button class="ui-button" onclick="window.history.back(); window.location.reload()">No</button>
         </form>

@@ -10,13 +10,16 @@
         <h2>Modules for <span th:text="${server.bestName}"></span></h2>
         <button class="ui-button state-switch"></button>
         <table>
-            <thead><tr th:each="module: ${modules.values()}"
-                       th:with="isModulePresent = ${modules.keySet().contains()}">
+            <thead>
+            <tr th:each="module: ${modules.values()}"
+                th:with="isModulePresent = ${modules.keySet().contains()}">
                 <h3>Module <span th:text="${module.dtype.alternateName}"></span></h3>
-            </tr></thead>
-            <tbody><tr></tr></tbody>
+            </tr>
+            </thead>
+            <tbody>
+            <tr></tr>
+            </tbody>
         </table>
-
 
 
         <table>
@@ -73,7 +76,8 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <th:block th:replace="~{fragment/propView.html :: propView(${module.dtype.proto}, ${module})}"/>
+                            <th:block
+                                    th:replace="~{fragment/propView.html :: propView(${module.dtype.proto}, ${module})}"/>
                             </tbody>
                         </table>
                     </td>
