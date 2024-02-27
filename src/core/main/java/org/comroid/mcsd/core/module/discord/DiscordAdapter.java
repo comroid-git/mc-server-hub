@@ -73,7 +73,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Data
-public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener, Command.Handler {
+public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventListener {
     private static final Map<UUID, DiscordAdapter> adapters = new ConcurrentHashMap<>();
     public static final int MaxBulkDelete = 100;
     public static final int MaxEditBacklog = 15;
@@ -133,41 +133,6 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             cmdr.register(this);
         }
         //flatMap(SlashCommandInteractionEvent.class).subscribeData(e -> cmdr.execute(e.getName(), e));
-    }
-
-    @Override
-    public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
-        final var e = Stream.of(args)
-                .flatMap(Streams.cast(SlashCommandInteractionEvent.class))
-                .findAny()
-                .orElseThrow();
-        final var user = bean(UserRepo.class)
-                .findByDiscordId(e.getUser().getIdLong())
-                .orElse(null);
-        if (response instanceof CompletableFuture)
-            e.deferReply().setEphemeral(cmd.ephemeral())
-                    .submit()
-                    .thenCombine(((CompletableFuture<?>) response), (hook, resp) -> {
-                        WebhookMessageCreateAction<Message> req;
-                        if (resp instanceof EmbedBuilder)
-                            req = hook.sendMessageEmbeds(embed((EmbedBuilder) resp, user).build());
-                        else req = hook.sendMessage(String.valueOf(resp));
-                        return req.submit();
-                    })
-                    .thenCompose(Function.identity())
-                    .exceptionally(Polyfill.exceptionLogger());
-        else {
-            ReplyCallbackAction req;
-            if (response instanceof EmbedBuilder)
-                req = e.replyEmbeds(embed((EmbedBuilder) response, user).build());
-            else req = e.reply(String.valueOf(response));
-            req.setEphemeral(cmd.ephemeral()).submit();
-        }
-    }
-
-    @Override
-    public @Nullable String handleThrowable(Throwable throwable) {
-        return Markdown.CodeBlock.apply(Command.Handler.super.handleThrowable(throwable));
     }
 
     @Command
