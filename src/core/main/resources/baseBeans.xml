@@ -3,5 +3,6 @@
        xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="org.comroid.mcsd.core.util.ApplicationContextProvider" name="applicationContextProvider" lazy-init="false"/>
+    <bean class="org.comroid.api.func.util.Command.Manager" name="cmdr" lazy-init="false" />
     <bean class="org.springframework.core.io.DefaultResourceLoader"/>
 </beans>

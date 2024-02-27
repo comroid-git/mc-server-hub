@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -90,14 +91,15 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                 .setCompression(Compression.ZLIB)
                 .addEventListeners(this)
                 .build();
-        if (!Debug.isDebug())
+
+        /*if (!Debug.isDebug())
             jda.retrieveCommands().submit()
                     /* todo: must not delete all commands every time
                     .thenCompose(ls -> CompletableFuture.allOf(ls.stream()
                             .map(net.dv8tion.jda.api.interactions.commands.Command::delete)
                             .map(RestAction::submit)
                             .toArray(CompletableFuture[]::new)))
-                    */
+                    *//*
                     .thenCompose($ -> jda.updateCommands().addCommands(
                             Commands.slash("info", "Shows parent information")
                                     .setGuildOnly(true),
@@ -124,11 +126,13 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                     .addOption(OptionType.STRING, "command", "The command to run", true)
                                     .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                     .setGuildOnly(true)).submit())
-                    .join();
-
-        final var cmdr = new Command.Manager(this);
-        cmdr.register(this);
-        flatMap(SlashCommandInteractionEvent.class).subscribeData(e -> cmdr.execute(e.getName(), e));
+                    .join();*/
+        final var cmdr = bean(Command.Manager.class);
+        if (cmdr.getAdapters().stream().noneMatch(Command.Manager.Adapter$JDA.class::isInstance)) {
+            cmdr.new Adapter$JDA(jda);
+            cmdr.register(this);
+        }
+        //flatMap(SlashCommandInteractionEvent.class).subscribeData(e -> cmdr.execute(e.getName(), e));
     }
 
     @Override
@@ -167,8 +171,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     @Command
-    public CompletableFuture<EmbedBuilder> info(SlashCommandInteractionEvent e) {
-        var parent = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+    public CompletableFuture<EmbedBuilder> info(MessageChannelUnion channel) {
+        var parent = bean(ServerRepo.class).findByDiscordChannel(channel.getIdLong())
                 .orElseThrow(() -> new Command.Error("Unable to find parent"));
         return parent.status().thenApply(stat -> {
             var embed = new EmbedBuilder()
@@ -193,8 +197,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     @Command
-    public CompletableFuture<EmbedBuilder> list(SlashCommandInteractionEvent e) {
-        var parent = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+    public CompletableFuture<EmbedBuilder> list(MessageChannelUnion channel) {
+        var parent = bean(ServerRepo.class).findByDiscordChannel(channel.getIdLong())
                 .orElseThrow(() -> new Command.Error("Unable to find parent"));
         return parent.status().thenApply(stat -> {
             var embed = new EmbedBuilder()
@@ -217,43 +221,42 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     @Command(ephemeral = true)
-    public CompletableFuture<String> whois(SlashCommandInteractionEvent e) {
+    public CompletableFuture<String> whois(MessageChannelUnion channel,
+                                           @Command.Arg(required = false) @Nullable String minecraftUsername,
+                                           @Command.Arg(required = false) @Nullable User discordUser) {
         final var users = bean(UserRepo.class);
-        var profile = e.getOption("minecraft");
-        var discord = e.getOption("discord");
 
-        if (profile == null && discord == null)
+        if (minecraftUsername == null && discordUser == null)
             return CompletableFuture.completedFuture("Please provide a Minecraft or Discord user");
-        else if (profile != null)
+        else if (minecraftUsername != null)
             //noinspection DataFlowIssue
-            return users.get(profile.getAsString())
+            return users.get(minecraftUsername)
                     .filter(data -> data.getDiscordId() != null)
                     .map(data -> jda.retrieveUserById(data.getDiscordId())
                             .useCache(true)
-                            .map(usr -> profile.getAsString() + " is " + usr.getAsMention() + " on Discord")
+                            .map(usr -> minecraftUsername + " is " + usr.getAsMention() + " on Discord")
                             .submit())
-                    .orElseGet(() -> CompletableFuture.completedFuture(profile.getAsString() + " has not linked their Accounts"));
+                    .orElseGet(() -> CompletableFuture.completedFuture(minecraftUsername + " has not linked their Accounts"));
         else {
-            final long dcid = discord.getAsUser().getIdLong();
+            final long dcid = discordUser.getIdLong();
             return users.findByDiscordId(dcid)
                     .filter(user -> user.getMinecraftId() != null)
-                    .map(user -> user.getMinecraftName().thenApply(mc->discord.getAsUser().getAsMention() + " is " + mc + " in Minecraft") )
-                    .orElseGet(() -> CompletableFuture.completedFuture(discord.getAsUser().getAsMention() + " has not linked their Accounts"));
+                    .map(user -> user.getMinecraftName().thenApply(mc->discordUser.getAsMention() + " is " + mc + " in Minecraft") )
+                    .orElseGet(() -> CompletableFuture.completedFuture(discordUser.getAsMention() + " has not linked their Accounts"));
         }
     }
 
     @Command(ephemeral = true)
-    public String link(SlashCommandInteractionEvent e) {
+    public String link(User cmdUser, @Command.Arg String minecraftUsername) {
         final var profiles = bean(UserRepo.class);
-        var username = Objects.requireNonNull(e.getOption("username")).getAsString();
-        var profile = profiles.get(username)
+        var profile = profiles.get(minecraftUsername)
                 .orElseThrow(() -> new Command.Error("Invalid username"));
         var code = profiles.startMcDcLinkage(profile);
-        final var cmd = Tellraw.notify(username, McFormatCode.Blue.text("Account Verification").build(),
+        final var cmd = Tellraw.notify(minecraftUsername, McFormatCode.Blue.text("Account Verification").build(),
                         "Use code ")
                 .component(McFormatCode.Aqua.text(code).build())
                 .component(McFormatCode.Reset.text(" to link this Minecraft Account to Discord User ").build())
-                .component(McFormatCode.Aqua.text(e.getUser().getEffectiveName()).build())
+                .component(McFormatCode.Aqua.text(cmdUser.getEffectiveName()).build())
                 .build()
                 .toString();
         // todo: should check if player is online
@@ -265,8 +268,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     @Command(ephemeral = true)
-    public String verify(SlashCommandInteractionEvent e) {
-        final var code = Objects.requireNonNull(e.getOption("code")).getAsString();
+    public String verify(User cmdUser, @Command.Arg String code) {
         final var users = bean(UserRepo.class);
         final var profile = users.findByVerification(code)
                 .orElseThrow(() -> new Command.Error("Invalid code"));
@@ -277,14 +279,14 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
             users.clearVerification(profile.getId());
             throw new Command.Error("Verification timeout");
         }
-        final var user = users.merge(users.findByDiscordId(e.getUser().getIdLong()), Optional.of(profile));
+        final var user = users.merge(users.findByDiscordId(cmdUser.getIdLong()), Optional.of(profile));
         users.clearVerification(user.getId());
         return "Minecraft account " + profile.getMinecraftName().join() + " has been linked";
     }
 
     @Command(ephemeral = true)
-    public CompletableFuture<String> backup(SlashCommandInteractionEvent e) {
-        return bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+    public CompletableFuture<String> backup(MessageChannelUnion channel) {
+        return bean(ServerRepo.class).findByDiscordChannel(channel.getIdLong())
                 .flatMap(srv -> srv.component(BackupModule.class).wrap())
                 .orElseThrow(() -> new Command.Error("Unable to find parent"))
                 .runBackup(true)
@@ -292,23 +294,21 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     @Command(ephemeral = true)
-    public CompletableFuture<String> update(SlashCommandInteractionEvent e) {
-        return bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+    public CompletableFuture<String> update(MessageChannelUnion channel,
+                                            @Command.Arg(required = false) @Nullable Boolean force) {
+        return bean(ServerRepo.class).findByDiscordChannel(channel.getIdLong())
                 .flatMap(srv -> srv.component(UpdateModule.class).wrap())
                 .orElseThrow(() -> new Command.Error("Unable to find parent"))
-                .runUpdate(Optional.ofNullable(e.getOption("force"))
-                        .map(OptionMapping::getAsBoolean)
-                        .orElse(false))
+                .runUpdate(Optional.ofNullable(force).orElse(false))
                 .thenApply($->$?"Update complete":"Update skipped");
     }
 
     @Command(ephemeral = true)
-    public String execute(SlashCommandInteractionEvent e) {
-        var console = bean(ServerRepo.class).findByDiscordChannel(e.getChannel().getIdLong())
+    public String execute(MessageChannelUnion channel, @Command.Arg String command) {
+        var console = bean(ServerRepo.class).findByDiscordChannel(channel.getIdLong())
                 .flatMap(srv -> srv.component(ConsoleModule.class).wrap())
                 .orElseThrow(() -> new Command.Error("Unable to find parent"));
-        var cmd = Objects.requireNonNull(e.getOption("command")).getAsString();
-        console.execute(cmd);
+        console.execute(command);
         return "Command was sent";
     }
 
