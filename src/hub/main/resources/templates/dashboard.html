@@ -16,6 +16,7 @@
                         <div class="simple ui-button icon-refresh" onclick="refreshServerList()"></div>
                     </th>
                     <th><a class="ui-button" th:href="@{/server/create}">Create</a></th>
+                    <th>Owner</th>
                     <th>MOTD</th>
                     <th>Players</th>
                     <th>Host</th>
@@ -38,6 +39,7 @@
                         <a class="ui-button"
                            th:if="${server.hasPermission(user, T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}"
                            th:href="@{'/server/modules/'+${server.id}}">Modules</a></td>
+                    <td><a th:text="${server.owner.bestName}" th:href="~{'/user/'+server.owner.id}"></a></td>
                     <td>
                         <div class="motd">Loading MOTD ...</div>
                     </td>
@@ -63,6 +65,7 @@
                     <!--<th><div class="simple ui-button icon-refresh" onclick="refreshServerList()"></div></th>-->
                     <th><a class="ui-button" th:href="@{/agent/create}">Create</a></th>
                     <th>Name</th>
+                    <th>Owner</th>
                     <th>URL</th>
                     <th></th>
                 </tr>
@@ -72,50 +75,11 @@
                     <!--<td><div class="statusIcon icon-loading"></div></td>-->
                     <td><a class="ui-button" th:href="@{'/agent/view/'+${agent.id}}">View</a></td>
                     <td th:text="${agent.bestName}"></td>
+                    <td><a th:text="${agent.owner.bestName}" th:href="~{'/user/'+agent.owner.id}"></a></td>
                     <td><a th:href="${agent.baseUrl}" th:text="${agent.baseUrl}"></a></td>
                     <td>
                         <a class="ui-button" th:href="@{'/agent/edit/'+${agent.id}}">Edit</a>
                         <a class="ui-button" th:href="@{'/agent/delete/'+${agent.id}}">Delete</a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-        <div id="userlist" th:if="${canManageUsers}">
-            <h2>Users</h2>
-            <table>
-                <thead>
-                <tr>
-                    <th></th>
-                    <th>Minecraft</th>
-                    <th>Discord ID</th>
-                    <th>Hub Profile</th>
-                    <th>E-Mail</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="user: ${userRepo}">
-                    <td><a class="ui-button" th:href="@{'/user/view/'+${user.id}}">View</a></td>
-                    <td>
-                        <span class="null-text" th:unless="${user.minecraftId != null}">Not linked</span>
-                        <a target="_blank" th:href="${user.nameMcURL}"
-                           th:if="${user.minecraftId != null}" th:text="${user.blockingMinecraftName()}">Minecraft Profile</a>
-                    </td>
-                    <td>
-                        <span class="null-text" th:unless="${user.discordId != null}">Not linked</span>
-                        <a target="_blank"
-                           th:href="'https://discordapp.com/channels/@me/'+${user.discordId}"
-                           th:if="${user.discordId != null}" th:text="${user.discordId}">Discord ID</a>
-                    </td>
-                    <td>
-                        <span class="null-text" th:unless="${user.hubId != null}">Not linked</span>
-                        <a target="_blank" th:href="'https://hub.comroid.org/hub/users/'+${user.hubId}"
-                           th:if="${user.hubId != null}">Hub</a>
-                    </td>
-                    <td>
-                        <span class="null-text" th:unless="${user.email != null}">Not provided</span>
-                        <a target="_blank" th:href="'mailto:'+${user.email}" th:if="${user.email != null}"
-                           th:text="${user.email}">E-Mail</a>
                     </td>
                 </tr>
                 </tbody>
