@@ -18,6 +18,7 @@ import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
+import org.comroid.mcsd.core.util.ApplicationContextProvider;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -26,10 +27,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -198,7 +196,12 @@ public class ServerManager {
         public long refreshModules() {
             return streamProtos()
                     .filter(not(tree::containsKey))
-                    .flatMap(Streams.filter(proto -> side.isFlagSet(proto.getDtype().getSide().getAsLong()),
+                    // always load if couldnt connect to hub
+                    .flatMap(Streams.filter(proto -> ApplicationContextProvider
+                                    .bean(CompletableFuture.class, "hubConnect")
+                                    .isCompletedExceptionally()
+                                    // otherwise only load if module belongs on this side
+                                    || side.isFlagSet(proto.getDtype().getPreferredSide().getAsLong()),
                             proto -> log.fine("Not loading proto " + proto + " because we are on " + side.name())))
                     .<ServerModule<?>>map(proto -> {
                         log.fine("Loading proto " + proto);

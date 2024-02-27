@@ -31,6 +31,7 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.wrap;
@@ -67,12 +68,12 @@ public class Program implements ApplicationRunner {
         return Streams.of(serverRepo.findAllForAgent(me.getId())).toList();
     }
 
-    @Override
-    public void run(ApplicationArguments args) {
+    @Bean
+    public CompletableFuture<?> hubConnect() {
         var config = bean(McsdConfig.class, "config");
         var agent = Objects.requireNonNull(config.getAgent(), "Config is incomplete; agent is missing");
 
-        REST.request(REST.Method.GET, config.getHubBaseUrl() + "/api/open/agent/hello/"
+        return REST.request(REST.Method.GET, config.getHubBaseUrl() + "/api/open/agent/hello/"
                         + bean(Agent.class, "me").getId()
                         + (Optional.ofNullable(agent.getBaseUrl())
                         .or(() -> wrap(OS.Host.class, "hostname")
@@ -82,8 +83,14 @@ public class Program implements ApplicationRunner {
                         .orElse("")))
                 .addHeader("Authorization", agent.getToken())
                 .execute()
-                .thenAccept(response -> response.require(HttpStatus.NO_CONTENT.value()))
+                .thenApply(REST.Response::validate2xxOK)
                 .exceptionally(Polyfill.exceptionLogger(Log.get(), "Could not connect to Hub at " + config.getHubBaseUrl()));
+    }
+
+    @Override
+    public void run(ApplicationArguments args) {
+        var config = bean(McsdConfig.class, "config");
+        var agent = Objects.requireNonNull(config.getAgent(), "Config is incomplete; agent is missing");
 
         bean(ServerManager.class).startAll(bean(List.class, "servers"));
     }
