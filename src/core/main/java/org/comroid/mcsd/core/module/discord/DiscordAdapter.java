@@ -127,11 +127,9 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                     .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
                                     .setGuildOnly(true)).submit())
                     .join();*/
-        final var cmdr = bean(Command.Manager.class);
-        if (cmdr.getAdapters().stream().noneMatch(Command.Manager.Adapter$JDA.class::isInstance)) {
-            cmdr.new Adapter$JDA(jda);
-            cmdr.register(this);
-        }
+        final var cmdr = new Command.Manager();
+        cmdr.new Adapter$JDA(jda);
+        cmdr.register(this);
         //flatMap(SlashCommandInteractionEvent.class).subscribeData(e -> cmdr.execute(e.getName(), e));
     }
 
