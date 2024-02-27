@@ -12,6 +12,7 @@ import org.comroid.api.tree.Component;
 import org.comroid.api.tree.UncheckedCloseable;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.model.ServerPropertiesModifier;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import static java.util.function.Predicate.not;
+import static org.comroid.api.func.util.Streams.filter;
 
 @Log
 @Service
@@ -41,13 +43,14 @@ import static java.util.function.Predicate.not;
 public class ServerManager {
     public static final Duration TickRate = Duration.ofSeconds(30);
     private final Map<UUID, Entry> cache = new ConcurrentHashMap<>();
+    private @Autowired ModuleType.Side side;
     private @Autowired ServerRepo servers;
     private @Autowired ModuleRepo<ModulePrototype> moduleRepo;
 
     public void startAll(List<Server> servers) {
         servers.stream()
                 .map(ThrowingFunction.logging(log, srv -> get(srv.getId()).assertion("Could not initialize " + srv)))
-                .flatMap(Streams.filter(Objects::nonNull, $ -> log.severe("A server was not initialized correctly")))
+                .flatMap(filter(Objects::nonNull, $ -> log.severe("A server was not initialized correctly")))
                 .map(entry -> {
                     var c = entry.reloadModules();
                     return "%s loaded %d modules".formatted(entry.server, c);
@@ -195,6 +198,8 @@ public class ServerManager {
         public long refreshModules() {
             return streamProtos()
                     .filter(not(tree::containsKey))
+                    .flatMap(Streams.filter(proto -> side.isFlagSet(proto.getDtype().getSide().getAsLong()),
+                            proto -> log.fine("Not loading proto " + proto + " because we are on " + side.name())))
                     .<ServerModule<?>>map(proto -> {
                         log.fine("Loading proto " + proto);
                         var module = proto.toModule(server);
