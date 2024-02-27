@@ -18,6 +18,7 @@ import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.repo.system.AgentRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +66,11 @@ public class Program implements ApplicationRunner {
     @DependsOn("migrateEntities")
     public List<Server> servers(@Autowired ServerRepo serverRepo, @Autowired Agent me) {
         return Streams.of(serverRepo.findAllForAgent(me.getId())).toList();
+    }
+
+    @Bean
+    public ModuleType.Side side() {
+        return ModuleType.Side.Agent;
     }
 
     @Override

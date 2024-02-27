@@ -1,9 +1,11 @@
 package org.comroid.mcsd.hub;
 
 import lombok.extern.slf4j.Slf4j;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 
 @Slf4j
@@ -13,6 +15,11 @@ import org.springframework.context.annotation.ImportResource;
 public class Program {
     public static void main(String[] args) {
         SpringApplication.run(Program.class, args);
+    }
+
+    @Bean
+    public ModuleType.Side side() {
+        return ModuleType.Side.Hub;
     }
 }
 
