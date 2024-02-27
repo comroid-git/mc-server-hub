@@ -83,8 +83,8 @@ public class GenericController {
     }
      */
 
-    @GetMapping
-    public String dash(Model model, HttpSession session) {
+    @GetMapping({"","/users"})
+    public String dash(Model model, HttpSession session, HttpServletRequest request) {
         var user = userRepo.get(session).assertion();
         model.addAttribute("serverRepo", Streams.of(serverRepo.findAll())
                         .filter(x -> x.hasPermission(user, Administrate))
@@ -102,29 +102,7 @@ public class GenericController {
                         .filter(x -> x.hasPermission(user, Administrate))
                         .toList())
                 .addAttribute("canManageUsers", user.hasPermission(user, ManageUsers));
-        return "dashboard";
-    }
-
-    @GetMapping("/users")
-    public String users(Model model, HttpSession session) {
-        var user = userRepo.get(session).assertion();
-        model.addAttribute("serverRepo", Streams.of(serverRepo.findAll())
-                        .filter(x -> x.hasPermission(user, Administrate))
-                        .collect(Collectors.toMap(Function.identity(), serverManager::tree)))
-                .addAttribute("discordBotRepo", Streams.of(discordBotRepo.findAll())
-                        .filter(x -> x.hasPermission(user, Administrate))
-                        .toList())
-                .addAttribute("agentRepo", Streams.of(agentRepo.findAll())
-                        .filter(x -> x.hasPermission(user, Administrate))
-                        .toList())
-                .addAttribute("shRepo", Streams.of(shRepo.findAll())
-                        .filter(x -> x.hasPermission(user, Administrate))
-                        .toList())
-                .addAttribute("userRepo", Streams.of(userRepo.findAll())
-                        .filter(x -> x.hasPermission(user, Administrate))
-                        .toList())
-                .addAttribute("canManageUsers", user.hasPermission(user, ManageUsers));
-        return "users";
+        return request.getContextPath();
     }
 
     @GetMapping("/health")
