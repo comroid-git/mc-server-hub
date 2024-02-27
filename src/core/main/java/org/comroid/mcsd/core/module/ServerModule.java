@@ -7,13 +7,14 @@ import org.comroid.api.tree.Component;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.model.IServerModule;
 import org.jetbrains.annotations.Nullable;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Data
 @AllArgsConstructor
-public abstract class ServerModule<T extends ModulePrototype> extends Component.Base implements Named {
+public abstract class ServerModule<T extends ModulePrototype> extends Component.Base implements IServerModule {
     protected final Server server;
     protected T proto;
 

@@ -14,6 +14,7 @@ import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Invocable;
 import org.comroid.api.tree.Component;
 import org.comroid.mcsd.core.MCSD;
+import org.comroid.mcsd.core.entity.module.InternalModulePrototype;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
 import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
@@ -31,6 +32,7 @@ import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.UpdateModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.UptimeModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
+import org.comroid.mcsd.core.module.InternalModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.console.McsdCommandModule;
 import org.comroid.mcsd.core.module.discord.DiscordModule;
@@ -48,6 +50,7 @@ import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.module.status.UptimeModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -62,6 +65,9 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     private static final Map<String, ModuleType<?, ?>> $cache = new ConcurrentHashMap<>();
     public static final Map<String, ModuleType<?, ?>> cache = Collections.unmodifiableMap($cache);
 
+    /** internal */
+    public static final ModuleType<InternalModule, @Nullable InternalModulePrototype> Internal = new ModuleType<>(Side.Both, "Internal", "Internal Scripting Module", InternalModule.class, InternalModulePrototype.class, null);
+
     // local
     /** java */
     public static final ModuleType<LocalExecutionModule, LocalExecutionModulePrototype> LocalExecution = new ModuleType<>(Side.Agent, "LocalExecution", "Local Execution Module", LocalExecutionModule.class, LocalExecutionModulePrototype.class, MCSD::getModules_localExecution);
@@ -73,8 +79,6 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     // remote
     /** ssh */
     public static final ModuleType<SshFileModule, SshFileModulePrototype> SshFile = new ModuleType<>(Side.Hub, "SshFile", "SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile);
-    /** rabbit */
-    public static final ModuleType<RabbitModule, RabbitModulePrototype> Rabbit = new ModuleType<>(Side.Both, "RabbitMQ", "RabbitMQ Connection module",RabbitModule.class, RabbitModulePrototype.class, MCSD::getModules_rabbit);
     /** rcon */
     public static final ModuleType<RconModule, RconModulePrototype> Rcon = new ModuleType<>(Side.Hub, "RCon","RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon);
 

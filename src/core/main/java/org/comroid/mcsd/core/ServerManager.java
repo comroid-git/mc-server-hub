@@ -3,25 +3,30 @@ package org.comroid.mcsd.core;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.extern.java.Log;
+import org.comroid.annotations.Order;
 import org.comroid.api.Polyfill;
 import org.comroid.api.func.exc.ThrowingFunction;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.AlmostComplete;
 import org.comroid.api.func.util.Streams;
+import org.comroid.api.info.Maintenance;
 import org.comroid.api.tree.Component;
 import org.comroid.api.tree.UncheckedCloseable;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.ssh.SshFileModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
-import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.model.ServerPropertiesModifier;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
+import org.comroid.mcsd.core.module.console.ConsoleModule;
+import org.comroid.mcsd.core.module.remote.ssh.SshFileModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
-import org.comroid.mcsd.core.util.ApplicationContextProvider;
+import org.comroid.mcsd.core.repo.system.ShRepo;
+import org.comroid.mcsd.core.side.agent.RabbitLinkModule;
+import org.comroid.mcsd.core.side.hub.ConsoleFromRabbitModule;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
@@ -35,12 +40,19 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import static java.util.function.Predicate.not;
+import static org.comroid.api.func.util.Streams.append;
 import static org.comroid.api.func.util.Streams.filter;
+import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Service
 @DependsOn("migrateEntities")
 public class ServerManager {
+    public static final Maintenance.Inspection MI_MissingFileModule = Maintenance.Inspection.builder()
+            .name("Missing FileModule")
+            .description("A module is missing a FileModule")
+            .format("%s is missing a FileModule in %s %s")
+            .build();
     public static final Duration TickRate = Duration.ofSeconds(30);
     private final Map<UUID, Entry> cache = new ConcurrentHashMap<>();
     private @Autowired ModuleType.Side side;
@@ -77,18 +89,64 @@ public class ServerManager {
     }
 
     @Value
+    @Order(99)
     public class Entry extends Component.Base {
+        /**
+         * the related server
+         */
         Server server;
-        AtomicReference<@Nullable Agent> agent = new AtomicReference<>(null);
+        /**
+         * persistent server modules
+         */
         Map<ModulePrototype, ServerModule<ModulePrototype>> tree = new ConcurrentHashMap<>();
+        /**
+         * internal modules
+         */
+        List<ServerModule<?>> internal = new ArrayList<>();
+        /**
+         * executor for modules
+         */
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(4, new ThreadFactory() {
             public final AtomicInteger count = new AtomicInteger(0);
+
             @Override
             public Thread newThread(@NotNull Runnable r) {
-                return new Thread(r, "server_" + server.getId() + "_exec_"+count.incrementAndGet());
+                return new Thread(r, "server_" + server.getId() + "_exec_" + count.incrementAndGet());
             }
         });
+        /**
+         * nonnull when running; close to {@linkplain #terminate() terminate}
+         */
         AtomicReference<UncheckedCloseable> running = new AtomicReference<>();
+
+        public Entry(Server server) {
+            super();
+            this.server = server;
+
+            // load rabbitmq communication modules
+            var hubConnect = bean(CompletableFuture.class, "hubConnect");
+            var hubConnectSuccess = hubConnect.isDone() && !hubConnect.isCompletedExceptionally();
+            if (hubConnectSuccess) switch (side) {
+                case Agent -> internal.add(new RabbitLinkModule(this));
+                case Hub -> {
+                    //noAutoConsole:
+                    if (component(ConsoleModule.class).isNull()) {
+                        log.info(server + " did not load a ConsoleModule; connecting to rabbit");
+                        internal.add(new ConsoleFromRabbitModule(this));
+                    }
+                    noAutoFs:
+                    if (component(FileModule.class).isNull()) {
+                        //var ssh = bean(ShRepo.class).fi;
+                        //if (ssh.isNull())
+                        //    break noAutoFs;
+                        //log.info(server + " did not load a ConsoleModule; using SSH/SFTP");
+                        //internal.add(new SshFileModule(server, new SshFileModulePrototype(ssh)));
+                        ; // todo: automatic fs provider with
+                    }
+                }
+                default -> throw new IllegalStateException("Unexpected value: " + side);
+            }
+        }
 
         @Override
         @SneakyThrows
@@ -132,7 +190,7 @@ public class ServerManager {
                 if (child instanceof ServerModule<?>) {
                     var key = ((ServerModule<?>) child).getProto();
                     tree.put(key, Polyfill.uncheckedCast(child));
-                }else super.addChildren(child);
+                } else super.addChildren(child);
             }
             return this;
         }
@@ -163,7 +221,9 @@ public class ServerManager {
 
         @Override
         public Stream<Object> streamOwnChildren() {
-            return tree.values().stream().map(Polyfill::uncheckedCast);
+            return tree.values().stream()
+                    .collect(append(internal))
+                    .map(Polyfill::uncheckedCast);
         }
 
         /**
@@ -175,7 +235,7 @@ public class ServerManager {
                     .filter(not(existing::contains))
                     .toList();
             return missing.stream()
-                    .filter(proto->removeChildren(proto)>1)
+                    .filter(proto -> removeChildren(proto) > 1)
                     .count();
         }
 
@@ -200,8 +260,7 @@ public class ServerManager {
             return streamProtos()
                     .filter(not(tree::containsKey))
                     // always load if couldnt connect to hub
-                    .flatMap(Streams.filter(proto -> ApplicationContextProvider
-                                    .bean(CompletableFuture.class, "hubConnect")
+                    .flatMap(filter(proto -> bean(CompletableFuture.class, "hubConnect")
                                     .isCompletedExceptionally()
                                     // otherwise only load if module belongs on this side
                                     || side.isFlagSet(proto.getDtype().getPreferredSide().getAsLong()),
@@ -223,7 +282,7 @@ public class ServerManager {
         public long reloadModules() {
             terminate();
             var running = this.running.get();
-            if (running!=null)
+            if (running != null)
                 running.close();
             clearChildren();
 
