@@ -2,8 +2,6 @@
 <!--suppress HtmlFormInputWithoutLabel -->
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:insert="~{/layout/head}"></head>
-<script th:src="@{/static/modules.js}" type="text/javascript"></script>
-<script th:src="@{/static/common.js}" type="text/javascript"></script>
 <body>
 <div class="ui-menubar" th:insert="~{/layout/menubar}"></div>
 <div class="ui-container-page">
@@ -14,10 +12,15 @@
                     th:text="${target==null?prefill.getOrDefault('display_name', 'Creating new'):target.getBestName()}"></b>
             </h2>
             <h3 style="text-decoration: none">
-                <span th:if="${!edit && user.canModify(target)}"><a class="ui-button" th:href="@{'/'+${type}+'/edit/'+${id}}">Edit</a></span>
-                <span th:if="${!action.equals('create') && user.canAdmin(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/permissions/'+${id}+'/'+${user.id}}">Permissions</a></span>
-                <span th:if="${type.equals('server') && target.hasPermission(user, T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}"> - <a class="ui-button" th:href="@{'/server/modules/'+${target.id}}">Modules</a></span>
-                <span th:if="${!action.equals('create') && user.canAdmin(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/delete/'+${id}}">Delete</a></span>
+                <a class="ui-button" th:href="@{'/'+${type}+'/edit/'+${id}}" th:if="${!edit && user.canModify(target)}">Edit</a>
+                <th:block th:if="${!action.equals('create')}">
+                    <a class="ui-button" th:href="@{'/server/modules/'+${target.id}}"
+                       th:if="${type.equals('server') && target.hasPermission(user, T(org.comroid.mcsd.core.entity.AbstractEntity$Permission).ManageModules)}">Modules</a>
+                    <th:block th:if="${user.canAdmin(target)}">
+                        <a class="ui-button" th:href="@{'/'+${type}+'/permissions/'+${id}+'/'+${user.id}}">Permissions</a>
+                        <a class="ui-button" th:href="@{'/'+${type}+'/delete/'+${id}}">Delete</a>
+                    </th:block>
+                </th:block>
             </h3>
             <th:block th:replace="~{fragment/propView.html :: propView(${struct}, ${prefill}, ${target}, !edit)}"/>
             <!--<th:block th:unless="${modules == null}">
