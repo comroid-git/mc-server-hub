@@ -22,7 +22,7 @@
                     </th:block>
                 </th:block>
             </h3>
-            <th:block th:replace="~{fragment/propView.html :: propView(${struct}, ${prefill}, ${target}, !edit)}"/>
+            <th:block th:replace="~{fragment/properties.html :: propView(${struct}, ${prefill}, ${target}, !edit)}"/>
             <!--<th:block th:unless="${modules == null}">
                 <h3>Modules</h3>
                 <table>
