@@ -8,6 +8,7 @@ import lombok.Value;
 import org.comroid.annotations.Ignore;
 import org.comroid.api.Polyfill;
 import org.comroid.api.attr.BitmaskAttribute;
+import org.comroid.api.attr.Described;
 import org.comroid.api.attr.Named;
 import org.comroid.api.data.bind.DataStructure;
 import org.comroid.api.func.ext.Wrap;
@@ -56,7 +57,7 @@ import java.util.function.Function;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Value
-public class ModuleType<Module extends ServerModule<Proto>, Proto extends ModulePrototype> implements Named {
+public class ModuleType<Module extends ServerModule<Proto>, Proto extends ModulePrototype> implements Named, Described {
     private static final Map<String, ModuleType<?, ?>> $cache = new ConcurrentHashMap<>();
     public static final Map<String, ModuleType<?, ?>> cache = Collections.unmodifiableMap($cache);
 
@@ -121,11 +122,6 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
                 .flatMap(type -> ModuleType.of(type).stream())
                 .map(Named::getName)
                 .toList();
-    }
-
-    @Override
-    public String getAlternateName() {
-        return description;
     }
 
     @JsonIgnore
