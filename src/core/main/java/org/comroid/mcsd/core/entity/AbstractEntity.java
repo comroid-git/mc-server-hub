@@ -5,10 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.annotations.Category;
-import org.comroid.annotations.Description;
-import org.comroid.annotations.Ignore;
-import org.comroid.annotations.Order;
+import org.comroid.annotations.*;
 import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.Named;
 import org.comroid.api.func.ext.Wrap;
@@ -40,7 +37,7 @@ public abstract class AbstractEntity implements Named {
             .description("User %s is missing required permission %s")
             .build();
     public static final int CurrentVersion = 1;
-    @Id @Order(Integer.MIN_VALUE)
+    @Id @Readonly @Order(Integer.MIN_VALUE)
     private UUID id = UUID.randomUUID();
     @Setter
     @Nullable

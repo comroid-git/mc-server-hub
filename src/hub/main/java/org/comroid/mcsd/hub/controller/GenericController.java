@@ -207,7 +207,7 @@ public class GenericController {
                 .map(DataStructure.Member::getName)
                 .collect(Collectors.joining("\n\t- ", "\n\t- ", "")));
         core.findRepository(type).save(target);
-        return "redirect:/%s/view/%s".formatted(type, id);
+        return "redirect:/%s/view/%s".formatted(type, target.getId());
     }
 
     @RequestMapping(value = "/{type}/permissions/{target}/{user}")
