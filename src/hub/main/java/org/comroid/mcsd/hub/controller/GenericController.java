@@ -193,9 +193,11 @@ public class GenericController {
                                @RequestParam Map<String, String> data) {
         final var user = userRepo.get(session).assertion();
         final var create = data.getOrDefault("action", "edit").equals("create");
-        final var target = create
-                ? Activator.get(core.findType(type)).createInstance(DataNode.of(data))
-                : core.findEntity(type, id);
+        final AbstractEntity target;
+        if (create) {
+            target = Activator.get(core.findType(type)).createInstance(DataNode.of(data));
+            target.setOwner(user);
+        } else target = core.findEntity(type, id);
         final var code = data.getOrDefault("auth_key", null);
         user.verifyPermission(user, Modify)
                 .or(() -> target instanceof User subject && user.canGovern(subject) ? subject : null)
