@@ -2,7 +2,7 @@ package org.comroid.mcsd.core.repo.system;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
-import org.comroid.api.data.seri.RegExpUtil;
+import org.comroid.api.data.RegExpUtil;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.AlmostComplete;
 import org.comroid.api.func.util.Streams;

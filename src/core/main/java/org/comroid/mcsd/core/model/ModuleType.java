@@ -9,7 +9,7 @@ import org.comroid.annotations.Ignore;
 import org.comroid.api.Polyfill;
 import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.Named;
-import org.comroid.api.data.seri.DataStructure;
+import org.comroid.api.data.bind.DataStructure;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Invocable;
 import org.comroid.api.tree.Component;

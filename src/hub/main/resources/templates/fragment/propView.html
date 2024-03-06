@@ -1,5 +1,5 @@
 <div th:fragment="propView(struct, prefill, obj, includeReadonly)">
-    <!--/*@thymesVar id="struct" type="org.comroid.api.data.seri.DataStructure"*/-->
+    <!--/*@thymesVar id="struct" type="org.comroid.api.data.bind.DataStructure"*/-->
     <!--/*@thymesVar id="prefill" type="java.util.Map<java.lang.String, java.lang.String>"*/-->
     <!--/*@thymesVar id="obj" type="java.lang.Object"*/-->
     <th:block th:each="entry: ${struct.categorizedOrderedProperties}" th:object="${entry}"
