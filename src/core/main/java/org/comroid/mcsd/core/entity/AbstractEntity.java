@@ -51,6 +51,7 @@ public abstract class AbstractEntity implements Named {
     @Nullable
     @ManyToOne
     private User owner;
+    @Readonly
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<User, @NotNull Long> permissions;
     private @Ignore @Nullable Integer version = CurrentVersion;

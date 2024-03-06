@@ -10,6 +10,7 @@ import me.dilley.MineStat;
 import org.comroid.annotations.Category;
 import org.comroid.annotations.Description;
 import org.comroid.annotations.Ignore;
+import org.comroid.annotations.Readonly;
 import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.IntegerAttribute;
 import org.comroid.api.func.ext.Wrap;
@@ -69,8 +70,8 @@ public class Server extends AbstractEntity {
     private boolean maintenance = false;
     private int maxPlayers = 20;
     private int queryPort = 25565;
-    private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
-    private @Nullable @ManyToOne Agent agent; // todo: make not nullable with db migration
+    private @Readonly @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
+    private @Readonly @Nullable @ManyToOne Agent agent; // todo: make not nullable with db migration
     // cannot remove these because they are needed for migration
     private @Ignore @Deprecated int rConPort = Defaults.RCON_PORT;
     private @Ignore @Deprecated @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
