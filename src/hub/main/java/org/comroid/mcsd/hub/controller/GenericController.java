@@ -155,8 +155,7 @@ public class GenericController {
                              @RequestParam Map<String, String> data) {
         final var code = data.getOrDefault("auth_code", null);
         final var user = userRepo.get(session).assertion();
-        final var create = action == null;
-        assert create || uuid != null;
+        final var create = uuid == null;
         final var id = create?null:UUID.fromString(uuid);
         final var perm = create ? switch (type) {
             case "server" -> CreateServer;
@@ -167,6 +166,8 @@ public class GenericController {
             default -> throw new IllegalStateException("Unexpected type: " + type);
         } : Modify;
         final var target = create ? null : core.findEntity(type, id);
+        if (action == null)
+            action = create ? "create" : "view";
         user.verifyPermission(user, perm)
                 .or(() -> target instanceof User subject && user.canGovern(subject) ? subject : null)
                 .or(id == null ? () -> null : authorizationLinkRepo.validate(user, id, code, perm).castRef())

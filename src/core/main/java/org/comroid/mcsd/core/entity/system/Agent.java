@@ -22,7 +22,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Entity
 public class Agent extends AbstractEntity {
     public static final int TokenLength = 64;
-    private @Deprecated @NotNull @Setter @Basic UUID target;
+    private @Deprecated @Nullable @Setter @Basic UUID target = null;
     private @Nullable @Setter @Basic String baseUrl;
     //private @Nullable @Setter @Basic String hubBaseUrl;
     private @Nullable @Getter(onMethod = @__(@JsonIgnore)) @Basic @ToString.Exclude String token = Token.random(32, true);

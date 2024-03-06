@@ -10,7 +10,7 @@
     <div class="ui-content" th:with="edit = ${action != null && (action.equals('edit') || action.equals('create'))}">
         <form method="post" th:action="'/api/webapp/'+${type}+'/'+${target==null?'create':target.id}">
             <h2>
-                <b th:text="${target.typeName}"></b>: <b
+                <b th:text="${target==null?'New '+type:target.typeName}"></b>: <b
                     th:text="${target==null?prefill.getOrDefault('display_name', 'Creating new'):target.getBestName()}"></b>
                 <span th:if="${user.canModify(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/edit/'+${id}}">Edit</a></span>
                 <span th:if="${user.canAdmin(target)}"> - <a class="ui-button"
@@ -84,7 +84,7 @@
             </th:block>-->
             <input name="action" th:if="${action!=null}" th:value="${action}" type="hidden">
             <input name="auth_key" th:if="${editKey!=null}" th:value="${editKey}" type="hidden">
-            <input th:if="${edit}" type="submit" value="Apply">
+            <input th:unless="${action.equals('view')}" type="submit" value="Apply">
         </form>
     </div>
 </div>
