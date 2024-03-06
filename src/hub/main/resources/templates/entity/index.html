@@ -14,6 +14,7 @@
                     th:text="${target==null?prefill.getOrDefault('display_name', 'Creating new'):target.getBestName()}"></b>
                 <span th:if="${!edit && user.canModify(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/edit/'+${id}}">Edit</a></span>
                 <span th:if="${!action.equals('create') && user.canAdmin(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/permissions/'+${id}+'/'+${user.id}}">Permissions</a></span>
+                <span th:if="${!action.equals('create') && user.canAdmin(target)}"> - <a class="ui-button" th:href="@{'/'+${type}+'/delete/'+${id}}">Delete</a></span>
             </h2>
             <th:block th:replace="~{fragment/propView.html :: propView(${struct}, ${prefill}, ${target}, !edit)}"/>
             <!--<th:block th:unless="${modules == null}">

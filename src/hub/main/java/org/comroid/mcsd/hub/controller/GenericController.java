@@ -154,9 +154,11 @@ public class GenericController {
                              @PathVariable(value = "id", required = false) @Nullable String uuid,
                              @RequestParam Map<String, String> data) {
         final var code = data.getOrDefault("auth_code", null);
-        final var user = userRepo.get(session).assertion();
         final var create = uuid == null;
         final var id = create?null:UUID.fromString(uuid);
+        if ("delete".equals(action))
+            return entityDelete(session, model, HttpMethod.GET, type, id, code);
+        final var user = userRepo.get(session).assertion();
         final var perm = create ? switch (type) {
             case "server" -> CreateServer;
             case "agent" -> CreateAgent;
