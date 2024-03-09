@@ -113,6 +113,7 @@ dependencies {
     implementation 'io.github.fragland:MineStat:3.+'
     implementation 'io.github.MrGraversen:minecraft-rcon:0.+'
     //implementation "dev.jaqobb:namemcapi:2.+" // not actually available ...
+    implementation 'com.github.steveice10:mcprotocollib:1.20-1'
 
     // discord
     api 'net.dv8tion:JDA:5.+'
