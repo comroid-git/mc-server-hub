@@ -25,7 +25,8 @@ import org.comroid.mcsd.core.entity.module.local.LocalShellModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ForceOpModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.PlayerListModulePrototype;
-import org.comroid.mcsd.core.entity.module.remote.rabbit.RabbitModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.rabbit.RabbitRxModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.rabbit.RabbitTxModulePrototype;
 import org.comroid.mcsd.core.entity.module.remote.rcon.RconModulePrototype;
 import org.comroid.mcsd.core.entity.module.remote.ssh.SshFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
@@ -43,7 +44,8 @@ import org.comroid.mcsd.core.module.local.LocalShellModule;
 import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.player.ForceOpModule;
 import org.comroid.mcsd.core.module.player.PlayerListModule;
-import org.comroid.mcsd.core.module.remote.rabbit.RabbitModule;
+import org.comroid.mcsd.core.module.remote.rabbit.RabbitRxModule;
+import org.comroid.mcsd.core.module.remote.rabbit.RabbitTxModule;
 import org.comroid.mcsd.core.module.remote.rcon.RconModule;
 import org.comroid.mcsd.core.module.remote.ssh.SshFileModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
@@ -82,6 +84,10 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     public static final ModuleType<SshFileModule, SshFileModulePrototype> SshFile = new ModuleType<>(Side.Hub, "SshFile", "SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile);
     /** rcon */
     public static final ModuleType<RconModule, RconModulePrototype> Rcon = new ModuleType<>(Side.Hub, "RCon","RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon);
+    /** agent-side rabbitmq */
+    public static final ModuleType<RabbitTxModule, RabbitTxModulePrototype> RabbitTx = new ModuleType<>(Side.Agent, "Rabbit Tx", "RabbitMQ Agent Module", RabbitTxModule.class, RabbitTxModulePrototype.class, MCSD::getModules_rabbitTx);
+    /** hub-side rabbitmq */
+    public static final ModuleType<RabbitRxModule, RabbitRxModulePrototype> RabbitRx = new ModuleType<>(Side.Hub, "Rabbit Rx", "RabbitMQ Agent Module", RabbitRxModule.class, RabbitRxModulePrototype.class, MCSD::getModules_rabbitRx);
 
     // player
     /** event source: console */
