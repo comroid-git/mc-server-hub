@@ -11,7 +11,6 @@ import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import org.comroid.api.Polyfill;
 import org.comroid.api.func.exc.ThrowingSupplier;
 import org.comroid.api.func.ext.Wrap;
-import org.comroid.api.tree.Component;
 import org.comroid.mcsd.api.model.IStatusMessage;
 import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
@@ -19,11 +18,10 @@ import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
-import org.comroid.mcsd.core.module.player.ConsolePlayerEventModule;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.module.status.StatusModule;
 import org.comroid.mcsd.core.repo.system.UserRepo;
-import org.comroid.mcsd.util.Tellraw;
+import org.comroid.api.text.minecraft.Tellraw;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -33,14 +31,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
-import static org.comroid.mcsd.util.McFormatCode.*;
-import static org.comroid.mcsd.util.Tellraw.Event.Action.open_url;
-import static org.comroid.mcsd.util.Tellraw.Event.Action.show_text;
+import static org.comroid.api.text.minecraft.McFormatCode.*;
+import static org.comroid.api.text.minecraft.Tellraw.Event.Action.open_url;
+import static org.comroid.api.text.minecraft.Tellraw.Event.Action.show_text;
 
 @Log
 @Getter
 @ToString
 public class DiscordModule extends ServerModule<DiscordModulePrototype> {
+    public static final String WebhookName = "MCSD Discord Hook";
     public static final Pattern EmojiPattern = Pattern.compile(".*:(?<name>[\\w-_]+):?.*");
     protected final DiscordAdapter adapter;
     private @Inject PlayerEventModule<?> events;
@@ -62,7 +61,7 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
 
         // public channel
         Optional.ofNullable(proto.getPublicChannelId()).ifPresent(id -> {
-            final var webhook = adapter.getWebhook(proto.getPublicChannelWebhook(), id)
+            final var webhook = adapter.getWebhook(id)
                     .thenApply(adapter::messageTemplate).join();
             final var bot = adapter.messageTemplate(id);
 

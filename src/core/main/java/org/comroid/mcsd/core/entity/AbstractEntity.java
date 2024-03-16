@@ -5,10 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.comroid.annotations.Category;
-import org.comroid.annotations.Description;
-import org.comroid.annotations.Ignore;
-import org.comroid.annotations.Order;
+import org.comroid.annotations.*;
 import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.Named;
 import org.comroid.api.func.ext.Wrap;
@@ -40,7 +37,7 @@ public abstract class AbstractEntity implements Named {
             .description("User %s is missing required permission %s")
             .build();
     public static final int CurrentVersion = 1;
-    @Id @Order(Integer.MIN_VALUE)
+    @Id @Readonly @Order(Integer.MIN_VALUE)
     private UUID id = UUID.randomUUID();
     @Setter
     @Nullable
@@ -54,6 +51,7 @@ public abstract class AbstractEntity implements Named {
     @Nullable
     @ManyToOne
     private User owner;
+    @Readonly
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<User, @NotNull Long> permissions;
     private @Ignore @Nullable Integer version = CurrentVersion;
@@ -140,7 +138,7 @@ public abstract class AbstractEntity implements Named {
         Stop,
         Backup,
         Update,
-        Maintenance,
+        SwitchMaintenance,
         Enable,
         Console,
         Execute,
@@ -160,7 +158,7 @@ public abstract class AbstractEntity implements Named {
 
         View(0x0100_0000_0000_0000L, Status),
         Moderate(0x0200_0000_0000_0000L, Whitelist, Kick, Mute),
-        Manage(0x0400_0000_0000_0000L, Ban, Start, Stop, Backup, Update, Maintenance, Enable),
+        Manage(0x0400_0000_0000_0000L, Ban, Start, Stop, Backup, Update, SwitchMaintenance, Enable),
         Administrate(0x0800_0000_0000_0000L, Console, Execute, Files, ForceOP, TriggerCron),
         Delete(0x1000_0000_0000_0000L),
 

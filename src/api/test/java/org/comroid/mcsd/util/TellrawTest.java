@@ -1,6 +1,8 @@
 package org.comroid.mcsd.util;
 
-import static org.comroid.mcsd.util.McFormatCode.*;
+import org.comroid.api.text.minecraft.Tellraw;
+
+import static org.comroid.api.text.minecraft.McFormatCode.*;
 
 public class TellrawTest {
     public static void main(String[] args) {

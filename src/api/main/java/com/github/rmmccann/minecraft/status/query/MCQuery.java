@@ -1,16 +1,17 @@
 package com.github.rmmccann.minecraft.status.query;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.java.Log;
 
 import java.io.Closeable;
 import java.net.*;
+import java.util.logging.Level;
 
 /**
  * A class that handles Minecraft Query protocol requests
  *
  * @author Ryan McCann
  */
-@Slf4j
+@Log
 public class MCQuery implements Closeable {
     final static byte HANDSHAKE = 9;
     final static byte STAT = 0;
@@ -156,11 +157,11 @@ public class MCQuery implements Closeable {
         } catch (SocketException e) {
             e.printStackTrace();
         } catch (SocketTimeoutException e) {
-            log.debug("Socket Timeout");
+            log.log(Level.FINER, "Socket Timeout");
             //System.exit(1);
             // throw exception
         } catch (UnknownHostException e) {
-            log.error("Unknown Host " + this.serverAddress + " in server query", e);
+            log.log(Level.FINER, "Unknown Host " + this.serverAddress + " in server query", e);
             //System.err.println("Unknown host!");
             //e.printStackTrace();
             //System.exit(1);

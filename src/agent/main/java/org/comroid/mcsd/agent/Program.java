@@ -74,7 +74,6 @@ public class Program implements ApplicationRunner {
         return Streams.of(serverRepo.findAllForAgent(me.getId())).toList();
     }
 
-    @Bean
     public CompletableFuture<?> hubConnect() {
         var config = bean(McsdConfig.class, "config");
         var agent = Objects.requireNonNull(config.getAgent(), "Config is incomplete; agent is missing");

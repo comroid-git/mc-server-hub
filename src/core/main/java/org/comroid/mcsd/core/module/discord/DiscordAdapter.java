@@ -38,17 +38,21 @@ import org.comroid.api.func.util.*;
 import org.comroid.api.text.Markdown;
 import org.comroid.api.text.TextDecoration;
 import org.comroid.mcsd.api.Defaults;
+import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.MCSD;
+import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.DiscordBot;
+import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.repo.system.UserRepo;
-import org.comroid.mcsd.util.McFormatCode;
-import org.comroid.mcsd.util.Tellraw;
+import org.comroid.api.text.minecraft.McFormatCode;
+import org.comroid.api.text.minecraft.Tellraw;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -68,6 +72,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.supplyAsync;
 import static net.dv8tion.jda.api.entities.Message.MAX_CONTENT_LENGTH;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
@@ -114,6 +120,8 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                     .setGuildOnly(true),
                             Commands.slash("verify", "Verify Minecraft Account linkage. Used after running link command")
                                     .addOption(OptionType.STRING, "code", "Your verification code", true)
+                                    .setGuildOnly(true),
+                            Commands.slash("issues", "Use this command if you're having issues with the server")
                                     .setGuildOnly(true),
                             Commands.slash("backup", "Create a backup of the parent")
                                     .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_PERMISSIONS))
@@ -247,6 +255,49 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         return "Minecraft account " + profile.getMinecraftName().join() + " has been linked";
     }
 
+    private final Map<UUID, Long> lastIssueReport = new ConcurrentHashMap<>();
+    private final Duration doubleIssueReportShutdownTimeout = Duration.ofMinutes(10);
+    @Command
+    public CompletableFuture<String> issues(SlashCommandInteractionEvent e) {
+        var user = bean(UserRepo.class).findByDiscordId(e.getUser().getIdLong())
+                .orElseThrow(() -> new EntityNotFoundException(User.class, e.getUser().getIdLong()));
+        var server = bean(ServerRepo.class).findByDiscordChannel(e.getChannelIdLong())
+                .orElseThrow(() -> new EntityNotFoundException(Server.class, "Discord Channel: " + e.getChannelIdLong()));
+        var entry = bean(ServerManager.class).get(server).assertion();
+        final var util = new Object() {
+            public void report(String message) {
+                log.info(message);
+                entry.component(DiscordModule.class)
+                        .map(dc -> dc.getProto().getModerationChannelId())
+                        .map(jda::getTextChannelById)
+                        .ifPresent(tc -> tc.sendMessage(message).queue());
+            }
+        };
+        return server.status().thenCompose(msg -> {
+            long lastReport = lastIssueReport.compute(server.getId(), (k, v) -> {
+                if (v == null)
+                    return 0L;
+                return v;
+            });
+            lastIssueReport.put(server.getId(), System.currentTimeMillis());
+            if (Instant.now().minus(doubleIssueReportShutdownTimeout).toEpochMilli() < lastReport) {
+                util.report(user + " reported issues with " + server + " again; restarting Agent");
+                System.exit(0);
+                return completedFuture("Restarting " + server.getAgent());
+            }
+            if (msg.getStatus() == Status.in_maintenance_mode)
+                return completedFuture("Server is in maintenance mode");
+            if (msg.getStatus() == Status.online)
+                return completedFuture("Server is claiming to be " + msg.getStatus() + "!" +
+                        "\nIf you're still having issues, please re-run the command within 10 Minutes");
+            util.report(user + " reported issues with " + server);
+            return supplyAsync(() -> {
+                entry.terminate();
+                return "Restarting " + server;
+            });
+        });
+    }
+
     @Command(ephemeral = true)
     public CompletableFuture<String> backup(MessageChannelUnion channel) {
         return bean(ServerRepo.class).findByDiscordChannel(channel.getIdLong())
@@ -352,12 +403,12 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
 
             @Override
             protected CompletableFuture<@NotNull Long> channelId() {
-                return CompletableFuture.completedFuture(channelId);
+                return completedFuture(channelId);
             }
 
             @Override
             protected CompletableFuture<@NotNull String> defaultAuthorName() {
-                return CompletableFuture.completedFuture(jda.getSelfUser().getEffectiveName());
+                return completedFuture(jda.getSelfUser().getEffectiveName());
             }
 
             @Override
@@ -396,38 +447,11 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         };
     }
 
-    public CompletableFuture<WebhookClient> getWebhook(@Nullable String webhookUrl, long channelId) {
-        return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(webhookUrl))
-                .thenCompose(url -> {
-                    final var client = WebhookClient.withUrl(url);
-                    return jda.retrieveWebhookById(client.getId())
-                            .submit()
-                            .thenCompose(wh -> {
-                                if (wh.getChannel().getIdLong() == channelId)
-                                    return CompletableFuture.completedFuture(wh);
-                                log.warning("Webhook " + wh.getIdLong() + " pointing to incorrect channel, recreating...");
-                                return wh.delete().submit().thenApply($ -> {
-                                    throw new RuntimeException("Invalid webhook, recreating");
-                                });
-                            })
-                            .thenApply($ -> client);
-                })
-                .exceptionallyCompose(t -> Objects.requireNonNull(jda.getTextChannelById(channelId))
-                        .createWebhook(Defaults.WebhookName)
-                        .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
-                        .submit()
-                        .thenApply(wh -> {
-                            var moduleRepo = bean(MCSD.class).getModules_discord();
-                            bean(ServerRepo.class)
-                                    .findByDiscordChannel(channelId)
-                                    .stream()
-                                    .flatMap(server -> moduleRepo
-                                            .findByServerIdAndDtype(server.getId(), "Discord")
-                                            .stream())
-                                    .map(discord -> discord.setPublicChannelWebhook(wh.getUrl()))
-                                    .forEach(moduleRepo::save);
-                            return wh;
-                        }));
+    public CompletableFuture<WebhookClient> getWebhook(long channelId) {
+        return Objects.requireNonNull(jda.getTextChannelById(channelId), "Invalid channel configuration")
+                .createWebhook(Defaults.WebhookName)
+                .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
+                .submit();
     }
 
     public Event.Bus<Message> listenMessages(long id) {
@@ -460,7 +484,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         }
 
         private CompletableFuture<@Nullable Long> related() {
-            return lastKnownMessage.get() != 0 ? CompletableFuture.completedFuture(lastKnownMessage.get()) : channelId()
+            return lastKnownMessage.get() != 0 ? completedFuture(lastKnownMessage.get()) : channelId()
                     .thenApply(jda::getTextChannelById)
                     .thenCombine(defaultAuthorName(), (chl, name) -> chl.getIterableHistory().stream()
                             .limit(MaxEditBacklog)

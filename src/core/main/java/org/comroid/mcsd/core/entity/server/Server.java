@@ -2,6 +2,16 @@ package org.comroid.mcsd.core.entity.server;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.rmmccann.minecraft.status.query.MCQuery;
+import com.github.steveice10.mc.auth.data.GameProfile;
+import com.github.steveice10.mc.protocol.ClientListener;
+import com.github.steveice10.mc.protocol.MinecraftProtocol;
+import com.github.steveice10.mc.protocol.data.ProtocolState;
+import com.github.steveice10.mc.protocol.data.status.ServerStatusInfo;
+import com.github.steveice10.mc.protocol.packet.status.clientbound.ClientboundStatusResponsePacket;
+import com.github.steveice10.mc.protocol.packet.status.serverbound.ServerboundStatusRequestPacket;
+import com.github.steveice10.packetlib.Session;
+import com.github.steveice10.packetlib.packet.Packet;
+import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import io.graversen.minecraft.rcon.Defaults;
 import jakarta.persistence.*;
 import lombok.*;
@@ -10,15 +20,16 @@ import me.dilley.MineStat;
 import org.comroid.annotations.Category;
 import org.comroid.annotations.Description;
 import org.comroid.annotations.Ignore;
-import org.comroid.annotations.Order;
+import org.comroid.annotations.Readonly;
 import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.IntegerAttribute;
-import org.comroid.api.data.seri.DataStructure;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Streams;
+import org.comroid.api.info.Maintenance;
 import org.comroid.api.net.Token;
 import org.comroid.mcsd.api.dto.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
+import org.comroid.mcsd.core.util.Util;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.AbstractEntity;
@@ -30,6 +41,7 @@ import org.comroid.mcsd.core.entity.system.ShConnection;
 import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
+import org.comroid.util.MultithreadUtil;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,8 +68,13 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 @Category(value = "General", order = -99, desc = @Description("Core Server Configuration"))
 public class Server extends AbstractEntity {
     private static final Map<UUID, StatusMessage> statusCache = new ConcurrentHashMap<>();
+    public static final Maintenance.Inspection MI_StatusError = Maintenance.Inspection.builder()
+            .name("Status Error")
+            .description("Unable to fetch Server Status")
+            .format("Unable to fetch status of %s")
+            .build();
     public static final Duration statusCacheLifetime = Duration.ofMinutes(1);
-    public static final Duration statusTimeout = Duration.ofSeconds(10);
+    public static final Duration statusTimeout = Duration.ofSeconds(30);
     private static final Duration TickRate = Duration.ofMinutes(1);
     private @Nullable String homepage;
     private String mcVersion = "1.19.4";
@@ -198,6 +215,7 @@ public class Server extends AbstractEntity {
     @SneakyThrows
     public CompletableFuture<StatusMessage> status() {
         log.trace("Getting status of Server %s".formatted(this));
+        final var errors = new ArrayList<Throwable>();
         return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(statusCache.computeIfPresent(getId(), (k, v) -> {
                     if (v.getTimestamp().plus(statusCacheLifetime).isBefore(Instant.now()))
                         return null;
@@ -205,8 +223,11 @@ public class Server extends AbstractEntity {
                 }), "Status cache outdated"))
                 .exceptionally(t ->
                 {
-                    log.trace("Unable to get server status from cache ["+t.getMessage()+"], using Query...");
+                    log.debug("Unable to get server status from cache [" + t.getMessage() + "], using Query...");
                     log.trace("Exception was", t);
+                    // do not include this exception as its only about cache status
+                    //errors.add(t);
+
                     try (var query = new MCQuery(host, getQueryPort())) {
                         var stat = query.fullStat();
                         return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
@@ -222,9 +243,51 @@ public class Server extends AbstractEntity {
                                 .withWorldName(stat.getMapName());
                     }
                 })
-                .exceptionally(t -> {
-                    log.trace("Unable to get server status using Query ["+t.getMessage()+"], using MineStat...");
+                .exceptionallyCompose(t -> {
+                    log.debug("Unable to get server status using Query [" + t.getMessage() + "], using MC Protocol...");
                     log.trace("Exception was", t);
+                    errors.add(t);
+
+                    final MinecraftProtocol protocol = new MinecraftProtocol();
+                    final var session = new TcpClientSession(host, port, protocol);
+                    try {
+                        return MultithreadUtil.<ServerStatusInfo>asyncFinish(task -> {
+                                    session.connect();
+                                    session.addListener(new ClientListener(ProtocolState.STATUS) {
+                                        @Override
+                                        public void packetReceived(Session session, Packet packet) {
+                                            if (!(packet instanceof ClientboundStatusResponsePacket csr)) {
+                                                super.packetReceived(session, packet);
+                                                return;
+                                            }
+                                            task.accept(csr.getInfo());
+                                        }
+                                    });
+                                    session.send(new ServerboundStatusRequestPacket());
+                                }).orTimeout(statusTimeout.toSeconds(), TimeUnit.SECONDS)
+                                .thenApply(stat -> {
+                                    var players = stat.getPlayerInfo();
+                                    return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
+                                            //todo
+                                            //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
+                                            //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline)
+                                            .withStatus(isMaintenance() ? Status.in_maintenance_mode : Status.online)
+                                            .withMotd(Util.kyoriComponentString(stat.getDescription()))
+                                            .withPlayerCount(players.getOnlinePlayers())
+                                            .withPlayerMax(players.getMaxPlayers())
+                                            .withPlayers(players.getPlayers().stream()
+                                                    .map(GameProfile::getName)
+                                                    .toList());
+                                }).orTimeout(15, TimeUnit.SECONDS);
+                    } finally {
+                        session.disconnect("goodbye");
+                    }
+                })
+                .exceptionally(t -> {
+                    log.debug("Unable to get server status using MC Protocol [" + t.getMessage() + "], using MineStat...");
+                    log.trace("Exception was", t);
+                    errors.add(t);
+
                     var stat = new MineStat(host, getPort());
                     return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             //todo
@@ -236,21 +299,23 @@ public class Server extends AbstractEntity {
                             .withMotd(Objects.requireNonNullElse(stat.getStrippedMotd(), ""))
                             .withGameMode(stat.getGameMode());
                 })
-                .orTimeout(statusTimeout.toSeconds(), TimeUnit.SECONDS)
+                .orTimeout(30, TimeUnit.SECONDS)
                 .exceptionally(t -> {
-                    log.warn("Unable to get server status ["+t.getMessage()+"]");
+                    log.warn("Unable to get server status [" + t.getMessage() + "]");
                     log.debug("Exception was", t);
+                    errors.add(t);
+                    MI_StatusError.new CheckResult(getId(), this, errors.toArray());
+
                     return statusCache.compute(getId(), (id, it) -> it == null ? new StatusMessage(id) : it)
                             //todo
                             //.withRcon(serverConnection.rcon.isConnected() ? Status.Online : Status.Offline)
                             //.withSsh(serverConnection.game.channel.isOpen() ? Status.Online : Status.Offline);
-                    ;
+                            ;
                 })
                 .thenApply(msg -> {
                     statusCache.put(getId(), msg);
                     return msg;
-                })
-                .completeOnTimeout(new StatusMessage(getId()), (long) (statusTimeout.toSeconds() * 1.5), TimeUnit.SECONDS);
+                });
     }
 
     public <T extends ServerModule<?>> Wrap<T> component(Class<T> type) {

@@ -1,7 +1,7 @@
 package org.comroid.mcsd.core.module;
 
 import lombok.SneakyThrows;
-import org.comroid.api.data.seri.JSON;
+import org.comroid.api.data.seri.adp.JSON;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.net.MD5;
 import org.comroid.mcsd.core.entity.module.FileModulePrototype;

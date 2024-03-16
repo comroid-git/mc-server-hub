@@ -20,7 +20,6 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;

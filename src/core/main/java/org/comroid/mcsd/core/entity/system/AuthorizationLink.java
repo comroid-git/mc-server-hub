@@ -5,6 +5,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.comroid.annotations.Readonly;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class AuthorizationLink {
     private @Id String code;
-    private @ManyToOne User creator;
+    private @Readonly @ManyToOne User creator;
     private UUID target;
     private long permissions;
     private Instant validUntil;

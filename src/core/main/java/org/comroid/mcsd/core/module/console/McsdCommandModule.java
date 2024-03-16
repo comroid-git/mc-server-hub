@@ -7,14 +7,13 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.func.util.Command;
 import org.comroid.api.func.util.Streams;
-import org.comroid.api.tree.Component;
 import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.system.UserRepo;
-import org.comroid.mcsd.util.McFormatCode;
-import org.comroid.mcsd.util.Tellraw;
+import org.comroid.api.text.minecraft.McFormatCode;
+import org.comroid.api.text.minecraft.Tellraw;
 import org.comroid.mcsd.util.Utils;
 import org.jetbrains.annotations.NotNull;
 

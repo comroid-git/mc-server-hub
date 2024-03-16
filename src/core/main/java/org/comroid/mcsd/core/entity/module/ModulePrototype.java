@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.comroid.annotations.Readonly;
 import org.comroid.api.Polyfill;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.server.Server;
@@ -27,7 +28,7 @@ import static org.comroid.api.java.StackTraceUtils.lessSimpleName;
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = {"server_id", "dtype"}))
 public abstract class ModulePrototype extends AbstractEntity {
     private @ManyToOne Server server;
-    private @Convert(converter = ModuleType.Converter.class) ModuleType<?, ?> dtype = ModuleType.of(this).assertion("Unsupported type: " + lessSimpleName(getClass()));
+    private @Readonly @Convert(converter = ModuleType.Converter.class) ModuleType<?, ?> dtype = ModuleType.of(this).assertion("Unsupported type: " + lessSimpleName(getClass()));
     private boolean enabled = true;
 
     @Override
