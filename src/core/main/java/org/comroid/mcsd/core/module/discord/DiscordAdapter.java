@@ -44,6 +44,7 @@ import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.DiscordBot;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.model.DiscordMessageSource;
+import org.comroid.mcsd.core.model.ModuleType;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.status.BackupModule;
 import org.comroid.mcsd.core.module.status.UpdateModule;
@@ -509,7 +510,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
                                     .findByDiscordChannel(channelId)
                                     .stream()
                                     .flatMap(server -> moduleRepo
-                                            .findByServerIdAndDtype(server.getId(), "Discord")
+                                            .findByServerIdAndDtype(server.getId(), ModuleType.Discord)
                                             .stream())
                                     .map(discord -> discord.setPublicChannelWebhook(wh.getUrl()))
                                     .forEach(moduleRepo::save);
