@@ -20,7 +20,10 @@ public class DiscordModulePrototype extends ModulePrototype {
     public static final long DefaultPublicChannelEvents = 0xFFFF_FFFF_FFFF_FFFFL;
 
     private @Nullable @ManyToOne DiscordBot discordBot;
-    private @Nullable String publicChannelWebhook;
+    /**
+     * @deprecated should always fetch by name or create, then cache and handle live deletion
+     */
+    private @Nullable @Deprecated String publicChannelWebhook;
     private @Nullable @Column(unique = true) Long publicChannelId;
     private @Nullable Long moderationChannelId;
     private @Nullable @Column(unique = true) Long consoleChannelId;

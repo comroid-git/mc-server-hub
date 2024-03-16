@@ -39,6 +39,7 @@ import static org.comroid.api.text.minecraft.Tellraw.Event.Action.show_text;
 @Getter
 @ToString
 public class DiscordModule extends ServerModule<DiscordModulePrototype> {
+    public static final String WebhookName = "MCSD Discord Hook";
     public static final Pattern EmojiPattern = Pattern.compile(".*:(?<name>[\\w-_]+):?.*");
     protected final DiscordAdapter adapter;
     private @Inject PlayerEventModule<?> events;
@@ -60,7 +61,7 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
 
         // public channel
         Optional.ofNullable(proto.getPublicChannelId()).ifPresent(id -> {
-            final var webhook = adapter.getWebhook(proto.getPublicChannelWebhook(), id)
+            final var webhook = adapter.getWebhook(id)
                     .thenApply(adapter::messageTemplate).join();
             final var bot = adapter.messageTemplate(id);
 

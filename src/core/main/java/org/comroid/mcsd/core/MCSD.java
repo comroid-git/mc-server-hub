@@ -261,7 +261,6 @@ public class MCSD {
                             () -> new DiscordModulePrototype()
                                     .setDiscordBot(server.getDiscordBot())
                                     .setPublicChannelId(server.getPublicChannelId())
-                                    .setPublicChannelWebhook(server.getPublicChannelWebhook())
                                     .setPublicChannelEvents(server.getPublicChannelEvents())
                                     .setModerationChannelId(server.getModerationChannelId())
                                     .setConsoleChannelId(server.getConsoleChannelId())

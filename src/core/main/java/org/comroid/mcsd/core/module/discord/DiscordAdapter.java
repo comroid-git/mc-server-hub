@@ -484,38 +484,11 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         };
     }
 
-    public CompletableFuture<WebhookClient> getWebhook(@Nullable String webhookUrl, long channelId) {
-        return CompletableFuture.supplyAsync(() -> Objects.requireNonNull(webhookUrl))
-                .thenCompose(url -> {
-                    final var client = WebhookClient.withUrl(url);
-                    return jda.retrieveWebhookById(client.getId())
-                            .submit()
-                            .thenCompose(wh -> {
-                                if (wh.getChannel().getIdLong() == channelId)
-                                    return completedFuture(wh);
-                                log.warning("Webhook " + wh.getIdLong() + " pointing to incorrect channel, recreating...");
-                                return wh.delete().submit().thenApply($ -> {
-                                    throw new RuntimeException("Invalid webhook, recreating");
-                                });
-                            })
-                            .thenApply($ -> client);
-                })
-                .exceptionallyCompose(t -> Objects.requireNonNull(jda.getTextChannelById(channelId))
-                        .createWebhook(Defaults.WebhookName)
-                        .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
-                        .submit()
-                        .thenApply(wh -> {
-                            var moduleRepo = bean(MCSD.class).getModules_discord();
-                            bean(ServerRepo.class)
-                                    .findByDiscordChannel(channelId)
-                                    .stream()
-                                    .flatMap(server -> moduleRepo
-                                            .findByServerIdAndDtype(server.getId(), ModuleType.Discord)
-                                            .stream())
-                                    .map(discord -> discord.setPublicChannelWebhook(wh.getUrl()))
-                                    .forEach(moduleRepo::save);
-                            return wh;
-                        }));
+    public CompletableFuture<WebhookClient> getWebhook(long channelId) {
+        return Objects.requireNonNull(jda.getTextChannelById(channelId), "Invalid channel configuration")
+                .createWebhook(Defaults.WebhookName)
+                .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
+                .submit();
     }
 
     public Event.Bus<Message> listenMessages(long id) {
