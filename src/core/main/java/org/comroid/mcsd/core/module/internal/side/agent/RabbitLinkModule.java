@@ -31,33 +31,32 @@ public class RabbitLinkModule extends InternalModule {
 
     @Override
     protected void $initialize() {
-        final var rabbit = bean(Rabbit.class);
+        final var rabbit = bean(Rabbit.class).exchange("mcsd.server." + server.getId());
         if (console != null) {
-            Rabbit.Binding<ConsoleData> inputBinding, outputBinding;
+            Rabbit.Exchange.Route<ConsoleData> route;
             addChildren(
-                    inputBinding = rabbit.bind("mcsd.server." + server.getId(), "module.console.input", ConsoleData.class),
-                    outputBinding = rabbit.bind("mcsd.server." + server.getId(), "module.console.output", ConsoleData.class),
-
                     // rabbit -> console
-                    inputBinding
-                            .filterData(cdat -> cdat.getType() == ConsoleData.Type.input)
+                    route = rabbit.route("module.console.input", ConsoleData.class),
+                    route.filterData(cdat -> cdat.getType() == ConsoleData.Type.input)
                             .mapData(ConsoleData::getData)
                             .subscribeData(cmd -> console.execute(cmd).exceptionally(
                                     exceptionLogger(log, "Could not forward command '" + cmd + "' from Rabbit to Console"))),
+
                     // console -> rabbit
+                    route = rabbit.route("module.console.output", ConsoleData.class),
                     console.getBus()
                             //.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                             .mapData(str -> new ConsoleData(ConsoleData.Type.output, str))
-                            .subscribeData(outputBinding::send)
+                            .subscribeData(route::send)
             );
         }
         if (players != null) {
             // events -> rabbit
             Arrays.stream(PlayerEvent.Type.values()).forEach(type -> {
-                Rabbit.Binding<PlayerEvent> binding;
+                Rabbit.Exchange.Route<PlayerEvent> route;
                 addChildren(
-                        binding = rabbit.bind("mcsd.server." + server.getId(), "module.player.event." + type.name().toLowerCase(), PlayerEvent.class),
-                        players.getBus().filterData(e -> e.getType() == type).subscribeData(binding::send)
+                        route = rabbit.route("module.player.event." + type.name().toLowerCase(), PlayerEvent.class),
+                        players.getBus().filterData(e -> e.getType() == type).subscribeData(route::send)
                 );
             });
         }

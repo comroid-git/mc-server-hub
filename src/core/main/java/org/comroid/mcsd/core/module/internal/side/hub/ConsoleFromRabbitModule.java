@@ -21,12 +21,12 @@ public class ConsoleFromRabbitModule extends ConsoleModule<@Nullable ConsoleModu
 
     @Override
     protected void $initialize() {
-        Rabbit.Binding<ConsoleData> binding;
+        var exchange = bean(Rabbit.class).bind("mcsd.server."+server.getId(), "module.console.output", ConsoleData.class);
         addChildren(
-                binding = bean(Rabbit.class).bind("mcsd.server."+server.getId(), "module.console.output", ConsoleData.class),
+                exchange,
 
                 // rabbit -> console
-                bus = binding
+                bus = exchange
                         .filterData(cData -> cData.getType() == ConsoleData.Type.output)
                         .mapData(ConsoleData::getData)
         );
