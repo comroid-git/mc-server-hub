@@ -64,51 +64,81 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     private static final Map<String, ModuleType<?, ?>> $cache = new ConcurrentHashMap<>();
     public static final Map<String, ModuleType<?, ?>> cache = Collections.unmodifiableMap($cache);
 
-    /** internal */
+    /**
+     * internal
+     */
     public static final ModuleType<InternalModule, @Nullable InternalModulePrototype> Internal = new ModuleType<>("Internal", "Internal Scripting Module", InternalModule.class, InternalModulePrototype.class, null, Agent, Hub);
 
     // local
-    /** java */
-    public static final ModuleType<LocalExecutionModule, LocalExecutionModulePrototype> LocalExecution = new ModuleType<>("LocalExecution", "Local Execution Module", LocalExecutionModule.class, LocalExecutionModulePrototype.class, MCSD::getModules_localExecution,Agent);
-    /** fs */
-    public static final ModuleType<LocalFileModule, LocalFileModulePrototype> LocalFile = new ModuleType<>("LocalFile", "Local File Module", LocalFileModule.class, LocalFileModulePrototype.class, MCSD::getModules_localFiles,Agent);
-    /** bash */
-    public static final ModuleType<LocalShellModule, LocalShellModulePrototype> LocalShell = new ModuleType<>("LocalShell", "Local Shell Execution Module", LocalShellModule.class, LocalShellModulePrototype.class, MCSD::getModules_localShell,Agent);
+    /**
+     * java
+     */
+    public static final ModuleType<LocalExecutionModule, LocalExecutionModulePrototype> LocalExecution = new ModuleType<>("LocalExecution", "Local Execution Module", LocalExecutionModule.class, LocalExecutionModulePrototype.class, MCSD::getModules_localExecution, Agent);
+    /**
+     * fs
+     */
+    public static final ModuleType<LocalFileModule, LocalFileModulePrototype> LocalFile = new ModuleType<>("LocalFile", "Local File Module", LocalFileModule.class, LocalFileModulePrototype.class, MCSD::getModules_localFiles, Agent);
+    /**
+     * bash
+     */
+    public static final ModuleType<LocalShellModule, LocalShellModulePrototype> LocalShell = new ModuleType<>("LocalShell", "Local Shell Execution Module", LocalShellModule.class, LocalShellModulePrototype.class, MCSD::getModules_localShell, Agent);
 
     // remote
-    /** ssh */
-    public static final ModuleType<SshFileModule, SshFileModulePrototype> SshFile = new ModuleType<>("SshFile", "SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile,Hub);
-    /** rcon */
-    public static final ModuleType<RconModule, RconModulePrototype> Rcon = new ModuleType<>("RCon","RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon,Hub,Agent);
+    /**
+     * ssh
+     */
+    public static final ModuleType<SshFileModule, SshFileModulePrototype> SshFile = new ModuleType<>("SshFile", "SSH File Module", SshFileModule.class, SshFileModulePrototype.class, MCSD::getModules_sshFile, Hub);
+    /**
+     * rcon
+     */
+    public static final ModuleType<RconModule, RconModulePrototype> Rcon = new ModuleType<>("RCon", "RCon Connection Module", RconModule.class, RconModulePrototype.class, MCSD::getModules_rcon, Hub, Agent);
 
     // player
-    /** event source: console */
-    public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>("ConsolePlayerEvent", "Maps Player Events based on Console Output using Regular Expressions", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents,new Bitmask.Set<>(Agent,Hub),Hub);
-    /** player list */
-    public static final ModuleType<PlayerListModule, PlayerListModulePrototype> PlayerList = new ModuleType<>("PlayerList", "Cache Player List from Player Events", PlayerListModule.class, PlayerListModulePrototype.class, MCSD::getModules_playerList,Agent,Hub);
-    /** force op */
-    public static final ModuleType<ForceOpModule, ForceOpModulePrototype> ForceOP = new ModuleType<>("ForceOP", "Enforce OP for permitted players", ForceOpModule.class, ForceOpModulePrototype.class, MCSD::getModules_forceOp,Agent,Hub);
+    /**
+     * event source: console
+     */
+    public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>("ConsolePlayerEvent", "Maps Player Events based on Console Output using Regular Expressions", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents, Both, Hub);
+    /**
+     * player list
+     */
+    public static final ModuleType<PlayerListModule, PlayerListModulePrototype> PlayerList = new ModuleType<>("PlayerList", "Cache Player List from Player Events", PlayerListModule.class, PlayerListModulePrototype.class, MCSD::getModules_playerList, Agent, Hub);
+    /**
+     * force op
+     */
+    public static final ModuleType<ForceOpModule, ForceOpModulePrototype> ForceOP = new ModuleType<>("ForceOP", "Enforce OP for permitted players", ForceOpModule.class, ForceOpModulePrototype.class, MCSD::getModules_forceOp, Agent, Hub);
 
     // status
-    public static final ModuleType<BackupModule, BackupModulePrototype> Backup = new ModuleType<>("Backup", "Automated Backups", BackupModule.class, BackupModulePrototype.class, MCSD::getModules_backup,Agent,Hub);
-    public static final ModuleType<UpdateModule, UpdateModulePrototype> Update = new ModuleType<>("Update", "Automated Updates", UpdateModule.class, UpdateModulePrototype.class, MCSD::getModules_update,Agent,Hub);
-    public static final ModuleType<StatusModule, StatusModulePrototype> Status = new ModuleType<>("Status", "Status Logging", StatusModule.class, StatusModulePrototype.class, MCSD::getModules_status,Hub,Agent);
-    public static final ModuleType<UptimeModule, UptimeModulePrototype> Uptime = new ModuleType<>("Uptime", "Uptime Logging", UptimeModule.class, UptimeModulePrototype.class, MCSD::getModules_uptime,Hub,Agent);
+    public static final ModuleType<BackupModule, BackupModulePrototype> Backup = new ModuleType<>("Backup", "Automated Backups", BackupModule.class, BackupModulePrototype.class, MCSD::getModules_backup, Agent, Hub);
+    public static final ModuleType<UpdateModule, UpdateModulePrototype> Update = new ModuleType<>("Update", "Automated Updates", UpdateModule.class, UpdateModulePrototype.class, MCSD::getModules_update, Agent, Hub);
+    public static final ModuleType<StatusModule, StatusModulePrototype> Status = new ModuleType<>("Status", "Status Logging", StatusModule.class, StatusModulePrototype.class, MCSD::getModules_status, Both, Agent);
+    public static final ModuleType<UptimeModule, UptimeModulePrototype> Uptime = new ModuleType<>("Uptime", "Uptime Logging", UptimeModule.class, UptimeModulePrototype.class, MCSD::getModules_uptime, Both, Agent);
 
     // utility
-    /** mcsd command */
-    public static final ModuleType<McsdCommandModule, McsdCommandModulePrototype> McsdCommand = new ModuleType<>("McsdCommand", "MCSD Command from Console", McsdCommandModule.class, McsdCommandModulePrototype.class, MCSD::getModules_mcsd,Agent,Hub);
-    /** discord */
-    public static final ModuleType<DiscordModule, DiscordModulePrototype> Discord = new ModuleType<>("Discord", "Discord Integration from Console", DiscordModule.class, DiscordModulePrototype.class, MCSD::getModules_discord,Hub,Agent);
+    /**
+     * mcsd command
+     */
+    public static final ModuleType<McsdCommandModule, McsdCommandModulePrototype> McsdCommand = new ModuleType<>("McsdCommand", "MCSD Command from Console", McsdCommandModule.class, McsdCommandModulePrototype.class, MCSD::getModules_mcsd, Agent, Hub);
+    /**
+     * discord
+     */
+    public static final ModuleType<DiscordModule, DiscordModulePrototype> Discord = new ModuleType<>("Discord", "Discord Integration from Console", DiscordModule.class, DiscordModulePrototype.class, MCSD::getModules_discord, Hub, Agent);
 
     String name;
     String description;
     Bitmask.Attribute<Side> preferSide;
     Bitmask.Set<Side> allowedSides;
-    @ToString.Exclude DataStructure<Module> impl;
-    @ToString.Exclude DataStructure<Proto> proto;
-    @ToString.Exclude @JsonIgnore @Ignore Invocable<Module> ctor;
-    @ToString.Exclude @JsonIgnore @Ignore Function<MCSD, ModuleRepo<Proto>> obtainRepo;
+    @ToString.Exclude
+    DataStructure<Module> impl;
+    @ToString.Exclude
+    DataStructure<Proto> proto;
+    @ToString.Exclude
+    @JsonIgnore
+    @Ignore
+    Invocable<Module> ctor;
+    @ToString.Exclude
+    @JsonIgnore
+    @Ignore
+    Function<MCSD, ModuleRepo<Proto>> obtainRepo;
 
     public ModuleType(String name,
                       String description,
@@ -168,10 +198,13 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
                 .findAny());
     }
 
-    public enum Side implements Bitmask.Attribute<Side> {Agent,Hub}
+    public enum Side implements Bitmask.Attribute<Side> {
+        Agent, Hub;
+        public static final Bitmask.Set<Side> Both = new Bitmask.Set<>(Agent, Hub);
+    }
 
     @jakarta.persistence.Converter(autoApply = true) // autoApply doesn't work
-    public static class Converter implements AttributeConverter<ModuleType<?,?>,String> {
+    public static class Converter implements AttributeConverter<ModuleType<?, ?>, String> {
         @Override
         public String convertToDatabaseColumn(ModuleType<?, ?> attribute) {
             return attribute.name;

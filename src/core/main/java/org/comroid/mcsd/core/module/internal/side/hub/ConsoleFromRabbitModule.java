@@ -27,7 +27,7 @@ public class ConsoleFromRabbitModule extends ConsoleModule<@Nullable ConsoleModu
 
                 // rabbit -> console
                 bus = binding
-                        .filterData(cData -> cData.getType() == ConsoleData.Type.input)
+                        .filterData(cData -> cData.getType() == ConsoleData.Type.output)
                         .mapData(ConsoleData::getData)
         );
     }
