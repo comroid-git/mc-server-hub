@@ -54,8 +54,8 @@ public class ServerManager {
             .build();
     public static final Duration TickRate = Duration.ofSeconds(30);
     private final Map<UUID, Entry> cache = new ConcurrentHashMap<>();
-    private @Autowired ModuleType.Side side;
     private @Autowired ServerRepo servers;
+    private @Autowired SidedConfiguration sideConfig;
     private @Autowired ModuleRepo<ModulePrototype> moduleRepo;
 
     public void startAll(List<Server> servers) {
@@ -125,7 +125,7 @@ public class ServerManager {
             // load rabbitmq communication modules
             var hubConnect = bean(CompletableFuture.class, "hubConnect");
             var hubConnectSuccess = hubConnect.isDone() && !hubConnect.isCompletedExceptionally();
-            if (hubConnectSuccess) switch (side) {
+            if (hubConnectSuccess) switch (sideConfig.getSide()) {
                 case Agent -> internal.add(new RabbitLinkModule(this));
                 case Hub -> {
                     //noAutoConsole:
@@ -142,14 +142,14 @@ public class ServerManager {
                         internal.add(new SshFileModule(server, new SshFileModulePrototype(ssh)));
                     }
                 }
-                default -> throw new IllegalStateException("Unexpected value: " + side);
+                default -> throw new IllegalStateException("Unexpected value: " + sideConfig);
             }
         }
 
         @Override
         @SneakyThrows
         protected void $initialize() {
-            if (side != ModuleType.Side.Agent)
+            if (sideConfig.getSide() != ModuleType.Side.Agent)
                 return;
             updateProperties();
         }
@@ -256,15 +256,17 @@ public class ServerManager {
         /**
          * Loads all modules that are in DB but are not loaded as a module
          */
+        @SuppressWarnings("SuspiciousMethodCalls")
         public long refreshModules() {
             return streamProtos()
                     .filter(not(tree::containsKey))
-                    // always load if couldnt connect to hub & is not agent exclusive
-                    .flatMap(filter(proto -> bean(CompletableFuture.class, "hubConnect")
-                                    .isCompletedExceptionally()
-                                    // otherwise only load if module belongs on this side
-                                    || side.isFlagSet(proto.getDtype().getPreferredSide().getAsLong()),
-                            proto -> log.fine("Not loading proto " + proto + " because we are on " + side.name())))
+                    .flatMap(filter(proto -> sideConfig.isHubConnected()
+                                    // when connected; check for side preference
+                                    ? proto.getDtype().getPreferSide().equals(sideConfig.getSide())
+                                    // when not connected; check for side allowance
+                                    : proto.getDtype().getAllowedSides().contains(sideConfig.getSide()),
+                            proto -> log.fine("Not loading proto %s (%s) because side configuration denies it (current: %s; preferred: %s)"
+                                    .formatted(proto, proto.getClass().getSimpleName(), sideConfig.getSide().name(), proto.getDtype().getPreferSide()))))
                     .<ServerModule<?>>map(proto -> {
                         log.fine("Loading proto " + proto);
                         var module = proto.toModule(server);
