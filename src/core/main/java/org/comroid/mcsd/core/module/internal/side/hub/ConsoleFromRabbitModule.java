@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.side.hub;
+package org.comroid.mcsd.core.module.internal.side.hub;
 
 import org.comroid.api.net.Rabbit;
 import org.comroid.mcsd.core.ServerManager;

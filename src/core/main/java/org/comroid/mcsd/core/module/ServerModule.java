@@ -25,7 +25,7 @@ public abstract class ServerModule<T extends ModulePrototype> extends Component.
 
     @Override
     public boolean isEnabled() {
-        return proto.isEnabled();
+        return proto==null||proto.isEnabled();
     }
 
     @Override

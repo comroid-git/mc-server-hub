@@ -20,11 +20,11 @@ import org.comroid.mcsd.core.model.ServerPropertiesModifier;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
+import org.comroid.mcsd.core.module.internal.side.agent.RabbitLinkModule;
+import org.comroid.mcsd.core.module.internal.side.hub.ConsoleFromRabbitModule;
 import org.comroid.mcsd.core.module.remote.ssh.SshFileModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
-import org.comroid.mcsd.core.side.agent.RabbitLinkModule;
-import org.comroid.mcsd.core.side.hub.ConsoleFromRabbitModule;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -33,7 +33,10 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -41,7 +44,6 @@ import java.util.stream.Stream;
 import static java.util.function.Predicate.not;
 import static org.comroid.api.func.util.Streams.append;
 import static org.comroid.api.func.util.Streams.filter;
-import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 @Log
 @Service
@@ -63,9 +65,10 @@ public class ServerManager {
                 .map(ThrowingFunction.logging(log, srv -> get(srv.getId()).assertion("Could not initialize " + srv)))
                 //.flatMap(filter(Objects::nonNull, $ -> log.severe("A server was not initialized correctly")))
                 .map(entry -> {
-                    assert entry!=null;
-                    var c = entry.reloadModules();
+                    assert entry != null;
+                    var c = entry.refreshModules();
                     entry.reloadInternalModules();
+                    entry.execute(entry.executor, TickRate);
                     return "%s loaded %d modules".formatted(entry.server, c);
                 })
                 .forEach(log::info);
@@ -123,9 +126,7 @@ public class ServerManager {
         public void reloadInternalModules() {
             internal.clear();
             // load rabbitmq communication modules
-            var hubConnect = bean(CompletableFuture.class, "hubConnect");
-            var hubConnectSuccess = hubConnect.isDone() && !hubConnect.isCompletedExceptionally();
-            if (hubConnectSuccess) switch (sideConfig.getSide()) {
+            switch (sideConfig.getSide()) {
                 case Agent -> internal.add(new RabbitLinkModule(this));
                 case Hub -> {
                     //noAutoConsole:
@@ -136,9 +137,9 @@ public class ServerManager {
                     noAutoFs:
                     if (component(FileModule.class).isNull()) {
                         var ssh = server.getSsh();
-                        if (ssh==null)
+                        if (ssh == null)
                             break noAutoFs;
-                        log.info(server + " did not load a ConsoleModule; using SSH/SFTP");
+                        log.info(server + " did not load a FileModule; using SCP/SFTP");
                         internal.add(new SshFileModule(server, new SshFileModulePrototype(ssh)));
                     }
                 }

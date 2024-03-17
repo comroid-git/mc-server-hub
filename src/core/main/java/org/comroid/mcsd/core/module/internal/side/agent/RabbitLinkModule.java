@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.side.agent;
+package org.comroid.mcsd.core.module.internal.side.agent;
 
 import lombok.extern.java.Log;
 import org.comroid.api.net.Rabbit;
