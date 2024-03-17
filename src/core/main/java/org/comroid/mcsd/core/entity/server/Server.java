@@ -20,10 +20,9 @@ import me.dilley.MineStat;
 import org.comroid.annotations.Category;
 import org.comroid.annotations.Description;
 import org.comroid.annotations.Ignore;
-import org.comroid.annotations.Readonly;
-import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.IntegerAttribute;
 import org.comroid.api.func.ext.Wrap;
+import org.comroid.api.func.util.Bitmask;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.info.Maintenance;
 import org.comroid.api.net.Token;
@@ -332,7 +331,7 @@ public class Server extends AbstractEntity {
     }
 
     @Deprecated
-    public enum Permission implements BitmaskAttribute<Permission> {
+    public enum Permission implements Bitmask.Attribute<Permission> {
         Status, Start, Stop, Console, Backup, Files
     }
     public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }

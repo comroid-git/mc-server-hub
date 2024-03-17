@@ -5,7 +5,6 @@ import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.Setter;
-import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.func.util.Bitmask;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 
@@ -25,5 +24,5 @@ public class ShConnection extends AbstractEntity {
         return "%s@%s:%d".formatted(username, host, port);
     }
 
-    public enum Capability implements BitmaskAttribute<Capability> { SSH, SFTP, FTP }
+    public enum Capability implements Bitmask.Attribute<Capability> { SSH, SFTP, FTP }
 }

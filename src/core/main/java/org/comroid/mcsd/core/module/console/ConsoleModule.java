@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
-import org.comroid.api.attr.BitmaskAttribute;
+import org.comroid.api.func.util.Bitmask;
 import org.comroid.api.func.util.Event;
 import org.comroid.mcsd.core.entity.module.console.ConsoleModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
@@ -56,7 +56,7 @@ public abstract class ConsoleModule<T extends ConsoleModulePrototype> extends Se
 
     @Getter
     @AllArgsConstructor
-    public enum Direction implements BitmaskAttribute<Direction> {
+    public enum Direction implements Bitmask.Attribute<Direction> {
         Output(1L),
         Input(2L),
         Bidirectional(3L);

@@ -259,7 +259,7 @@ public class ServerManager {
         public long refreshModules() {
             return streamProtos()
                     .filter(not(tree::containsKey))
-                    // always load if couldnt connect to hub
+                    // always load if couldnt connect to hub & is not agent exclusive
                     .flatMap(filter(proto -> bean(CompletableFuture.class, "hubConnect")
                                     .isCompletedExceptionally()
                                     // otherwise only load if module belongs on this side
