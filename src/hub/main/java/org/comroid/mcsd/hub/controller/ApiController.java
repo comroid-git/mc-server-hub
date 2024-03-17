@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.Polyfill;
-import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.func.util.Bitmask;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.info.Constraint;
@@ -160,7 +159,7 @@ public class ApiController {
                 .or(() -> shRepo.findById(targetId))
                 .or(() -> discordBotRepo.findById(targetId))
                 .orElseThrow(() -> new EntityNotFoundException(AbstractEntity.class, targetId));
-        entity.requirePermission(user, BitmaskAttribute.valueOf(permissions, AbstractEntity.Permission.class)
+        entity.requirePermission(user, Bitmask.Attribute.valueOf(permissions, AbstractEntity.Permission.class)
                 .toArray(AbstractEntity.Permission[]::new));
         var link = authorizationLinkRepo.create(user, entity.getId(), permissions);
         return config.getHubBaseUrl() + link.getUrlPath();

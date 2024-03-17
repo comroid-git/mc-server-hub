@@ -10,8 +10,8 @@ import lombok.extern.java.Log;
 import org.comroid.annotations.Category;
 import org.comroid.annotations.Description;
 import org.comroid.annotations.Ignore;
-import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.func.ext.Wrap;
+import org.comroid.api.func.util.Bitmask;
 import org.comroid.api.func.util.Cache;
 import org.comroid.api.info.Constraint;
 import org.comroid.api.net.REST;
@@ -196,5 +196,5 @@ public class User extends AbstractEntity {
     }
 
     @Deprecated
-    public enum Perm implements BitmaskAttribute<Perm> {None, ManageServers, ManageShConnections, Admin;}
+    public enum Perm implements Bitmask.Attribute<Perm> {None, ManageServers, ManageShConnections, Admin;}
 }

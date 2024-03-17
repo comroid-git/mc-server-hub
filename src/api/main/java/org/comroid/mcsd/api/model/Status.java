@@ -22,15 +22,19 @@ public enum Status implements IntegerAttribute, IStatusMessage {
     shutting_down       (Scope.Moderation, "\uD83D\uDED1", McFormatCode.Red);
 
     private final String emoji;
-    private final Color color;
+    private final McFormatCode format;
     private final Scope scope;
 
-    Status(Scope scope, String emoji, McFormatCode color) {
-        if (!color.isColor())
+    Status(Scope scope, String emoji, McFormatCode format) {
+        if (!format.isColor())
             throw new IllegalArgumentException("Invalid format code; must be color: ");
-        this.scope = scope;
         this.emoji = emoji;
-        this.color = color.getColor();
+        this.format = format;
+        this.scope = scope;
+    }
+
+    public Color getColor() {
+        return format.getColor();
     }
 
     @Override

@@ -12,13 +12,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AgentRepo extends AbstractEntity.Repo<Agent> {
-    @Deprecated
-    @Query("SELECT a FROM Agent a" +
-            " JOIN ShConnection sh" +
-            " JOIN Server s ON s.id = :serverId" +
-            " WHERE sh.id = a.target AND sh.id = s.shConnection.id")
-    Optional<Agent> findForServer(@Param("serverId") UUID serverId);
-
     @Modifying
     @Transactional
     @Query("UPDATE Agent a SET a.baseUrl = :baseUrl WHERE a.id = :id")

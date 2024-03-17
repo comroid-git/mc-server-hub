@@ -12,21 +12,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ServerRepo extends AbstractEntity.Repo<Server> {
-    @Deprecated
-    @Query("SELECT s FROM Server s" +
-            " JOIN Agent a ON a.id = :agentId" +
-            " JOIN ShConnection sh" +
-            " WHERE sh.id = a.target AND sh.id = s.shConnection.id")
-    Iterable<Server> findAllForAgent_old(@Param("agentId") UUID agentId);
-
     @Query("SELECT s FROM Server s WHERE s.agent.id = :agentId")
     Iterable<Server> findAllForAgent(@Param("agentId") UUID agentId);
 
-    @Query("SELECT s FROM Server s" +
-            " JOIN Agent a ON a.id = :agentId" +
-            //" JOIN SshFileModulePrototype fs ON fs.server.id = s.id" +
-            " JOIN ShConnection sh ON sh.id = a.target" +
-            " WHERE s.name = :name")
+    @Query("SELECT s FROM Server s WHERE s.agent.id = :agentId AND s.name = :name")
     Optional<Server> findByAgentAndName(@Param("agentId") UUID agentId, @Param("name") String name);
 
     @Query("SELECT s FROM Server s" +

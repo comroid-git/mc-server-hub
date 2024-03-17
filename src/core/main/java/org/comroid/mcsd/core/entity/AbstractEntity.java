@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.annotations.*;
-import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.Named;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Bitmask;
@@ -84,7 +83,7 @@ public abstract class AbstractEntity implements Named {
     }
 
     public boolean hasPermission(@NotNull User user, long anyOf) {
-        return hasPermission(user, BitmaskAttribute
+        return hasPermission(user, Bitmask.Attribute
                 .valueOf(anyOf, Permission.class)
                 .toArray(Permission[]::new));
     }
@@ -127,7 +126,7 @@ public abstract class AbstractEntity implements Named {
     }
 
     // todo: ungroup permissions?
-    public enum Permission implements BitmaskAttribute<Permission> {
+    public enum Permission implements Bitmask.Attribute<Permission> {
         None(0),
         Status,
         Whitelist,

@@ -20,10 +20,9 @@ import me.dilley.MineStat;
 import org.comroid.annotations.Category;
 import org.comroid.annotations.Description;
 import org.comroid.annotations.Ignore;
-import org.comroid.annotations.Readonly;
-import org.comroid.api.attr.BitmaskAttribute;
 import org.comroid.api.attr.IntegerAttribute;
 import org.comroid.api.func.ext.Wrap;
+import org.comroid.api.func.util.Bitmask;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.info.Maintenance;
 import org.comroid.api.net.Token;
@@ -88,8 +87,9 @@ public class Server extends AbstractEntity {
     private boolean maintenance = false;
     private int maxPlayers = 20;
     private int queryPort = 25565;
-    private @Readonly @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
-    private @Readonly @Nullable @ManyToOne Agent agent; // todo: make not nullable with db migration
+    private @ElementCollection(fetch = FetchType.EAGER) List<String> tickerMessages;
+    private @Nullable @ManyToOne Agent agent; // todo: make not nullable with db migration
+    private @Nullable @ManyToOne ShConnection ssh;
     // cannot remove these because they are needed for migration
     private @Ignore @Deprecated int rConPort = Defaults.RCON_PORT;
     private @Ignore @Deprecated @Getter(onMethod = @__(@JsonIgnore)) String rConPassword = Token.random(16, false);
@@ -204,7 +204,11 @@ public class Server extends AbstractEntity {
     }
 
     public Path path(String... extra) {
-        return Paths.get(((FileModulePrototype) component(FileModule.class).assertion().getProto()).getDirectory(), extra);
+        return Paths.get(component(FileModule.class)
+                .map(ServerModule::getProto)
+                .<FileModulePrototype>castRef()
+                .map(FileModulePrototype::getDirectory)
+                .orElse(""), extra);
     }
 
     @SneakyThrows
@@ -327,7 +331,7 @@ public class Server extends AbstractEntity {
     }
 
     @Deprecated
-    public enum Permission implements BitmaskAttribute<Permission> {
+    public enum Permission implements Bitmask.Attribute<Permission> {
         Status, Start, Stop, Console, Backup, Files
     }
     public enum ConsoleMode implements IntegerAttribute { Append, Scroll, ScrollClean }

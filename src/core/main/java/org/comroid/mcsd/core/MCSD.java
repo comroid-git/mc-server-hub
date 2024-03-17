@@ -15,6 +15,7 @@ import org.comroid.api.func.util.DelegateStream;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.io.FileHandle;
 import org.comroid.api.net.REST;
+import org.comroid.api.net.Rabbit;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.api.dto.McsdConfig;
 import org.comroid.mcsd.core.entity.AbstractEntity;
@@ -27,8 +28,8 @@ import org.comroid.mcsd.core.entity.module.local.LocalShellModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ConsolePlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.ForceOpModulePrototype;
 import org.comroid.mcsd.core.entity.module.player.PlayerListModulePrototype;
-import org.comroid.mcsd.core.entity.module.remote.RconModulePrototype;
-import org.comroid.mcsd.core.entity.module.ssh.SshFileModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.rcon.RconModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.ssh.SshFileModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
 import org.comroid.mcsd.core.entity.module.status.UpdateModulePrototype;
@@ -91,10 +92,10 @@ public class MCSD {
     @Lazy @Autowired private ModuleRepo<LocalFileModulePrototype> modules_localFiles;
     @Lazy @Autowired private ModuleRepo<LocalShellModulePrototype> modules_localShell;
     @Lazy @Autowired private ModuleRepo<RconModulePrototype> modules_rcon;
+    @Lazy @Autowired private ModuleRepo<SshFileModulePrototype> modules_sshFile;
     @Lazy @Autowired private ModuleRepo<ConsolePlayerEventModulePrototype> modules_consolePlayerEvents;
     @Lazy @Autowired private ModuleRepo<PlayerListModulePrototype> modules_playerList;
     @Lazy @Autowired private ModuleRepo<ForceOpModulePrototype> modules_forceOp;
-    @Lazy @Autowired private ModuleRepo<SshFileModulePrototype> modules_sshFile;
     @Lazy @Autowired private ModuleRepo<BackupModulePrototype> modules_backup;
     @Lazy @Autowired private ModuleRepo<StatusModulePrototype> modules_status;
     @Lazy @Autowired private ModuleRepo<UpdateModulePrototype> modules_update;
@@ -138,6 +139,12 @@ public class MCSD {
                 .username(db.getUsername())
                 .password(db.getPassword())
                 .build();
+    }
+
+    @Bean
+    @Nullable
+    public Rabbit rabbit(@Autowired McsdConfig config) {
+        return Rabbit.of(config.getRabbitUri()).get();
     }
 
     @Bean
@@ -215,7 +222,7 @@ public class MCSD {
         // migrate server.agent fields
         servers.saveAll(entityManager.createQuery("SELECT s FROM Server s WHERE s.agent = null", Server.class)
                 .getResultList().stream()
-                .peek(srv -> agents.findForServer(srv.getId()).ifPresentOrElse(
+                .peek(srv -> Optional.ofNullable(srv.getAgent()).ifPresentOrElse(
                         srv::setAgent,
                         () -> log.warn("Could not migrate " + srv + "s Agent ID. Please set Agent ID manually (Server ID: " + srv.getId() + ")")
                 ))

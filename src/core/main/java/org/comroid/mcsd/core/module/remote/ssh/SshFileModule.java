@@ -1,4 +1,4 @@
-package org.comroid.mcsd.core.module.ssh;
+package org.comroid.mcsd.core.module.remote.ssh;
 
 import lombok.SneakyThrows;
 import org.apache.sshd.client.SshClient;
@@ -6,7 +6,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.comroid.api.info.Log;
-import org.comroid.mcsd.core.entity.module.ssh.SshFileModulePrototype;
+import org.comroid.mcsd.core.entity.module.remote.ssh.SshFileModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.util.ApplicationContextProvider;

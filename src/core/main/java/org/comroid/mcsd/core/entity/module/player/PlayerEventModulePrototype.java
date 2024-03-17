@@ -39,8 +39,8 @@ public abstract class PlayerEventModulePrototype extends ModulePrototype {
                     "(?<message>has (made the advancement|completed the challenge) " +
                     "(\\[(?<advancement>[\\w\\s]+)]))\\r?\\n?");
 
-    private @Nullable @Basic Pattern chatPattern;
-    private @Nullable Pattern broadcastPattern;
-    private @Nullable Pattern joinLeavePattern;
-    private @Nullable Pattern achievementPattern;
+    private @Nullable @Basic String chatPattern;
+    private @Nullable String broadcastPattern;
+    private @Nullable String joinLeavePattern;
+    private @Nullable String achievementPattern;
 }
