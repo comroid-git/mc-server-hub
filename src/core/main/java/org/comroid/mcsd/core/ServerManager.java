@@ -22,6 +22,8 @@ import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.internal.side.agent.RabbitLinkModule;
 import org.comroid.mcsd.core.module.internal.side.hub.ConsoleFromRabbitModule;
+import org.comroid.mcsd.core.module.internal.side.hub.EventsFromRabbitModule;
+import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.module.remote.ssh.SshFileModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
@@ -39,6 +41,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.util.function.Predicate.not;
@@ -124,16 +127,22 @@ public class ServerManager {
         AtomicReference<UncheckedCloseable> running = new AtomicReference<>();
 
         public void reloadInternalModules() {
+            var helper = new Object() {
+                <T extends ServerModule<?>> void loadIfAbsent(Class<T> type, Supplier<T> supplier) {
+                    if (component(type).isNull()) {
+                        log.info(server + " did not load a "+type.getSimpleName()+"; connecting to rabbit");
+                        internal.add(supplier.get());
+                    }
+                }
+            };
+
             internal.clear();
             // load rabbitmq communication modules
             switch (sideConfig.getSide()) {
                 case Agent -> internal.add(new RabbitLinkModule(this));
                 case Hub -> {
-                    //noAutoConsole:
-                    if (component(ConsoleModule.class).isNull()) {
-                        log.info(server + " did not load a ConsoleModule; connecting to rabbit");
-                        internal.add(new ConsoleFromRabbitModule(this));
-                    }
+                    helper.loadIfAbsent(ConsoleModule.class, () -> new ConsoleFromRabbitModule(this));
+                    helper.loadIfAbsent(PlayerEventModule.class, () -> new EventsFromRabbitModule(this));
                     noAutoFs:
                     if (component(FileModule.class).isNull()) {
                         var ssh = server.getSsh();

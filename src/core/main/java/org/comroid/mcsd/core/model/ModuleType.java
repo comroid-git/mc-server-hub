@@ -97,7 +97,7 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
     /**
      * event source: console
      */
-    public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>("ConsolePlayerEvent", "Maps Player Events based on Console Output using Regular Expressions", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents, Both, Hub);
+    public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>("ConsolePlayerEvent", "Maps Player Events based on Console Output using Regular Expressions", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents, Agent, Hub);
     /**
      * player list
      */
