@@ -23,7 +23,7 @@ public class ConsoleFromRabbitModule extends ConsoleModule<@Nullable ConsoleModu
     protected void $initialize() {
         Rabbit.Binding<ConsoleData> binding;
         addChildren(
-                binding = bean(Rabbit.class).bind("mcsd."+server.getId(), "module.console.output", ConsoleData.class),
+                binding = bean(Rabbit.class).bind("mcsd.server."+server.getId(), "module.console.output", ConsoleData.class),
 
                 // rabbit -> console
                 bus = binding
@@ -35,7 +35,7 @@ public class ConsoleFromRabbitModule extends ConsoleModule<@Nullable ConsoleModu
     @Override
     public CompletableFuture<@Nullable String> execute(String input, @Nullable Pattern terminator) {
         return CompletableFuture.supplyAsync(() -> {
-            bean(Rabbit.class).bind("mcsd."+server.getId(),"module.console.input", ConsoleData.class)
+            bean(Rabbit.class).bind("mcsd.server."+server.getId(),"module.console.input", ConsoleData.class)
                     .send(input(input));
             return null;
         });

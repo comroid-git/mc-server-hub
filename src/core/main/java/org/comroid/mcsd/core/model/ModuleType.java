@@ -83,7 +83,7 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
 
     // player
     /** event source: console */
-    public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>("ConsolePlayerEvent", "Maps Player Events based on Console Output using Regular Expressions", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents,Agent,Hub);
+    public static final ModuleType<ConsolePlayerEventModule, ConsolePlayerEventModulePrototype> ConsolePlayerEvent = new ModuleType<>("ConsolePlayerEvent", "Maps Player Events based on Console Output using Regular Expressions", ConsolePlayerEventModule.class, ConsolePlayerEventModulePrototype.class, MCSD::getModules_consolePlayerEvents,new Bitmask.Set<>(Agent,Hub),Hub);
     /** player list */
     public static final ModuleType<PlayerListModule, PlayerListModulePrototype> PlayerList = new ModuleType<>("PlayerList", "Cache Player List from Player Events", PlayerListModule.class, PlayerListModulePrototype.class, MCSD::getModules_playerList,Agent,Hub);
     /** force op */
@@ -115,7 +115,7 @@ public class ModuleType<Module extends ServerModule<Proto>, Proto extends Module
                       Class<Module> impl,
                       Class<Proto> proto,
                       Function<MCSD, ModuleRepo<Proto>> obtainRepo,
-                      Side preferSide,
+                      Bitmask.Attribute<Side> preferSide,
                       Side... allowSides
     ) {
         this.name = name;

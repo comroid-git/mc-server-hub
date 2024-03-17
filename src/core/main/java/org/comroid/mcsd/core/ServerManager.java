@@ -259,15 +259,19 @@ public class ServerManager {
          */
         @SuppressWarnings("SuspiciousMethodCalls")
         public long refreshModules() {
+            final var side = sideConfig.getSide();
             return streamProtos()
                     .filter(not(tree::containsKey))
-                    .flatMap(filter(proto -> sideConfig.isHubConnected()
-                                    // when connected; check for side preference
-                                    ? proto.getDtype().getPreferSide().equals(sideConfig.getSide())
-                                    // when not connected; check for side allowance
-                                    : proto.getDtype().getAllowedSides().contains(sideConfig.getSide()),
+                    .flatMap(filter(proto -> {
+                                var dtype = proto.getDtype();
+                                return sideConfig.isHubConnected()
+                                                // when connected; check for side preference
+                                                ? dtype.getPreferSide().isFlagSet(side.getAsLong())
+                                                // when not connected; check for side allowance
+                                                : dtype.getAllowedSides().contains(side);
+                            },
                             proto -> log.fine("Not loading proto %s (%s) because side configuration denies it (current: %s; preferred: %s)"
-                                    .formatted(proto, proto.getClass().getSimpleName(), sideConfig.getSide().name(), proto.getDtype().getPreferSide()))))
+                                    .formatted(proto, proto.getClass().getSimpleName(), side.name(), proto.getDtype().getPreferSide()))))
                     .<ServerModule<?>>map(proto -> {
                         log.fine("Loading proto " + proto);
                         var module = proto.toModule(server);

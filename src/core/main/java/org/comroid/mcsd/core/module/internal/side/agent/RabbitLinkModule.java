@@ -23,8 +23,8 @@ public class RabbitLinkModule extends InternalModule {
     protected void $initialize() {
         Rabbit.Binding<ConsoleData> inputBinding, outputBinding;
         addChildren(
-                inputBinding = bean(Rabbit.class).bind("mcsd."+server.getId(), "module.console.input", ConsoleData.class),
-                outputBinding = bean(Rabbit.class).bind("mcsd."+server.getId(), "module.console.output", ConsoleData.class),
+                inputBinding = bean(Rabbit.class).bind("mcsd.server."+server.getId(), "module.console.input", ConsoleData.class),
+                outputBinding = bean(Rabbit.class).bind("mcsd.server."+server.getId(), "module.console.output", ConsoleData.class),
                 // rabbit -> console
                 inputBinding
                         .filterData(cdat -> cdat.getType() == ConsoleData.Type.input)

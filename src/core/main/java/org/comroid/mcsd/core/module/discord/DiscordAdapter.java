@@ -448,10 +448,15 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
     }
 
     public CompletableFuture<WebhookClient> getWebhook(long channelId) {
-        return Objects.requireNonNull(jda.getTextChannelById(channelId), "Invalid channel configuration")
-                .createWebhook(Defaults.WebhookName)
-                .map(wh -> WebhookClientBuilder.fromJDA(wh).build())
-                .submit();
+        TextChannel channel = Objects.requireNonNull(jda.getTextChannelById(channelId), "Invalid channel configuration");
+        return channel.retrieveWebhooks().submit()
+                .thenApply(list -> list.stream()
+                        .filter(wh -> Defaults.WebhookName.equals(wh.getName()))
+                        .findAny())
+                .thenCompose(result -> result.map(CompletableFuture::completedFuture)
+                        .or(() -> Optional.of(channel.createWebhook(Defaults.WebhookName).submit()))
+                        .orElseThrow())
+                .thenApply(wh -> WebhookClientBuilder.fromJDA(wh).build());
     }
 
     public Event.Bus<Message> listenMessages(long id) {
