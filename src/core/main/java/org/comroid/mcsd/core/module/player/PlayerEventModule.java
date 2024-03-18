@@ -65,15 +65,8 @@ public abstract class PlayerEventModule<T extends PlayerEventModulePrototype> ex
     public static final List<Pattern> DeathMessagePatterns = new ArrayList<>();
     private final AtomicReference<TickerMessage> lastTickerMessage = new AtomicReference<>(new TickerMessage(now(), -1));
     protected @Getter Event.Bus<PlayerEvent> bus;
-
-    public PlayerEventModule(Server server, T proto) {
-        super(server, proto);
-    }
-
-    protected abstract Event.Bus<PlayerEvent> initEventBus();
-
-    @Override
-    protected void $initialize() {
+    
+    static {
         try (var url = new URL("https://raw.githubusercontent.com/misode/mcmeta/assets-json/assets/minecraft/lang/en_us.json").openStream()) {
             var obj = bean(ObjectMapper.class).readTree(url);
             Streams.of(obj.fields(), obj.size())
@@ -95,7 +88,16 @@ public abstract class PlayerEventModule<T extends PlayerEventModulePrototype> ex
         } catch (Throwable t) {
             log.log(Level.INFO, "Unable to fetch death messages; disabling support for it", t);
         }
+    }
 
+    public PlayerEventModule(Server server, T proto) {
+        super(server, proto);
+    }
+
+    protected abstract Event.Bus<PlayerEvent> initEventBus();
+
+    @Override
+    protected void $initialize() {
         bus = initEventBus();
     }
 
