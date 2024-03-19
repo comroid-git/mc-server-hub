@@ -3,9 +3,7 @@ package org.comroid.mcsd.agent.controller;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.comroid.api.func.util.Streams;
-import org.comroid.mcsd.agent.AgentRunner;
 import org.comroid.mcsd.core.MCSD;
-import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.entity.system.User;
@@ -19,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import static java.util.stream.Stream.*;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
@@ -32,8 +29,6 @@ public class ApiController {
     private UserRepo users;
     @Autowired
     private ServerRepo servers;
-    @Autowired
-    private AgentRunner runner;
     @Autowired
     private Agent me;
 
