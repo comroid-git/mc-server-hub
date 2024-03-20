@@ -2,9 +2,9 @@ package org.comroid.mcsd.core.module.internal.side.agent;
 
 import lombok.extern.java.Log;
 import org.comroid.api.net.Rabbit;
-import org.comroid.mcsd.api.dto.PlayerEvent;
+import org.comroid.mcsd.api.dto.comm.PlayerEvent;
 import org.comroid.mcsd.core.ServerManager;
-import org.comroid.mcsd.core.dto.ConsoleData;
+import org.comroid.mcsd.api.dto.comm.ConsoleData;
 import org.comroid.mcsd.core.module.InternalModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;

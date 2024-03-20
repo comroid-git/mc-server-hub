@@ -1,4 +1,4 @@
-package org.comroid.mcsd.api.dto;
+package org.comroid.mcsd.api.dto.config;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

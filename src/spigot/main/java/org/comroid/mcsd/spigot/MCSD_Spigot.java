@@ -4,7 +4,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.comroid.api.Polyfill;
 import org.comroid.api.net.REST;
-import org.comroid.mcsd.api.dto.PlayerEvent;
+import org.comroid.mcsd.api.dto.comm.PlayerEvent;
 import org.comroid.util.PathUtil;
 import org.jetbrains.annotations.Nullable;
 

@@ -1,6 +1,6 @@
 package org.comroid.mcsd.agent.config;
 
-import org.comroid.mcsd.api.dto.McsdConfig;
+import org.comroid.mcsd.api.dto.config.McsdConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

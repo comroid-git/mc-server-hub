@@ -9,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.func.util.Event;
 import org.comroid.api.func.util.Streams;
-import org.comroid.mcsd.api.dto.PlayerEvent;
+import org.comroid.mcsd.api.dto.comm.PlayerEvent;
 import org.comroid.mcsd.core.entity.module.player.PlayerEventModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.module.ServerModule;

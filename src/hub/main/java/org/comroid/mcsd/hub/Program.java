@@ -3,7 +3,7 @@ package org.comroid.mcsd.hub;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.common.aliasing.qual.Unique;
 import org.comroid.api.func.util.Streams;
-import org.comroid.mcsd.api.dto.McsdConfig;
+import org.comroid.mcsd.api.dto.config.McsdConfig;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.model.ModuleType;

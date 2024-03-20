@@ -2,7 +2,7 @@ package org.comroid.mcsd.core.module.internal.side.hub;
 
 import org.comroid.api.net.Rabbit;
 import org.comroid.mcsd.core.ServerManager;
-import org.comroid.mcsd.core.dto.ConsoleData;
+import org.comroid.mcsd.api.dto.comm.ConsoleData;
 import org.comroid.mcsd.core.entity.module.console.ConsoleModulePrototype;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.jetbrains.annotations.Nullable;
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
-import static org.comroid.mcsd.core.dto.ConsoleData.input;
+import static org.comroid.mcsd.api.dto.comm.ConsoleData.input;
 import static org.comroid.mcsd.core.util.ApplicationContextProvider.bean;
 
 /** inits console bus with rabbitmq connection and sends commands through rabbitmq */

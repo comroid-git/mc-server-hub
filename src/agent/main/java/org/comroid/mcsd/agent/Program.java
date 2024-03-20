@@ -11,8 +11,8 @@ import org.comroid.api.net.REST;
 import org.comroid.api.os.OS;
 import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
-import org.comroid.mcsd.api.dto.AgentInfo;
-import org.comroid.mcsd.api.dto.McsdConfig;
+import org.comroid.mcsd.api.dto.config.AgentInfo;
+import org.comroid.mcsd.api.dto.config.McsdConfig;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.server.Server;
@@ -27,7 +27,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.*;
-import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Objects;

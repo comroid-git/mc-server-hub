@@ -17,7 +17,7 @@ import org.comroid.api.io.FileHandle;
 import org.comroid.api.net.REST;
 import org.comroid.api.net.Rabbit;
 import org.comroid.api.os.OS;
-import org.comroid.mcsd.api.dto.McsdConfig;
+import org.comroid.mcsd.api.dto.config.McsdConfig;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
