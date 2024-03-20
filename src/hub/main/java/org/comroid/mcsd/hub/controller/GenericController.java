@@ -126,6 +126,21 @@ public class GenericController {
         return "redirect:/server/view/" + serverId;
     }
 
+    @GetMapping("/server/console/{id}")
+    public String serverConsolePage(HttpSession session, Model model,
+                                    @PathVariable("id") UUID serverId,
+                                    @RequestParam(value = "auth_code", required = false) String code) {
+        var user = userRepo.get(session).assertion();
+        var server = core.getServers().findById(serverId)
+                .orElseThrow(() -> new EntityNotFoundException(Server.class, serverId));
+        server.verifyPermission(user, Console)
+                .or(authorizationLinkRepo.validate(user, serverId, code, Console).castRef())
+                .orElseThrow(() -> new InsufficientPermissionsException(user, serverId, Console));
+        model.addAttribute("user", user)
+                .addAttribute("server", server);
+        return "server/console";
+    }
+
     @GetMapping("/server/modules/{id}")
     public String serverModulesPage(HttpSession session, Model model,
                                     @PathVariable("id") UUID serverId,
