@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'org.comroid.mcsd'
-version = '0.1.1-SNAPSHOT'
+version = '0.1.1'
 sourceCompatibility = '17'
 targetCompatibility = '17'
 mainClassName = 'org.comroid.mcsd.hub.Program'

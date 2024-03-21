@@ -1,6 +1,6 @@
 allprojects {
     group = 'org.comroid.mcsd'
-    version = '0.1.1-SNAPSHOT'
+    version = '0.1.1'
 }
 
 subprojects {
