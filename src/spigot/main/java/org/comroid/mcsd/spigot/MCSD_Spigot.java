@@ -13,6 +13,8 @@ import java.util.Objects;
 import java.util.logging.Level;
 
 public final class MCSD_Spigot extends JavaPlugin {
+    public static final String DefaultHubBaseUrl = "https://mc.comroid.org";
+    public static final String DefaultRabbitUri = "amqp://anonymous:anonymous@rabbitmq.comroid.org:5672/mcsd";
     private EventManager eventManager;
     private FileConfiguration config;
 
@@ -69,10 +71,9 @@ public final class MCSD_Spigot extends JavaPlugin {
     }
 
     private void initConfigDefaults() {
-        initConfigAttribute("mcsd.hubBaseUrl", "https://mc.comroid.org", "MCSD Hub Base URL");
-        initConfigAttribute("mcsd.agent.id", null, "MCSD Agent ID");
-        initConfigAttribute("mcsd.agent.token", null, "MCSD Agent Token");
-        initConfigAttribute("mcsd.agent.serverId", null, "MCSD Server ID");
+        initConfigAttribute("mcsd.hubBaseUrl", DefaultHubBaseUrl, "MCSD Hub Base URL");
+        initConfigAttribute("mcsd.rabbitMqUri", DefaultRabbitUri, "MCSD RabbitMQ URI");
+        initConfigAttribute("mcsd.server.id", null, "MCSD Server ID");
 
         saveConfig();
     }

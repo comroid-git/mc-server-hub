@@ -1,0 +1,11 @@
+mcsd:
+  # base url of the mcsd hub instance you want to use
+  # default requires registration
+  # set to "null" to run without hub
+  hubBaseUrl: https://mc.comroid.org
+  # uri for rabbitmq connection
+  # default uses comroid mcsd hub; see mcsd.hubBaseUrl for reference
+  rabbitMqUri: amqp://anonymous:anonymous@rabbitmq.comroid.org:5672/mcsd
+  # server configuration
+  server:
+    id: <server id here>
