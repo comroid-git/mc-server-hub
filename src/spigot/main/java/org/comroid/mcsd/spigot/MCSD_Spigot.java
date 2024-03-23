@@ -3,6 +3,7 @@ package org.comroid.mcsd.spigot;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.comroid.api.Polyfill;
+import org.comroid.api.func.util.Command;
 import org.comroid.api.net.REST;
 import org.comroid.mcsd.api.dto.comm.PlayerEvent;
 import org.comroid.util.PathUtil;
@@ -17,11 +18,17 @@ public final class MCSD_Spigot extends JavaPlugin {
     public static final String DefaultRabbitUri = "amqp://anonymous:anonymous@rabbitmq.comroid.org:5672/mcsd";
     private EventManager eventManager;
     private FileConfiguration config;
+    private Command.Manager cmdr;
 
     @Override
     public void onLoad() {
         this.config = getConfig();
         initConfigDefaults();
+
+        this.cmdr = new Command.Manager();
+        cmdr.new Adapter$Spigot(this);
+        cmdr.register(this);
+        cmdr.initialize();
     }
 
     @Override
@@ -37,26 +44,11 @@ public final class MCSD_Spigot extends JavaPlugin {
         getServer().getPluginManager().registerEvents(eventManager, this);
     }
 
-    public String hub(String path) {
-        path = PathUtil.sanitize(path);
-        if (!path.startsWith("/"))
-            path = '/' + path;
-        return config.getString("mcsd.hubBaseUrl") + "/api/open" + path;
-    }
-
-    public REST.Request req(REST.Method method, String path) {
-        return REST.request(method, hub(path))
-                .addHeader("Authorization", config.getString("mcsd.agent.token"));
-    }
-
-    public void forward(PlayerEvent event) {
-        req(REST.Method.POST, "/agent/%s/server/%s/player/event".formatted(
-                config.getString("mcsd.agent.id"),
-                config.getString("mcsd.agent.serverId")))
-                .setBody(event.json())
-                .execute()
-                .thenApply(REST.Response::validate2xxOK)
-                .exceptionally(Polyfill.exceptionLogger(getLogger(), Level.WARNING, Level.FINE, "Could not forward PlayerEvent to Hub"));
+    @Command(permission = "mcsd.reload")
+    public String reload() {
+        onDisable();
+        onEnable();
+        return "Reloaded!";
     }
 
     @Override
@@ -64,8 +56,20 @@ public final class MCSD_Spigot extends JavaPlugin {
         eventManager.close();
     }
 
+    private String hub(String path) {
+        path = PathUtil.sanitize(path);
+        if (!path.startsWith("/"))
+            path = '/' + path;
+        return config.getString("mcsd.hubBaseUrl") + "/api/open" + path;
+    }
+
+    private REST.Request req(REST.Method method, String path) {
+        return REST.request(method, hub(path))
+                .addHeader("Authorization", config.getString("mcsd.agent.token"));
+    }
+
     private void initConfigAttribute(String path, @Nullable String defaultValue, String hint) {
-        config.addDefault(path, Objects.requireNonNullElse(defaultValue, "<please specify>"));
+        config.addDefault(path, Objects.requireNonNull(defaultValue, "no config value set for " + path));
         if (!config.contains(path))
             config.setComments(path, List.of(hint));
     }
