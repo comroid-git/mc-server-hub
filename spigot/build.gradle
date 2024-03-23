@@ -60,6 +60,9 @@ dependencies {
     // mcsd api
     implementation project(':api')
 
+    // rabbit
+    runtimeOnly 'com.rabbitmq:amqp-client:5.+'
+
     // placeholderapi
     compileOnly 'me.clip:placeholderapi:2.9.+'
 }
