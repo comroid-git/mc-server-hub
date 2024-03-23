@@ -17,7 +17,7 @@ public class EventsFromRabbitModule extends PlayerEventModule<@Nullable PlayerEv
 
     @Override
     protected Event.Bus<PlayerEvent> initEventBus() {
-        var binding = bean(Rabbit.class).bind("mcsd.server."+server.getId(), "module.player.event.#", PlayerEvent.class);
+        var binding = bean(Rabbit.class).bind("mcsd.module.player", "event.*."+server.getId(), PlayerEvent.class);
         addChildren(binding);
         return binding;
     }

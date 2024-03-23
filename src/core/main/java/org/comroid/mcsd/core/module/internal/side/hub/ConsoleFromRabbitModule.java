@@ -21,7 +21,7 @@ public class ConsoleFromRabbitModule extends ConsoleModule<@Nullable ConsoleModu
 
     @Override
     protected void $initialize() {
-        var exchange = bean(Rabbit.class).bind("mcsd.server."+server.getId(), "module.console.output", ConsoleData.class);
+        var exchange = bean(Rabbit.class).bind("mcsd.module.console", "output."+server.getId(), ConsoleData.class);
         addChildren(
                 exchange,
 
@@ -35,7 +35,7 @@ public class ConsoleFromRabbitModule extends ConsoleModule<@Nullable ConsoleModu
     @Override
     public CompletableFuture<@Nullable String> execute(String input, @Nullable Pattern terminator) {
         return CompletableFuture.supplyAsync(() -> {
-            bean(Rabbit.class).bind("mcsd.server."+server.getId(),"module.console.input", ConsoleData.class)
+            bean(Rabbit.class).bind("mcsd.module.console","input."+server.getId(), ConsoleData.class)
                     .send(input(input));
             return null;
         });

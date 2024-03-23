@@ -31,19 +31,20 @@ public class RabbitLinkModule extends InternalModule {
 
     @Override
     protected void $initialize() {
-        final var rabbit = bean(Rabbit.class).exchange("mcsd.server." + server.getId());
+        final var rabbit = bean(Rabbit.class);
         if (console != null) {
+            Rabbit.Exchange exchange = rabbit.exchange("mcsd.module.console");
             Rabbit.Exchange.Route<ConsoleData> route;
             addChildren(
                     // rabbit -> console
-                    route = rabbit.route("module.console.input", ConsoleData.class),
+                    route = exchange.route("input." + server.getId(), ConsoleData.class),
                     route.filterData(cdat -> cdat.getType() == ConsoleData.Type.input)
                             .mapData(ConsoleData::getData)
                             .subscribeData(cmd -> console.execute(cmd).exceptionally(
                                     exceptionLogger(log, "Could not forward command '" + cmd + "' from Rabbit to Console"))),
 
                     // console -> rabbit
-                    route = rabbit.route("module.console.output", ConsoleData.class),
+                    route = exchange.route("output." + server.getId(), ConsoleData.class),
                     console.getBus()
                             //.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                             .mapData(str -> new ConsoleData(ConsoleData.Type.output, str))
@@ -52,10 +53,11 @@ public class RabbitLinkModule extends InternalModule {
         }
         if (players != null) {
             // events -> rabbit
+            Rabbit.Exchange exchange = rabbit.exchange("mcsd.module.player");
             Arrays.stream(PlayerEvent.Type.values()).forEach(type -> {
                 Rabbit.Exchange.Route<PlayerEvent> route;
                 addChildren(
-                        route = rabbit.route("module.player.event." + type.name().toLowerCase(), PlayerEvent.class),
+                        route = exchange.route("event." + type.name().toLowerCase() + '.' + server.getId(), PlayerEvent.class),
                         players.getBus().filterData(e -> e.getType() == type).subscribeData(route::send)
                 );
             });
