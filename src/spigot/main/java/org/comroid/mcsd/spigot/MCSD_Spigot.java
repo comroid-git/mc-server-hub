@@ -20,6 +20,7 @@ import java.util.logging.Logger;
 
 @Getter
 public final class MCSD_Spigot extends JavaPlugin {
+    public static final String Unspecified = "<please specify>";
     public static final String DefaultHubBaseUrl = "https://mc.comroid.org";
     public static final String DefaultRabbitUri = "amqp://anonymous:anonymous@rabbitmq.comroid.org:5672/mcsd";
     public static final String DefaultConsoleLevel = Level.INFO.getName();
@@ -106,7 +107,7 @@ public final class MCSD_Spigot extends JavaPlugin {
     }
 
     private void initConfigAttribute(String path, @Nullable String defaultValue, String hint) {
-        config.addDefault(path, Objects.requireNonNull(defaultValue, "no config value set for " + path));
+        config.addDefault(path, Objects.requireNonNullElse(defaultValue, Unspecified));
         if (!config.contains(path))
             config.setComments(path, List.of(hint));
     }
