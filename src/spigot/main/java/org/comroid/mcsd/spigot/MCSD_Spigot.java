@@ -40,7 +40,7 @@ public final class MCSD_Spigot extends JavaPlugin {
     @Override
     public void onLoad() {
         // config
-        this.config = getConfig();
+        this.config = super.getConfig();
         initConfigDefaults();
 
         // plugin commands
