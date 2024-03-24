@@ -16,6 +16,7 @@ import org.comroid.mcsd.core.BasicController;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.AbstractEntity;
+import org.comroid.mcsd.core.entity.module.FileModulePrototype;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
 import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
 import org.comroid.mcsd.core.entity.module.local.LocalExecutionModulePrototype;
@@ -32,6 +33,7 @@ import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.model.ModuleType;
+import org.comroid.mcsd.core.module.FileModule;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.repo.system.*;
@@ -218,19 +220,22 @@ public class GenericController {
                 .collect(Collectors.joining("\n\t- ", "\n\t- ", "")));
         core.findRepository(type).save(target);
         if (target instanceof Server server) {
+            var helper = new Object() {
+                <T extends ModulePrototype> T init(T it) {
+                    it.setOwner(user);
+                    it.setServer(server);
+                    if (it instanceof FileModulePrototype lfmp)
+                        lfmp.setForceCustomJar(false);
+                    return it;
+                }
+            };
             // add default modules
-            for (ModulePrototype proto : List.of(
-                    new LocalExecutionModulePrototype(),
-                    new LocalFileModulePrototype(),
-                    new BackupModulePrototype(),
-                    new StatusModulePrototype(),
-                    new UptimeModulePrototype(),
-                    new DiscordModulePrototype()
-            )) {
-                proto.setOwner(user);
-                proto.setServer(server);
-                proto.getDtype().getObtainRepo().apply(mcsd).save(uncheckedCast(proto));
-            }
+            mcsd.getModules_localExecution().save(helper.init(new LocalExecutionModulePrototype()));
+            mcsd.getModules_localFiles().save(helper.init(new LocalFileModulePrototype()));
+            mcsd.getModules_backup().save(helper.init(new BackupModulePrototype()));
+            mcsd.getModules_status().save(helper.init(new StatusModulePrototype()));
+            mcsd.getModules_uptime().save(helper.init(new UptimeModulePrototype()));
+            mcsd.getModules_discord().save(helper.init(new DiscordModulePrototype()));
         }
         return "redirect:/%s/view/%s".formatted(type, target.getId());
     }
