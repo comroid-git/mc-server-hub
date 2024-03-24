@@ -185,7 +185,7 @@ public class MCSD {
         }, 72, 72, TimeUnit.HOURS);
     }
 
-    @Bean
+    //@Bean
     @Lazy(false)
     @Transactional
     @SuppressWarnings("deprecation")
