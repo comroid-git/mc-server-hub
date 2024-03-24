@@ -9,6 +9,7 @@ import org.comroid.api.func.util.Streams;
 import org.comroid.api.info.Log;
 import org.comroid.api.net.REST;
 import org.comroid.api.os.OS;
+import org.comroid.mcsd.agent.config.WebSocketConfig;
 import org.comroid.mcsd.agent.controller.ApiController;
 import org.comroid.mcsd.api.dto.config.AgentInfo;
 import org.comroid.mcsd.api.dto.config.McsdConfig;
@@ -38,7 +39,7 @@ import static org.comroid.mcsd.core.util.ApplicationContextProvider.wrap;
 @Slf4j
 @ImportResource({"classpath:beans.xml"})
 @SpringBootApplication(scanBasePackages = "org.comroid.mcsd.*")
-@ComponentScan(basePackageClasses = {ApiController.class})
+@ComponentScan(basePackageClasses = {AgentRunner.class, ApiController.class, WebSocketConfig.class})
 public class Program implements ApplicationRunner {
     public static void main(String[] args) {
         // todo experimental: is this even still necessary with the agentrunner removed?
