@@ -311,14 +311,18 @@ public class GenericController {
         user.verifyPermission(user, Delete)
                 .or(authorizationLinkRepo.validate(user, id, code, Delete).cast())
                 .orElseThrow(() -> new InsufficientPermissionsException(user, id, Delete));
-        (switch (type) {
+        var repo = switch (type) {
             case "agent" -> agentRepo;
             case "discordBot" -> discordBotRepo;
             case "server" -> serverRepo;
             case "sh" -> shRepo;
             case "user" -> userRepo;
             default -> throw new BadRequestException("invalid type: " + type);
-        }).deleteById(id);
+        };
+        if ("server".equals(type))
+            Streams.of(mcsd.getModules().findAllByServerId(id))
+                .forEach(proto -> proto.getDtype().getObtainRepo().apply(mcsd).delete(uncheckedCast(proto)));
+        repo.deleteById(id);
         return "redirect:/";
     }
 }
