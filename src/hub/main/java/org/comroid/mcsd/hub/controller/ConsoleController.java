@@ -54,7 +54,9 @@ public class ConsoleController {
     }
 
     private Connection con(User user, ServerManager.Entry srv) {
-        return connections.computeIfAbsent(user, $ -> {
+        return connections.compute(user, (k, v) -> {
+            if (v != null && !v.isClosed())
+                v.close();
             var con = new Connection(user, srv);
             con.start();
             return con;
