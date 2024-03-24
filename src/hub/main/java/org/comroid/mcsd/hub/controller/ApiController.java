@@ -76,6 +76,12 @@ public class ApiController {
     }
 
     @ResponseBody
+    @GetMapping("/webapp/server/{id}")
+    public Optional<Server> server(HttpSession session, @PathVariable("id") UUID id) {
+        return servers.findById(id);
+    }
+
+    @ResponseBody
     @GetMapping("/webapp/modules")
     public Map<String, ModuleType<?,?>> modules() {
         return ModuleType.cache;

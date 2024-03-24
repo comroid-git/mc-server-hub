@@ -3,9 +3,8 @@ let subscriptionDisconnect;
 let subscriptionHandshake;
 let subscriptionOutput;
 let subscriptionError;
-let servers = [];
 let user;
-let agent;
+let server;
 
 function connect() {
     let socket = new SockJS('/console');
@@ -17,7 +16,7 @@ function connect() {
         subscriptionHandshake = stompClient.subscribe('/user/' + user.name + '/console/handshake', function (msg) {
             handleHandshake();
         });
-        stompClient.send('/console/connect', {}, JSON.stringify(agent.id));
+        stompClient.send('/console/connect', {}, JSON.stringify(server.id));
     });
 }
 
@@ -93,8 +92,9 @@ async function runBackup(id) {
 async function load() {
     writeLine('Connecting...')
     user = await (await fetch('/api/webapp/user')).json();
-    agent = await (await fetch('/api/webapp/agent')).json();
-    servers = await (await fetch('/api/webapp/servers')).json();
+    let li = window.location.href.lastIndexOf('/');
+    let sid = window.location.href.substring(li+1);
+    server = await (await fetch('/api/webapp/server/'+sid)).json();
 
     connect();
 
