@@ -46,6 +46,7 @@ public class RabbitLinkModule extends InternalModule {
                     // console -> rabbit
                     route = exchange.route("output." + server.getId(), ConsoleData.class),
                     console.getBus()
+                            .filterData(str -> !str.isBlank())
                             //.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                             .mapData(str -> new ConsoleData(ConsoleData.Type.output, str))
                             .subscribeData(route::send)

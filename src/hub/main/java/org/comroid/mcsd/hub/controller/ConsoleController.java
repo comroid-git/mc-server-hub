@@ -21,6 +21,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -60,8 +61,8 @@ public class ConsoleController {
         });
     }
 
-    @SendToUser
     @MessageMapping("/console/connect")
+    @SendToUser("/console/handshake")
     public Server connect(@Header("simpSessionAttributes") Map<String, Object> attr, @Payload UUID serverId) {
         var user = usr(attr);
         var srv = srv(serverId);
@@ -70,18 +71,18 @@ public class ConsoleController {
         return con.entry.getServer();
     }
 
-    @SendToUser
     @MessageMapping("/console/input")
+    @SendToUser("/console/output")
     public String input(@Header("simpSessionAttributes") Map<String, Object> attr, final @Payload String input) {
         var user = usr(attr);
-        return con(user)
+        return con(user).stream().findAny()
                 .map(con -> con.console.execute(input))
                 .map(CompletableFuture::join)
-                .orElseThrow();
+                .orElse("");
     }
 
-    @SendToUser
     @MessageMapping("/console/disconnect")
+    @SendToUser("/console/goodbye")
     public boolean disconnect(@Header("simpSessionAttributes") Map<String, Object> attr) {
         var user = usr(attr);
         if (!connections.containsKey(user))
@@ -97,7 +98,8 @@ public class ConsoleController {
         ServerManager.Entry entry;
         ConsoleModule<?> console;
 
-        private Connection(User user, ServerManager.Entry entry) {
+        private Connection(User user, ServerManager.Entry entry)
+        {
             assert user.getName() != null : "User has no name";
 
             this.user = user;
@@ -106,7 +108,8 @@ public class ConsoleController {
                     .orElseThrow(()->new NoSuchElementException(entry.getServer()+" has no Console Module"));
 
             addChildren(console.getBus()
-                    .filter(e-> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
+                    //.filter(e-> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
+                    .mapData(str -> str.replaceAll("((\r?\n)|(br */))+", "<br/>"))
                     .subscribeData(txt -> respond.convertAndSendToUser(user.getName(), "/console/output", txt)));
         }
     }

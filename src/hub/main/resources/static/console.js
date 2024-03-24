@@ -39,7 +39,7 @@ function handleHandshake() {
         handleError(msg.body);
     });
     writeLine("Connected");
-    writeLine("Type 'help' for a list of commands");
+    //writeLine("Type 'help' for a list of commands");
     //if (servers.length === 1 && servers[0].enabled)
     //    sendInput('attach '+servers[0].name)
 }
@@ -78,7 +78,7 @@ function sendMessage() {
 }
 
 function sendInput(input) {
-    stompClient.send('/console/input', {}, JSON.stringify(" "+input)); //hackeroo with the space pad
+    stompClient.send('/console/input', {}, input);
 }
 
 function restartServer() {
