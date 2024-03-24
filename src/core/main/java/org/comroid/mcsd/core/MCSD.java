@@ -185,13 +185,15 @@ public class MCSD {
         }, 72, 72, TimeUnit.HOURS);
     }
 
-    //@Bean
+    @Bean
     @Lazy(false)
     @Transactional
     @SuppressWarnings("deprecation")
     @Order(Ordered.HIGHEST_PRECEDENCE)
     @DependsOn("applicationContextProvider")
     public Set<AbstractEntity> migrateEntities() {
+        return Set.of();
+        /*
         class Helper {
             <T extends AbstractEntity> void getOrMigrate(Server server, ModuleType<?, ?> type, Supplier<T> migratedObj) {
                 var repo = type.getObtainRepo().apply(MCSD.this);
@@ -289,6 +291,7 @@ public class MCSD {
         log.info(ModuleType.cache.size() + " Module types loaded");
 
         return yield;
+         */
     }
 
     public static String wrapHostname(String hostname) {
