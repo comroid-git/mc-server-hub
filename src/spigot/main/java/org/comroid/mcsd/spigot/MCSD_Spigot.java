@@ -4,11 +4,13 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.comroid.api.Polyfill;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Command;
 import org.comroid.api.net.REST;
 import org.comroid.api.net.Rabbit;
+import org.comroid.mcsd.api.dto.comm.ConsoleData;
 import org.comroid.mcsd.api.dto.comm.PlayerEvent;
 import org.comroid.util.PathUtil;
 import org.jetbrains.annotations.Nullable;
@@ -17,6 +19,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
+
+import static org.bukkit.Bukkit.getConsoleSender;
 
 @Getter
 public final class MCSD_Spigot extends JavaPlugin {
@@ -72,6 +76,13 @@ public final class MCSD_Spigot extends JavaPlugin {
                 .requireNonNull("Unable to initialize RabbitMQ connection");
         this.console = rabbit.exchange(ExchangeConsole);
         this.players = rabbit.exchange(ExchangePlayerEvent);
+
+        // rabbit -> console dispatch
+        console.route(RouteConsoleInputBase.formatted(serverId), ConsoleData.class)
+                .filterData(cData -> cData.getType() == ConsoleData.Type.input)
+                .mapData(ConsoleData::getData)
+                .subscribeData(cmd -> Bukkit.getScheduler().runTask(this,
+                        () -> Bukkit.getServer().dispatchCommand(getConsoleSender(), cmd)));
 
         // logger configuration
         this.appender = new RabbitAppender(this);
