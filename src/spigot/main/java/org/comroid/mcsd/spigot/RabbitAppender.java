@@ -30,8 +30,7 @@ public class RabbitAppender extends AbstractAppender {
 
     @Override
     public void append(LogEvent event) {
-        if (event.getLevel().intLevel() < plugin.getConsoleLevel().intValue())
-            return;
+        //if (event.getLevel().intLevel() < plugin.getConsoleLevel().intValue()) return;
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(event.getTimeMillis());
         var str = "[%tT %s] [%s]: %s".formatted(
