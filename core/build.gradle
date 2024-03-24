@@ -26,7 +26,7 @@ ext {
 }
 
 group = 'org.comroid.mcsd'
-version = "0.1.${getCommitTimestampMinutes()}"
+version = "0.2.${getCommitTimestampMinutes()}"
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
