@@ -1,6 +1,7 @@
 package org.comroid.mcsd.spigot;
 
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.comroid.api.Polyfill;
