@@ -31,7 +31,7 @@ public class RabbitAppender extends AbstractAppender {
     public void append(LogEvent event) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(event.getTimeMillis());
-        var str = "[%tT %s] %s: %s".formatted(
+        var str = "[%tT %s] [%s]: %s".formatted(
                 calendar,
                 event.getLevel().name(),
                 event.getLoggerName(),
