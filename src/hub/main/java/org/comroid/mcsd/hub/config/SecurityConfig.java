@@ -1,7 +1,6 @@
-package org.comroid.mcsd.core.config;
+package org.comroid.mcsd.hub.config;
 
 import org.comroid.mcsd.api.dto.McsdConfig;
-import org.comroid.mcsd.core.model.ModuleType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,14 +28,14 @@ public class SecurityConfig {
     }
 
     @Bean
-    public ClientRegistrationRepository clientRegistrationRepository(@Autowired ModuleType.Side side, @Autowired McsdConfig config) {
+    public ClientRegistrationRepository clientRegistrationRepository(@Autowired McsdConfig config) {
         return new InMemoryClientRegistrationRepository(config.getOAuth().stream()
                 .map(info -> ClientRegistration.withRegistrationId(info.getName())
                         .clientId(info.getClientId())
                         .clientSecret(info.getSecret())
                         .scope(info.getScope())
                         .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                        .redirectUri(side == ModuleType.Side.Agent ? info.getAgentRedirectUrl() : info.getRedirectUrl())
+                        .redirectUri(info.getRedirectUrl())
                         .authorizationUri(info.getAuthorizationUrl())
                         .tokenUri(info.getTokenUrl())
                         .userInfoUri(info.getUserInfoUrl())

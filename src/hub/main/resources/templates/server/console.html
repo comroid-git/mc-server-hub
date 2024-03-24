@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:insert="~{/layout/head}"></head>
-<script type="text/javascript" src="console.js"></script>
-<script type="text/javascript" src="webjars/sockjs-client/1.5.1/sockjs.js"></script>
-<script type="text/javascript" src="webjars/stomp-websocket/2.3.4/stomp.js"></script>
-<body>
+<script type="text/javascript" th:src="@{/static/console.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/sockjs-client/1.5.1/sockjs.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/stomp-websocket/2.3.4/stomp.js}"></script>
+<body onload="connect()" onbeforeunload="disconnect()">
 <div class="ui-menubar" th:insert="~{/layout/menubar}"></div>
 <div class="ui-container-page ui-content">
     <div class="ui-content">
