@@ -17,6 +17,12 @@ import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.AbstractEntity;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
+import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
+import org.comroid.mcsd.core.entity.module.local.LocalExecutionModulePrototype;
+import org.comroid.mcsd.core.entity.module.local.LocalFileModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.UptimeModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.entity.system.DiscordBot;
@@ -26,6 +32,7 @@ import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.model.ModuleType;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.repo.system.*;
 import org.jetbrains.annotations.Nullable;
@@ -42,6 +49,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.comroid.api.Polyfill.uncheckedCast;
 import static org.comroid.mcsd.core.entity.AbstractEntity.Permission.*;
 
 @Slf4j
@@ -201,7 +209,7 @@ public class GenericController {
                 .or(() -> target instanceof User subject && user.canGovern(subject) ? subject : null)
                 .or(id == null ? () -> null : authorizationLinkRepo.validate(user, id, code, Modify).cast())
                 .orElseThrow(() -> new InsufficientPermissionsException(user, id, Modify));
-        var affected = DataStructure.of(target.getClass()).update(data, Polyfill.uncheckedCast(target));
+        var affected = DataStructure.of(target.getClass()).update(data, uncheckedCast(target));
         if (affected.isEmpty())
             log.debug("No properties of " + target + " were affected");
         else log.debug("Following properties of " + target + " were affected:"
@@ -209,6 +217,21 @@ public class GenericController {
                 .map(DataStructure.Member::getName)
                 .collect(Collectors.joining("\n\t- ", "\n\t- ", "")));
         core.findRepository(type).save(target);
+        if (target instanceof Server server) {
+            // add default modules
+            for (ModulePrototype proto : List.of(
+                    new LocalExecutionModulePrototype(),
+                    new LocalFileModulePrototype(),
+                    new BackupModulePrototype(),
+                    new StatusModulePrototype(),
+                    new UptimeModulePrototype(),
+                    new DiscordModulePrototype()
+            )) {
+                proto.setOwner(user);
+                proto.setServer(server);
+                proto.getDtype().getObtainRepo().apply(mcsd).save(uncheckedCast(proto));
+            }
+        }
         return "redirect:/%s/view/%s".formatted(type, target.getId());
     }
 
