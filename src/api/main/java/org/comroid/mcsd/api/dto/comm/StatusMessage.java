@@ -1,4 +1,4 @@
-package org.comroid.mcsd.api.dto;
+package org.comroid.mcsd.api.dto.comm;
 
 import lombok.*;
 import org.comroid.mcsd.api.model.Status;

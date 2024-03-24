@@ -37,7 +37,7 @@
             th:name="${prop.name}"
             th:readonly="${isReadonly}">
         <option th:each="it: ${prop.heldType.htmlSelectOptions}"
-                th:selected="${currentValue.equals(it.key)}"
+                th:selected="${it.key.equals(currentValue)}"
                 th:value="${it.key}" th:text="${it.value}"></option>
     </select>
     <!--           data-th-attr="${String.join(', ', prop.type.htmlInputAttributes)}"-->

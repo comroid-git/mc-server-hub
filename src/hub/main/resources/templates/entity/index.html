@@ -6,7 +6,7 @@
 <div class="ui-menubar" th:insert="~{/layout/menubar}"></div>
 <div class="ui-container-page">
     <div class="ui-content" th:with="edit = ${!action.equals('view')}">
-        <form method="post" th:action="'/api/webapp/'+${type}+'/'+${target==null?'create':target.id}">
+        <form method="post" th:action="'/api/webapp/'+${type}+'/'+${action.equals('create')?'create':target.id}">
             <h2>
                 <b th:text="${target==null?'New '+type:target.typeName}"></b>: <b
                     th:text="${target==null?prefill.getOrDefault('display_name', 'Creating new'):target.getBestName()}"></b>

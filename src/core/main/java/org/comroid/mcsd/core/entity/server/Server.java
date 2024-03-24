@@ -26,7 +26,7 @@ import org.comroid.api.func.util.Bitmask;
 import org.comroid.api.func.util.Streams;
 import org.comroid.api.info.Maintenance;
 import org.comroid.api.net.Token;
-import org.comroid.mcsd.api.dto.StatusMessage;
+import org.comroid.mcsd.api.dto.comm.StatusMessage;
 import org.comroid.mcsd.api.model.Status;
 import org.comroid.mcsd.core.util.Util;
 import org.comroid.mcsd.core.MCSD;

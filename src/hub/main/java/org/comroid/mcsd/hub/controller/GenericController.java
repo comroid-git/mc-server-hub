@@ -16,7 +16,14 @@ import org.comroid.mcsd.core.BasicController;
 import org.comroid.mcsd.core.MCSD;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.AbstractEntity;
+import org.comroid.mcsd.core.entity.module.FileModulePrototype;
 import org.comroid.mcsd.core.entity.module.ModulePrototype;
+import org.comroid.mcsd.core.entity.module.discord.DiscordModulePrototype;
+import org.comroid.mcsd.core.entity.module.local.LocalExecutionModulePrototype;
+import org.comroid.mcsd.core.entity.module.local.LocalFileModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.BackupModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.StatusModulePrototype;
+import org.comroid.mcsd.core.entity.module.status.UptimeModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.Agent;
 import org.comroid.mcsd.core.entity.system.DiscordBot;
@@ -26,6 +33,8 @@ import org.comroid.mcsd.core.exception.BadRequestException;
 import org.comroid.mcsd.core.exception.EntityNotFoundException;
 import org.comroid.mcsd.core.exception.InsufficientPermissionsException;
 import org.comroid.mcsd.core.model.ModuleType;
+import org.comroid.mcsd.core.module.FileModule;
+import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.comroid.mcsd.core.repo.system.*;
 import org.jetbrains.annotations.Nullable;
@@ -42,6 +51,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.comroid.api.Polyfill.uncheckedCast;
 import static org.comroid.mcsd.core.entity.AbstractEntity.Permission.*;
 
 @Slf4j
@@ -216,7 +226,7 @@ public class GenericController {
                 .or(() -> target instanceof User subject && user.canGovern(subject) ? subject : null)
                 .or(id == null ? () -> null : authorizationLinkRepo.validate(user, id, code, Modify).cast())
                 .orElseThrow(() -> new InsufficientPermissionsException(user, id, Modify));
-        var affected = DataStructure.of(target.getClass()).update(data, Polyfill.uncheckedCast(target));
+        var affected = DataStructure.of(target.getClass()).update(data, uncheckedCast(target));
         if (affected.isEmpty())
             log.debug("No properties of " + target + " were affected");
         else log.debug("Following properties of " + target + " were affected:"
@@ -224,6 +234,24 @@ public class GenericController {
                 .map(DataStructure.Member::getName)
                 .collect(Collectors.joining("\n\t- ", "\n\t- ", "")));
         core.findRepository(type).save(target);
+        if (target instanceof Server server) {
+            var helper = new Object() {
+                <T extends ModulePrototype> T init(T it) {
+                    it.setOwner(user);
+                    it.setServer(server);
+                    if (it instanceof FileModulePrototype lfmp)
+                        lfmp.setForceCustomJar(false);
+                    return it;
+                }
+            };
+            // add default modules
+            mcsd.getModules_localExecution().save(helper.init(new LocalExecutionModulePrototype()));
+            mcsd.getModules_localFiles().save(helper.init(new LocalFileModulePrototype()));
+            mcsd.getModules_backup().save(helper.init(new BackupModulePrototype()));
+            mcsd.getModules_status().save(helper.init(new StatusModulePrototype()));
+            mcsd.getModules_uptime().save(helper.init(new UptimeModulePrototype()));
+            mcsd.getModules_discord().save(helper.init(new DiscordModulePrototype()));
+        }
         return "redirect:/%s/view/%s".formatted(type, target.getId());
     }
 
@@ -298,14 +326,18 @@ public class GenericController {
         user.verifyPermission(user, Delete)
                 .or(authorizationLinkRepo.validate(user, id, code, Delete).cast())
                 .orElseThrow(() -> new InsufficientPermissionsException(user, id, Delete));
-        (switch (type) {
+        var repo = switch (type) {
             case "agent" -> agentRepo;
             case "discordBot" -> discordBotRepo;
             case "server" -> serverRepo;
             case "sh" -> shRepo;
             case "user" -> userRepo;
             default -> throw new BadRequestException("invalid type: " + type);
-        }).deleteById(id);
+        };
+        if ("server".equals(type))
+            Streams.of(mcsd.getModules().findAllByServerId(id))
+                .forEach(proto -> proto.getDtype().getObtainRepo().apply(mcsd).delete(uncheckedCast(proto)));
+        repo.deleteById(id);
         return "redirect:/";
     }
 }

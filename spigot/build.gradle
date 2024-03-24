@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'org.comroid.mcsd'
-version = '0.1.0-SNAPSHOT'
+version = '0.1.1'
 
 sourceSets {
     main.java.srcDirs       = files(parent.projectDir.toString() + "/src/spigot/main/java")
@@ -15,7 +15,7 @@ sourceSets {
 }
 
 tasks.register('dlServerJar', Download).configure {
-    src 'https://github.com/IzzelAliz/Arclight/releases/download/Trials%2F1.0.2/arclight-forge-1.20.1-1.0.2.jar'
+    src 'https://github.com/IzzelAliz/Arclight/releases/download/Trials%2F1.0.5/arclight-forge-1.20.1-1.0.5.jar'
     //src 'https://serverjars.com/api/fetchJar/servers/paper/1.19.4'
     dest "${buildDir}/libs/server.jar"
 }
@@ -51,6 +51,7 @@ repositories {
         name = "sonatype"
         url = "https://oss.sonatype.org/content/groups/public/"
     }
+    maven { url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
 }
 
 dependencies {
@@ -58,6 +59,12 @@ dependencies {
 
     // mcsd api
     implementation project(':api')
+
+    // rabbit
+    runtimeOnly 'com.rabbitmq:amqp-client:5.+'
+
+    // placeholderapi
+    compileOnly 'me.clip:placeholderapi:2.9.+'
 }
 
 def targetJavaVersion = 17

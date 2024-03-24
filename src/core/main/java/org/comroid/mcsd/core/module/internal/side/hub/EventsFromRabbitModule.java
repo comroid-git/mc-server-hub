@@ -2,7 +2,7 @@ package org.comroid.mcsd.core.module.internal.side.hub;
 
 import org.comroid.api.func.util.Event;
 import org.comroid.api.net.Rabbit;
-import org.comroid.mcsd.api.dto.PlayerEvent;
+import org.comroid.mcsd.api.dto.comm.PlayerEvent;
 import org.comroid.mcsd.core.ServerManager;
 import org.comroid.mcsd.core.entity.module.player.PlayerEventModulePrototype;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
@@ -17,7 +17,7 @@ public class EventsFromRabbitModule extends PlayerEventModule<@Nullable PlayerEv
 
     @Override
     protected Event.Bus<PlayerEvent> initEventBus() {
-        var binding = bean(Rabbit.class).bind("mcsd.server."+server.getId(), "module.player.event.#", PlayerEvent.class);
+        var binding = bean(Rabbit.class).bind("mcsd.module.player", "event.*."+server.getId(), PlayerEvent.class);
         addChildren(binding);
         return binding;
     }

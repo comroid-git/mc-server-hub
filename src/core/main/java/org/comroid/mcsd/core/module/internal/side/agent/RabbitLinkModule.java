@@ -2,9 +2,9 @@ package org.comroid.mcsd.core.module.internal.side.agent;
 
 import lombok.extern.java.Log;
 import org.comroid.api.net.Rabbit;
-import org.comroid.mcsd.api.dto.PlayerEvent;
+import org.comroid.mcsd.api.dto.comm.PlayerEvent;
 import org.comroid.mcsd.core.ServerManager;
-import org.comroid.mcsd.core.dto.ConsoleData;
+import org.comroid.mcsd.api.dto.comm.ConsoleData;
 import org.comroid.mcsd.core.module.InternalModule;
 import org.comroid.mcsd.core.module.console.ConsoleModule;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
@@ -31,19 +31,20 @@ public class RabbitLinkModule extends InternalModule {
 
     @Override
     protected void $initialize() {
-        final var rabbit = bean(Rabbit.class).exchange("mcsd.server." + server.getId());
+        final var rabbit = bean(Rabbit.class);
         if (console != null) {
+            Rabbit.Exchange exchange = rabbit.exchange("mcsd.module.console");
             Rabbit.Exchange.Route<ConsoleData> route;
             addChildren(
                     // rabbit -> console
-                    route = rabbit.route("module.console.input", ConsoleData.class),
+                    route = exchange.route("input." + server.getId(), ConsoleData.class),
                     route.filterData(cdat -> cdat.getType() == ConsoleData.Type.input)
                             .mapData(ConsoleData::getData)
                             .subscribeData(cmd -> console.execute(cmd).exceptionally(
                                     exceptionLogger(log, "Could not forward command '" + cmd + "' from Rabbit to Console"))),
 
                     // console -> rabbit
-                    route = rabbit.route("module.console.output", ConsoleData.class),
+                    route = exchange.route("output." + server.getId(), ConsoleData.class),
                     console.getBus()
                             //.filter(e -> DelegateStream.IO.EventKey_Output.equals(e.getKey()))
                             .mapData(str -> new ConsoleData(ConsoleData.Type.output, str))
@@ -52,10 +53,11 @@ public class RabbitLinkModule extends InternalModule {
         }
         if (players != null) {
             // events -> rabbit
+            Rabbit.Exchange exchange = rabbit.exchange("mcsd.module.player");
             Arrays.stream(PlayerEvent.Type.values()).forEach(type -> {
                 Rabbit.Exchange.Route<PlayerEvent> route;
                 addChildren(
-                        route = rabbit.route("module.player.event." + type.name().toLowerCase(), PlayerEvent.class),
+                        route = exchange.route("event." + type.name().toLowerCase() + '.' + server.getId(), PlayerEvent.class),
                         players.getBus().filterData(e -> e.getType() == type).subscribeData(route::send)
                 );
             });

@@ -1,6 +1,10 @@
-name: MCSD-Spigot
+name: MCSD
 version: '0.1.0'
 main: org.comroid.mcsd.spigot.MCSD_Spigot
 api-version: '1.18'
 load: STARTUP
 website: https://github.com/comroid-git/mc-server-hub
+commands:
+  reload:
+    permission: mcsd.reload
+    description: Reloads Configuration
