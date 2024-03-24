@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Getter
 public final class MCSD_Spigot extends JavaPlugin {
@@ -35,6 +34,7 @@ public final class MCSD_Spigot extends JavaPlugin {
     Command.Manager cmdr;
     UUID serverId;
     Level consoleLevel;
+    RabbitAppender appender;
     Rabbit.Exchange console;
     Rabbit.Exchange players;
 
@@ -73,7 +73,10 @@ public final class MCSD_Spigot extends JavaPlugin {
         this.players = rabbit.exchange(ExchangePlayerEvent);
 
         // logger configuration
-        Logger.getGlobal().addHandler(new LoggerHandler(this));
+        this.appender = new RabbitAppender(this);
+        appender.start();
+        if (!appender.isStarted())
+            getLogger().warning("Could not start RabbitAppender");
 
         // bukkit events
         this.eventManager = new EventManager(this);
