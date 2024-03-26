@@ -1,7 +1,6 @@
 package org.comroid.mcsd.spigot;
 
 import lombok.Value;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.Logger;
@@ -30,14 +29,20 @@ public class RabbitAppender extends AbstractAppender {
 
     @Override
     public void append(LogEvent event) {
-        //if (event.getLevel().intLevel() < plugin.getConsoleLevel().intValue()) return;
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(event.getTimeMillis());
-        var str = "[%tT %s] [%s]: %s".formatted(
-                calendar,
-                event.getLevel().name(),
-                event.getLoggerName(),
-                event.getMessage().getFormattedMessage());
-        route.send(output(str));
+        try {
+            if (event.getLevel().intLevel() < plugin.getConsoleLevel().intLevel())
+                return;
+            var calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(event.getTimeMillis());
+            var str = "[%tT %s] [%s]: %s\n".formatted(
+                    calendar,
+                    event.getLevel().name(),
+                    event.getLoggerName(),
+                    event.getMessage().getFormattedMessage());
+            route.send(output(str));
+        } catch (Throwable t) {
+            System.err.println("Error in RabbitAppender");
+            t.printStackTrace(System.err);
+        }
     }
 }
