@@ -7,7 +7,7 @@ mcsd:
   # default uses comroid mcsd hub; see mcsd.hubBaseUrl for reference
   rabbitMqUri: amqp://anonymous:anonymous@rabbitmq.comroid.org:5672/mcsd
   # logging level for console module
-  # changing this finer than INFO (e.g. WARNING or SEVERE) affects how other mcsd modules work
+  # changing this finer than INFO (e.g. WARN, ERROR or FATAL) affects how other mcsd modules work
   consoleLevel: INFO
   # server configuration
   server:

@@ -1,6 +1,7 @@
 package org.comroid.mcsd.spigot;
 
 import lombok.Getter;
+import org.apache.logging.log4j.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -18,7 +19,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.logging.Level;
 
 import static org.bukkit.Bukkit.getConsoleSender;
 
@@ -27,7 +27,7 @@ public final class MCSD_Spigot extends JavaPlugin {
     public static final String Unspecified = "<please specify>";
     public static final String DefaultHubBaseUrl = "https://mc.comroid.org";
     public static final String DefaultRabbitUri = "amqp://anonymous:anonymous@rabbitmq.comroid.org:5672/mcsd";
-    public static final String DefaultConsoleLevel = Level.INFO.getName();
+    public static final String DefaultConsoleLevel = Level.INFO.name();
     public static final String ExchangeConsole = "mcsd.module.console";
     public static final String ExchangePlayerEvent = "mcsd.module.player";
     public static final String RouteConsoleInputBase = "input.%s";
@@ -60,14 +60,14 @@ public final class MCSD_Spigot extends JavaPlugin {
     public void onEnable() {
         // convert config
         this.serverId = UUID.fromString(Objects.requireNonNull(config.getString("mcsd.server.id"), "Server ID not configured"));
-        this.consoleLevel = Level.parse(config.getString("mcsd.consoleLevel", DefaultConsoleLevel));
+        this.consoleLevel = Level.valueOf(config.getString("mcsd.consoleLevel", DefaultConsoleLevel));
 
         // send hello to hub
         req(REST.Method.GET, "/agent/hello/" + config.getString("mcsd.agent.id"))
                 .execute()
                 .thenApply(REST.Response::validate2xxOK)
                 .thenRun(() -> getLogger().info("Ping to Hub succeeded"))
-                .exceptionally(Polyfill.exceptionLogger(getLogger(), Level.WARNING, Level.FINE, "Could not reach Hub @ " + config.getString("mcsd.hubBaseUrl")));
+                .exceptionally(Polyfill.exceptionLogger(getLogger(), java.util.logging.Level.WARNING, java.util.logging.Level.FINE, "Could not reach Hub @ " + config.getString("mcsd.hubBaseUrl")));
 
         // rabbitmq
         var rabbit = Wrap.of(config.get("mcsd.rabbitMqUri", DefaultRabbitUri))
