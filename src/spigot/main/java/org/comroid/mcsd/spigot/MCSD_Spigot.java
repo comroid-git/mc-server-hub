@@ -61,16 +61,6 @@ public final class MCSD_Spigot extends JavaPlugin {
         this.serverId = UUID.fromString(Objects.requireNonNull(config.getString("mcsd.server.id"), "Server ID not configured"));
         this.consoleLevel = Level.valueOf(config.getString("mcsd.consoleLevel", DefaultConsoleLevel));
 
-        // send hello to hub
-        req(REST.Method.GET, "/agent/hello/" + config.getString("mcsd.agent.id"))
-                .execute()
-                .thenApply(REST.Response::validate2xxOK)
-                .thenRun(() -> getLogger().info("Ping to Hub succeeded"))
-                .exceptionally(Polyfill.exceptionLogger(getLogger(),
-                        java.util.logging.Level.WARNING,
-                        java.util.logging.Level.FINE,
-                        "Could not reach Hub @ " + config.getString("mcsd.hubBaseUrl")));
-
         // rabbitmq
         var rabbit = Wrap.of(config.get("mcsd.rabbitMqUri", DefaultRabbitUri))
                 .map(String::valueOf)
