@@ -101,10 +101,10 @@ public final class MCSD_Spigot extends JavaPlugin {
     }
 
     public void forward(PlayerEvent event) {
-        players.route(RoutePlayerEventBase.formatted(
-                                event.getType().name().toLowerCase(),
-                                serverId),
-                        PlayerEvent.class)
+        var routingKey = RoutePlayerEventBase.formatted(
+                event.getType().name().toLowerCase(),
+                serverId);
+        players.route(routingKey, PlayerEvent.class)
                 .send(event);
     }
 
