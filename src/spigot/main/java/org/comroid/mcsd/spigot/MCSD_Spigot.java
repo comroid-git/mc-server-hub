@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.comroid.api.Polyfill;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Command;
@@ -67,7 +66,10 @@ public final class MCSD_Spigot extends JavaPlugin {
                 .execute()
                 .thenApply(REST.Response::validate2xxOK)
                 .thenRun(() -> getLogger().info("Ping to Hub succeeded"))
-                .exceptionally(Polyfill.exceptionLogger(getLogger(), java.util.logging.Level.WARNING, java.util.logging.Level.FINE, "Could not reach Hub @ " + config.getString("mcsd.hubBaseUrl")));
+                .exceptionally(Polyfill.exceptionLogger(getLogger(),
+                        java.util.logging.Level.WARNING,
+                        java.util.logging.Level.FINE,
+                        "Could not reach Hub @ " + config.getString("mcsd.hubBaseUrl")));
 
         // rabbitmq
         var rabbit = Wrap.of(config.get("mcsd.rabbitMqUri", DefaultRabbitUri))
