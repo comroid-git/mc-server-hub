@@ -100,7 +100,13 @@ public final class MCSD_Spigot extends JavaPlugin {
         eventManager.close();
     }
 
-    public void forward(PlayerEvent event) {}
+    public void forward(PlayerEvent event) {
+        players.route(RoutePlayerEventBase.formatted(
+                                event.getType().name().toLowerCase(),
+                                serverId),
+                        PlayerEvent.class)
+                .send(event);
+    }
 
     @Command(permission = "mcsd.reload")
     public String reload() {
