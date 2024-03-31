@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 def getCommitTimestampMinutes() {
@@ -54,4 +55,11 @@ dependencies {
     // utility
     compileOnly 'org.projectlombok:lombok:+'
     annotationProcessor 'org.projectlombok:lombok:+'
+}
+
+task simplifyArtifact(type: Copy) {
+    dependsOn jar
+    from jar.outputs.files.singleFile
+    into "$buildDir/libs/"
+    rename { n -> "mcsd-api.jar" }
 }

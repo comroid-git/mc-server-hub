@@ -24,13 +24,14 @@ tasks.register('serverJar', Copy) {
     dependsOn dlServerJar
     from dlServerJar.outputs.files.singleFile
     into "$projectDir/run"
-    rename { "server.jar" }
+    rename { n -> "server.jar" }
 }
 
-tasks.register('testPlugin', Copy).configure {
+tasks.register('testPlugin', Copy) {
     dependsOn shadowJar, serverJar
     from shadowJar.outputs.files.singleFile
     into "${projectDir}/run/plugins"
+    rename { n -> "mcsd-spigot.jar" }
 }
 
 repositories {
