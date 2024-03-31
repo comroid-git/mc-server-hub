@@ -89,7 +89,8 @@ public final class MCSD_Spigot extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        eventManager.close();
+        this.eventManager.close();
+        this.appender.stop();
     }
 
     public void forward(PlayerEvent event) {
