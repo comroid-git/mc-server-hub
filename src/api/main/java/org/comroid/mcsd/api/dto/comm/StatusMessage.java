@@ -27,6 +27,10 @@ public class StatusMessage {
     private @With @Nullable String worldName;
     private @With @Nullable UUID userId;
 
+    public @Nullable String getMotdSanitized() {
+        return motd == null ? null : motd.replaceAll("[&§�]\\w", "");
+    }
+
     public StatusMessage combine(@Nullable StatusMessage other) {
         if (other == null)
             return this;

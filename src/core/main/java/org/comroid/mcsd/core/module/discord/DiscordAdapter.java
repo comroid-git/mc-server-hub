@@ -148,7 +148,7 @@ public class DiscordAdapter extends Event.Bus<GenericEvent> implements EventList
         return parent.status().thenApply(stat -> {
             var embed = new EmbedBuilder()
                     .setTitle(stat.getStatus().toStatusMessage(), parent.getHomepage())
-                    .setDescription(TextDecoration.sanitize(stat.getMotd(), McFormatCode.class, Markdown.class))
+                    .setDescription(stat.getMotdSanitized())
                     .setColor(stat.getStatus().getColor())
                     .setThumbnail(parent.getThumbnailURL())
                     .addField("Host", parent.getHost(), true)

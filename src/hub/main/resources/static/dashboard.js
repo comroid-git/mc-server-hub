@@ -16,7 +16,7 @@ function refreshServerList() {
             .then(resp => resp.json())
             .then(data => {
                 entry.querySelector('.statusIcon').className = 'statusIcon icon-'+statusIconName(data.status);
-                entry.querySelector('.motd').innerHTML = data.status==='offline'?'---':data.motd;
+                entry.querySelector('.motd').innerHTML = data.status==='offline'?'---':data.motdSanitized;
                 entry.querySelector('.players').innerHTML = data.status==='offline'?'---':`${data.playerCount}/${data.playerMax}`;
             })
             .catch(error => console.log('could not update status of '+entry.id, error))
