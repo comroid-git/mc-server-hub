@@ -13,6 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
+          ref: ${{ github.event.release.tag_name }}
           path: mc-server-hub
 
       - name: Clone japi repository
