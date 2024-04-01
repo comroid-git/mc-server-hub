@@ -3,21 +3,6 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
-def getCommitTimestampMinutes() {
-    // Run 'git log' command to get the timestamp of the latest commit
-    def result = new ByteArrayOutputStream()
-    exec {
-        commandLine 'git', 'log', '-1', '--format=%ct'
-        standardOutput = result
-    }
-
-    // Convert the timestamp to minutes
-    def timestampSeconds = result.toString().trim().toLong()
-    def timestampMinutes = timestampSeconds / 60
-
-    return (int) timestampMinutes
-}
-
 ext {
     artifactName = 'mcsd-api'
     projectDescription = 'comroid Minecraft Server Hub Base API'
@@ -25,7 +10,6 @@ ext {
 }
 
 group = 'org.comroid.mcsd'
-version = "0.2.${getCommitTimestampMinutes()}"
 sourceCompatibility = '17'
 targetCompatibility = '17'
 

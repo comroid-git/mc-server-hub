@@ -5,7 +5,6 @@ plugins {
 }
 
 group = 'org.comroid.mcsd'
-version = '0.2.0'
 
 sourceSets {
     main.java.srcDirs       = files(parent.projectDir.toString() + "/src/spigot/main/java")
