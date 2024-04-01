@@ -12,18 +12,23 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          path: mc-server-hub
 
       - name: Clone japi repository
         uses: actions/checkout@v2
         with:
           repository: comroid-git/japi
-          path: ../japi
+          path: japi
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
           java-version: '17'
+
+      - name: Change working directory
+        run: cd mc-server-hub
 
       - name: Build Artifacts
         run: ./gradlew simplifyArtifact
