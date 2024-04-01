@@ -5,13 +5,13 @@ import org.apache.logging.log4j.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.comroid.api.Polyfill;
 import org.comroid.api.func.ext.Wrap;
 import org.comroid.api.func.util.Command;
 import org.comroid.api.net.REST;
 import org.comroid.api.net.Rabbit;
 import org.comroid.mcsd.api.dto.comm.ConsoleData;
 import org.comroid.mcsd.api.dto.comm.PlayerEvent;
+import org.comroid.mcsd.api.log.RabbitConsoleAppender;
 import org.comroid.util.PathUtil;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +38,7 @@ public final class MCSD_Spigot extends JavaPlugin {
     Command.Manager cmdr;
     UUID serverId;
     Level consoleLevel;
-    RabbitAppender appender;
+    RabbitConsoleAppender appender;
     Rabbit.Exchange console;
     Rabbit.Exchange players;
 
@@ -77,7 +77,10 @@ public final class MCSD_Spigot extends JavaPlugin {
                         () -> Bukkit.getServer().dispatchCommand(getConsoleSender(), cmd)));
 
         // logger configuration
-        this.appender = new RabbitAppender(this);
+        this.appender = new RabbitConsoleAppender(
+                rabbit.exchange(ExchangeConsole)
+                        .route(RouteConsoleOutputBase.formatted(serverId), ConsoleData.class),
+                consoleLevel);
         appender.start();
         if (!appender.isStarted())
             getLogger().warning("Could not start RabbitAppender");

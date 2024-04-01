@@ -1,6 +1,7 @@
-package org.comroid.mcsd.spigot;
+package org.comroid.mcsd.api.log;
 
 import lombok.Value;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.Logger;
@@ -15,14 +16,14 @@ import static org.comroid.mcsd.api.dto.comm.ConsoleData.output;
 
 @Value
 @Plugin(name = "MCSD Console Relay", category = "Core", elementType = "appender", printObject = true)
-public class RabbitAppender extends AbstractAppender {
-    MCSD_Spigot plugin;
+public class RabbitConsoleAppender extends AbstractAppender {
     Rabbit.Exchange.Route<ConsoleData> route;
+    Level level;
 
-    public RabbitAppender(MCSD_Spigot plugin) {
+    public RabbitConsoleAppender(Rabbit.Exchange.Route<ConsoleData> route, Level level) {
         super("MCSD Console Appender", null, null, false, null);
-        this.plugin = plugin;
-        this.route = plugin.getConsole().route(MCSD_Spigot.RouteConsoleOutputBase.formatted(plugin.getServerId()), ConsoleData.class);
+        this.route = route;
+        this.level = level;
 
         ((Logger) LogManager.getRootLogger()).addAppender(this);
     }
@@ -30,7 +31,7 @@ public class RabbitAppender extends AbstractAppender {
     @Override
     public void append(LogEvent event) {
         try {
-            if (event.getLevel().intLevel() > plugin.getConsoleLevel().intLevel())
+            if (event.getLevel().intLevel() > level.intLevel())
                 return;
             var calendar = Calendar.getInstance();
             calendar.setTimeInMillis(event.getTimeMillis());
