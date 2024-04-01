@@ -30,5 +30,5 @@ jobs:
           distribution: 'adopt'
           java-version: '17'
 
-      - name: Build Artifacts
+      - name: Run Unit Tests
         run: cd mc-server-hub && ./gradlew test
