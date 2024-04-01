@@ -28,11 +28,8 @@ jobs:
           distribution: 'adopt'
           java-version: '17'
 
-      - name: Change working directory
-        run: cd mc-server-hub
-
       - name: Build Artifacts
-        run: ./gradlew simplifyArtifact
+        run: cd mc-server-hub && ./gradlew simplifyArtifact
 
       - name: Upload API JAR to Release
         id: upload-api-assets
