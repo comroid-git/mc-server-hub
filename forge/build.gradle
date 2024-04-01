@@ -223,7 +223,7 @@ shadowJar {
 }
 
 task simplifyArtifact(type: Copy) {
-    dependsOn shadowJar
+    dependsOn test, shadowJar
     from shadowJar.outputs.files.singleFile
     into "$rootDir/build/libs/"
     rename { n -> "mcsd-forge.jar" }

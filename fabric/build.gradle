@@ -140,7 +140,7 @@ shadowJar {
 }
 
 task simplifyArtifact(type: Copy) {
-	dependsOn remappedShadowJar
+	dependsOn test, remappedShadowJar
 	from remappedShadowJar.outputs.files.singleFile
 	into "$rootDir/build/libs/"
 	rename { n -> "mcsd-fabric.jar" }
