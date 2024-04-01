@@ -1,4 +1,4 @@
-name: Upload Files to Release
+name: Unit Tests
 
 on:
   push:
