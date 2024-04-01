@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/libs/mcsd-api.jar
+          asset_path: mc-server-hub/build/libs/mcsd-api.jar
           asset_name: "mcsd-api-${{ github.event.release.tag_name }}.jar"
           asset_content_type: application/java-archive
         env:
@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/libs/mcsd-core.jar
+          asset_path: mc-server-hub/build/libs/mcsd-core.jar
           asset_name: "mcsd-core-${{ github.event.release.tag_name }}.jar"
           asset_content_type: application/java-archive
         env:
@@ -58,7 +58,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/libs/mcsd-spigot.jar
+          asset_path: mc-server-hub/build/libs/mcsd-spigot.jar
           asset_name: "mcsd-spigot-${{ github.event.release.tag_name }}.jar"
           asset_content_type: application/java-archive
         env:
@@ -69,7 +69,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/libs/mcsd-forge.jar
+          asset_path: mc-server-hub/build/libs/mcsd-forge.jar
           asset_name: "mcsd-forge-${{ github.event.release.tag_name }}.jar"
           asset_content_type: application/java-archive
         env:
@@ -80,7 +80,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/libs/mcsd-fabric.jar
+          asset_path: mc-server-hub/build/libs/mcsd-fabric.jar
           asset_name: "mcsd-fabric-${{ github.event.release.tag_name }}.jar"
           asset_content_type: application/java-archive
         env:
