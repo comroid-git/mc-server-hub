@@ -42,8 +42,9 @@ dependencies {
 }
 
 task simplifyArtifact(type: Copy) {
+    // api module should be slim, and only contain mcsd's own api
     dependsOn jar
     from jar.outputs.files.singleFile
-    into "$buildDir/libs/"
+    into "$rootDir/build/libs/"
     rename { n -> "mcsd-api.jar" }
 }

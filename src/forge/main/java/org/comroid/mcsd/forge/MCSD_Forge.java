@@ -31,8 +31,6 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.comroid.api.Polyfill;
-import org.comroid.mcsd.api.dto.PlayerEvent;
-import org.comroid.util.REST;
 import org.slf4j.Logger;
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -73,10 +71,10 @@ public class MCSD_Forge
 
     @SubscribeEvent
     static void onChat(final ServerChatEvent event) {
-        REST.put(Config.info.getHubBaseUrl()+"/api/agent/chat"+Config.info.getAgent(),
-                        new PlayerEvent(event.getUsername(), event.getMessage().getString(), PlayerEvent.Type.Chat).json())
-                .thenApply(REST.Response::validate2xxOK)
-                .exceptionally(Polyfill.exceptionLogger());
+//        REST.put(Config.info.getHubBaseUrl()+"/api/agent/chat"+Config.info.getAgent(),
+//                        new PlayerEvent(event.getUsername(), event.getMessage().getString(), PlayerEvent.Type.Chat).json())
+//                .thenApply(REST.Response::validate2xxOK)
+//                .exceptionally(Polyfill.exceptionLogger());
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent

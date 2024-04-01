@@ -25,30 +25,60 @@ jobs:
         with:
           java-version: '17'
 
-# api artifact
-      - name: Build API Artifact
-        run: ./gradlew :api:simplifyArtifact
+      - name: Build Artifacts
+        run: ./gradlew simplifyArtifact
+
       - name: Upload API JAR to Release
         id: upload-api-assets
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: api/build/libs/mcsd-api.jar
-          asset_name: "mcsd-api-${{ github.event.release.tag_name }}.zip"
+          asset_path: build/libs/mcsd-api.jar
+          asset_name: "mcsd-api-${{ github.event.release.tag_name }}.jar"
           asset_content_type: application/java-archive
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-# spigot artifact
-      - name: Build Spigot Artifact
-        run: ./gradlew :spigot:testPlugin
+
+      - name: Upload Core JAR to Release
+        id: upload-api-assets
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: build/libs/mcsd-core.jar
+          asset_name: "mcsd-core-${{ github.event.release.tag_name }}.jar"
+          asset_content_type: application/java-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload Spigot Plugin to Release
         id: upload-spigot-assets
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: spigot/run/plugins/mcsd-spigot.jar
-          asset_name: "mcsd-spigot-${{ github.event.release.tag_name }}.zip"
+          asset_path: build/libs/mcsd-spigot.jar
+          asset_name: "mcsd-spigot-${{ github.event.release.tag_name }}.jar"
+          asset_content_type: application/java-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Forge Mod to Release
+        id: upload-forge-assets
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: build/libs/mcsd-forge.jar
+          asset_name: "mcsd-forge-${{ github.event.release.tag_name }}.jar"
+          asset_content_type: application/java-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Fabric Mod to Release
+        id: upload-fabric-assets
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: build/libs/mcsd-fabric.jar
+          asset_name: "mcsd-fabric-${{ github.event.release.tag_name }}.jar"
           asset_content_type: application/java-archive
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

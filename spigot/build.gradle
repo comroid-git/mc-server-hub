@@ -26,10 +26,21 @@ tasks.register('serverJar', Copy) {
     rename { n -> "server.jar" }
 }
 
+shadowJar {
+    dependsOn project(':api').simplifyArtifact
+}
+
 tasks.register('testPlugin', Copy) {
     dependsOn shadowJar, serverJar
     from shadowJar.outputs.files.singleFile
     into "${projectDir}/run/plugins"
+    rename { n -> "mcsd-spigot.jar" }
+}
+
+task simplifyArtifact(type: Copy) {
+    dependsOn shadowJar
+    from shadowJar.outputs.files.singleFile
+    into "$rootDir/build/libs/"
     rename { n -> "mcsd-spigot.jar" }
 }
 

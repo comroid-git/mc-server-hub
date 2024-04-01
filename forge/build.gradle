@@ -1,4 +1,6 @@
 plugins {
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id "de.undercouch.download" version "5.5.0"
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
@@ -153,7 +155,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
     // mcsd api
-    implementation project(':api') // todo: include as jarjar
+    implementation project(':api')
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
@@ -214,4 +216,15 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+shadowJar {
+    dependsOn project(':api').simplifyArtifact
+}
+
+task simplifyArtifact(type: Copy) {
+    dependsOn shadowJar
+    from shadowJar.outputs.files.singleFile
+    into "$rootDir/build/libs/"
+    rename { n -> "mcsd-forge.jar" }
 }

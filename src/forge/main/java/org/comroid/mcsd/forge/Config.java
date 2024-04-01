@@ -9,9 +9,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.comroid.api.Polyfill;
-import org.comroid.mcsd.api.dto.AgentInfo;
-import org.comroid.mcsd.api.dto.PlayerEvent;
-import org.comroid.util.REST;
 
 import java.util.List;
 import java.util.Set;
@@ -33,7 +30,7 @@ public class Config
 
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
-    static AgentInfo info;
+    //static AgentInfo info;
 
     private static boolean validateItemName(final Object obj)
     {
@@ -48,6 +45,6 @@ public class Config
         var hubBaseUrl=Token.get();
         var token=BaseUrl.get();
         var baseUrl=HubBaseUrl.get();
-        info=new AgentInfo(target,agent,hubBaseUrl,token,baseUrl);
+        //info=new AgentInfo(target,agent,hubBaseUrl,token,baseUrl);
     }
 }
