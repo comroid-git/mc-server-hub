@@ -49,12 +49,17 @@ public class DiscordModule extends ServerModule<DiscordModulePrototype> {
         super(server, proto);
         this.adapter = Optional.ofNullable(proto.getDiscordBot())
                 .map(DiscordAdapter::get)
-                .orElseThrow();
+                .orElse(null);
     }
 
     @Override
     @SneakyThrows
     protected void $initialize() {
+        if (adapter == null) {
+            log.warning("Cannot initialize "+this+"; adapter not loaded");
+            return;
+        }
+
         var chat = events.getBus();
 
         adapter.getJda().awaitReady();
