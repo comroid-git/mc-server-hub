@@ -168,7 +168,7 @@ public class ServerManager {
         @Override
         protected void $lateInitialize() {
             if (sideConfig.getSide() == ModuleType.Side.Agent)
-                component(UpdateModule.class).ifPresent(module -> module.runUpdate(false));
+                component(UpdateModule.class).ifPresent(module -> module.runUpdate(false).join());
         }
 
         public AlmostComplete<Properties> updateProperties() throws IOException {
