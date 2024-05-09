@@ -65,6 +65,7 @@ public class ServerManager {
 
     public void startAll(List<Server> servers) {
         servers.stream()
+                .filter(Server::isEnabled)
                 .map(ThrowingFunction.logging(log, srv -> get(srv.getId()).assertion("Could not initialize " + srv)))
                 //.flatMap(filter(Objects::nonNull, $ -> log.severe("A server was not initialized correctly")))
                 .map(entry -> {
