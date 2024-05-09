@@ -25,6 +25,7 @@ import org.comroid.mcsd.core.module.internal.side.hub.ConsoleFromRabbitModule;
 import org.comroid.mcsd.core.module.internal.side.hub.EventsFromRabbitModule;
 import org.comroid.mcsd.core.module.player.PlayerEventModule;
 import org.comroid.mcsd.core.module.remote.ssh.SshFileModule;
+import org.comroid.mcsd.core.module.status.UpdateModule;
 import org.comroid.mcsd.core.repo.module.ModuleRepo;
 import org.comroid.mcsd.core.repo.server.ServerRepo;
 import org.jetbrains.annotations.NotNull;
@@ -160,9 +161,14 @@ public class ServerManager {
         @Override
         @SneakyThrows
         protected void $initialize() {
-            if (sideConfig.getSide() != ModuleType.Side.Agent)
-                return;
-            updateProperties().get();
+            if (sideConfig.getSide() == ModuleType.Side.Agent)
+                updateProperties().get();
+        }
+
+        @Override
+        protected void $lateInitialize() {
+            if (sideConfig.getSide() == ModuleType.Side.Agent)
+                component(UpdateModule.class).ifPresent(module -> module.runUpdate(false));
         }
 
         public AlmostComplete<Properties> updateProperties() throws IOException {
