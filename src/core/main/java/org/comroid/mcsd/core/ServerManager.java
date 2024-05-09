@@ -162,7 +162,7 @@ public class ServerManager {
         protected void $initialize() {
             if (sideConfig.getSide() != ModuleType.Side.Agent)
                 return;
-            updateProperties();
+            updateProperties().get();
         }
 
         public AlmostComplete<Properties> updateProperties() throws IOException {
