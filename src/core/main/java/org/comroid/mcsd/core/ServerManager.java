@@ -170,9 +170,10 @@ public class ServerManager {
             var files = component(FileModule.class).assertion("No file module is specified");
             files.mkDir(serverProperties);
             final var prop = new Properties();
-            try (var input = files.readFile(serverProperties)) {
-                prop.load(input);
-            }
+            if (files.exists(serverProperties))
+                try (var input = files.readFile(serverProperties)) {
+                    prop.load(input);
+                }
 
             // generic
             prop.setProperty("server-port", String.valueOf(server.getPort()));
