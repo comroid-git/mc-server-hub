@@ -7,13 +7,13 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 import org.comroid.api.func.util.Command;
 import org.comroid.api.func.util.Streams;
+import org.comroid.api.text.minecraft.McFormatCode;
+import org.comroid.api.text.minecraft.Tellraw;
 import org.comroid.mcsd.core.entity.module.console.McsdCommandModulePrototype;
 import org.comroid.mcsd.core.entity.server.Server;
 import org.comroid.mcsd.core.entity.system.User;
 import org.comroid.mcsd.core.module.ServerModule;
 import org.comroid.mcsd.core.repo.system.UserRepo;
-import org.comroid.api.text.minecraft.McFormatCode;
-import org.comroid.api.text.minecraft.Tellraw;
 import org.comroid.mcsd.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,7 +48,7 @@ public class McsdCommandModule extends ServerModule<McsdCommandModulePrototype> 
     }
 
     @Override
-    public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
+    public void handleResponse(Command.Usage cmd, @NotNull Object response, Object... args) {
         var profile = Arrays.stream(args)
                 .flatMap(Streams.cast(User.class))
                 .findAny()

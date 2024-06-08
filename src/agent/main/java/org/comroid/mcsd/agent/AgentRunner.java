@@ -273,7 +273,7 @@ public class AgentRunner implements Command.Handler {
     }
 
     @Override
-    public void handleResponse(Command.Delegate cmd, @NotNull Object response, Object... args) {
+    public void handleResponse(Command.Usage cmd, @NotNull Object response, Object... args) {
         //Stream.of(args).flatMap(Streams.cast(ConsoleController.Connection.class)).findAny()
         //                .ifPresent(con -> ws.convertAndSendToUser(con.getUser().getName(), response));
         out.println(response);
